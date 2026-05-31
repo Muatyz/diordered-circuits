@@ -1,1 +1,15 @@
+# 数据集以及处理中, 处理后的数据文件
+/data/interim
+/data/processed
 /data/raw
+
+# 测试脚本, 仅供测试函数使用
+/test
+
+# prompt 文件
+/.skills
+/.todo
+
+# 系统文件
+/.vscode
+/.dist

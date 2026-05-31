@@ -8,6 +8,13 @@ from pynwb import NWBHDF5IO
 RAW = Path("data/raw/dandi_000939")
 
 def summarize_nwb(path: Path) -> dict:
+    """
+    汇总单个 NWB 文件的顶层结构信息。
+
+    返回一个字典，包含文件路径、session 信息、subject 信息、acquisition /
+    processing / interval 键、units 表是否存在以及 unit 数量等。这个摘要会被
+    写入 CSV，作为了解数据集结构的清单。
+    """
     with NWBHDF5IO(str(path), "r", load_namespaces=True) as io:
         nwb = io.read()
 
@@ -36,6 +43,12 @@ def summarize_nwb(path: Path) -> dict:
         return out
 
 def main():
+    """
+    命令行入口：扫描原始 NWB 目录并生成结构清单 CSV。
+
+    每个 NWB 文件会调用 `summarize_nwb`；单个文件失败时记录错误并继续处理其余
+    文件。输出保存到 `reports/nwb_inventory.csv`。
+    """
     files = sorted(RAW.rglob("*.nwb"))
     print(f"Found {len(files)} NWB files")
 
