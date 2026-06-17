@@ -1,3 +1,4 @@
+import warnings
 import time
 
 import numpy as np
@@ -93,7 +94,7 @@ def linear_center_of_mass_positions(matrix, positions):
     mass = np.sum(matrix, axis=1)
     center = np.full(matrix.shape[0], 0.5 * (positions[0] + positions[-1]))
     good = mass > 0
-    center[good] = (matrix[good] @ positions) / mass[good]
+    center[good] = np.einsum("ij,j->i", matrix[good], positions, optimize=False) / mass[good]
     return center
 
 
@@ -184,6 +185,31 @@ def align_rows_to_peak(matrix, target_bin=None):
     return np.vstack([np.roll(row, target_bin - peak) for row, peak in zip(matrix, peaks)])
 
 
+def align_rows_to_circular_com(matrix, angles_rad=None, target_bin=None):
+    """
+    Circularly shift each row so its circular center of mass lands on target_bin.
+
+    Figure 2E-F in the reference paper uses center-of-mass-aligned tuning
+    curves. The COM angle is rounded to the nearest angular bin before rolling,
+    preserving the original bin count and avoiding interpolation artifacts.
+    """
+    matrix = np.asarray(matrix, dtype=float)
+    if matrix.ndim != 2:
+        raise ValueError("Expected a 2D matrix shaped (n_units, n_bins)")
+    if matrix.shape[1] == 0:
+        raise ValueError("Expected at least one angular bin")
+
+    n_bins = matrix.shape[1]
+    if target_bin is None:
+        target_bin = n_bins // 2
+    if angles_rad is None:
+        angles_rad = np.linspace(0.0, 2 * np.pi, n_bins, endpoint=False)
+
+    preferred = circular_center_of_mass_angles(matrix, angles_rad)
+    preferred_bins = np.mod(np.rint(preferred / (2 * np.pi) * n_bins).astype(int), n_bins)
+    return np.vstack([np.roll(row, target_bin - peak) for row, peak in zip(matrix, preferred_bins)])
+
+
 def mean_normalize_rows(matrix):
     """
     Divide each row by its finite-bin mean.
@@ -212,20 +238,169 @@ def population_mean_and_std(aligned_matrix):
     return np.nanmean(aligned_matrix, axis=0), np.nanstd(aligned_matrix, axis=0)
 
 
-def softplus_inverse(rate, beta=2.0, eps=1e-12):
+def _as_jsonable_number(value):
+    """
+    Convert NumPy scalars to plain Python numbers for diagnostics dictionaries.
+    """
+    value = np.asarray(value)
+    if value.shape:
+        raise ValueError("expected a scalar value")
+    return value.item()
+
+
+def _finite_stats(values):
+    """
+    Return compact min/max/mean diagnostics for a finite numeric array.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    return {
+        "min": float(np.min(values)),
+        "max": float(np.max(values)),
+        "mean": float(np.mean(values)),
+    }
+
+
+def prepare_phi_star_for_inverse(
+    phi_raw,
+    theta_axis=-1,
+    neuron_axis=0,
+    alpha_floor=1e-4,
+    do_double_normalize=True,
+    max_sinkhorn_iter=10000,
+    sinkhorn_tol=1e-10,
+):
+    """
+    Prepare data-derived firing-rate targets before applying inverse softplus.
+
+    `phi_raw` is expected to contain tuning curves with one neuron axis and one
+    circular angle axis. The returned `phi_safe` is shaped `(n_valid_neurons,
+    n_theta_bins)`, has strictly positive entries, and has unit theta mean for
+    every retained neuron. When `do_double_normalize` is true, every theta bin
+    also has unit population mean. Invalid zero-mean neurons are removed and
+    reported through `info["valid_neuron_mask"]`.
+    """
+    phi_raw = np.asarray(phi_raw, dtype=np.float64)
+    if phi_raw.ndim != 2:
+        raise ValueError("phi_raw must be a 2D matrix")
+    if neuron_axis == theta_axis:
+        raise ValueError("neuron_axis and theta_axis must be different")
+    if not (0.0 < float(alpha_floor) < 1.0):
+        raise ValueError("alpha_floor must be between 0 and 1")
+
+    neuron_axis = int(neuron_axis) % phi_raw.ndim
+    theta_axis = int(theta_axis) % phi_raw.ndim
+    phi = np.moveaxis(phi_raw, (neuron_axis, theta_axis), (0, 1)).astype(np.float64, copy=True)
+
+    info = {
+        "phi_raw_shape": list(phi_raw.shape),
+        "canonical_shape": list(phi.shape),
+        "neuron_axis": int(neuron_axis),
+        "theta_axis": int(theta_axis),
+        "alpha_floor": float(alpha_floor),
+        "do_double_normalize": bool(do_double_normalize),
+        "max_sinkhorn_iter": int(max_sinkhorn_iter),
+        "sinkhorn_tol": float(sinkhorn_tol),
+        "raw_min": float(np.nanmin(phi)),
+        "raw_max": float(np.nanmax(phi)),
+        "raw_mean": float(np.nanmean(phi)),
+        "raw_exact_zero_count": int(np.sum(phi == 0.0)),
+        "raw_below_1e-12_count": int(np.sum(phi < 1e-12)),
+        "raw_below_1e-8_count": int(np.sum(phi < 1e-8)),
+        "raw_below_1e-6_count": int(np.sum(phi < 1e-6)),
+        "raw_below_1e-4_count": int(np.sum(phi < 1e-4)),
+    }
+
+    if not np.all(np.isfinite(phi)):
+        bad_count = int(np.size(phi) - np.sum(np.isfinite(phi)))
+        raise ValueError(f"phi_raw contains {bad_count} NaN or infinite values")
+
+    negative_mask = phi < 0.0
+    info["negative_count_clipped"] = int(np.sum(negative_mask))
+    info["raw_negative_min"] = float(np.min(phi[negative_mask])) if np.any(negative_mask) else None
+    if np.any(negative_mask):
+        warnings.warn(
+            f"Clipping {info['negative_count_clipped']} negative phi_raw values to zero before normalization",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        phi = phi.copy()
+        phi[negative_mask] = 0.0
+
+    row_mean = np.mean(phi, axis=1)
+    valid_neuron_mask = np.isfinite(row_mean) & (row_mean > 0.0)
+    info["n_neurons_raw"] = int(phi.shape[0])
+    info["n_theta_bins"] = int(phi.shape[1])
+    info["n_valid_neurons"] = int(np.sum(valid_neuron_mask))
+    info["n_removed_neurons"] = int(phi.shape[0] - np.sum(valid_neuron_mask))
+    info["valid_neuron_mask"] = valid_neuron_mask.tolist()
+    if info["n_valid_neurons"] == 0:
+        raise ValueError("No neurons have positive finite mean firing rate")
+
+    phi = phi[valid_neuron_mask]
+    phi /= np.mean(phi, axis=1, keepdims=True)
+    phi = (1.0 - float(alpha_floor)) * phi + float(alpha_floor)
+
+    sinkhorn_iter = 0
+    row_err = float(np.max(np.abs(np.mean(phi, axis=1) - 1.0)))
+    col_err = float(np.max(np.abs(np.mean(phi, axis=0) - 1.0)))
+    if do_double_normalize:
+        for sinkhorn_iter in range(1, int(max_sinkhorn_iter) + 1):
+            phi /= np.mean(phi, axis=1, keepdims=True)
+            phi /= np.mean(phi, axis=0, keepdims=True)
+            row_err = float(np.max(np.abs(np.mean(phi, axis=1) - 1.0)))
+            col_err = float(np.max(np.abs(np.mean(phi, axis=0) - 1.0)))
+            if max(row_err, col_err) < float(sinkhorn_tol):
+                break
+
+    info["sinkhorn_iterations"] = int(sinkhorn_iter)
+    info["final_row_mean_max_abs_error"] = float(row_err)
+    info["final_col_mean_max_abs_error"] = float(col_err)
+    info["phi_safe_shape"] = list(phi.shape)
+    info["phi_safe_min"] = float(np.min(phi))
+    info["phi_safe_max"] = float(np.max(phi))
+    info["phi_safe_mean"] = float(np.mean(phi))
+
+    diagnostics = []
+    if not np.all(np.isfinite(phi)):
+        diagnostics.append("phi_safe contains NaN or infinite values")
+    if not np.min(phi) > 0.0:
+        diagnostics.append(f"phi_safe minimum is not strictly positive: {np.min(phi):.6g}")
+    if row_err >= 1e-8:
+        diagnostics.append(f"row mean normalization error {row_err:.6g} exceeds 1e-8")
+    if do_double_normalize and col_err >= 1e-8:
+        diagnostics.append(f"column mean normalization error {col_err:.6g} exceeds 1e-8")
+    if diagnostics:
+        raise ValueError("; ".join(diagnostics))
+
+    return phi, info
+
+
+def softplus_inverse(rate, beta=2.0):
     """
     Convert positive firing rates to input currents for a softplus nonlinearity.
 
-    The reference model uses an invertible softplus activation to map target
-    firing-rate tuning curves onto an input-current manifold. Very small rates
-    are clipped only at the numerical support used by `sinkhorn_normalize`, so
-    `softplus(softplus_inverse(rate))` remains consistent with the saved target
-    manifold up to floating-point precision. The data-derived network model
-    uses beta=2.
+    The inverse is deliberately strict: target-rate floors must be applied by
+    `prepare_phi_star_for_inverse`, not hidden inside this function. The
+    data-derived network model uses beta=2.
     """
-    rate = np.maximum(np.asarray(rate, dtype=float), eps)
-    scaled = beta * rate
-    return np.where(scaled > 20.0, rate, np.log(np.expm1(scaled)) / beta)
+    rate = np.asarray(rate, dtype=np.float64)
+    beta = float(beta)
+    if beta <= 0.0:
+        raise ValueError("beta must be positive")
+    if not np.all(np.isfinite(rate)):
+        raise ValueError("rate contains NaN or infinite values")
+    if np.any(rate <= 0.0):
+        raise ValueError("softplus_inverse requires strictly positive rates")
+
+    z = beta * rate
+    out = np.empty_like(rate, dtype=np.float64)
+    small = z < 20.0
+    out[small] = np.log(np.expm1(z[small])) / beta
+    out[~small] = rate[~small] + np.log1p(-np.exp(-z[~small])) / beta
+    return out
+
+
+softplus_inv = softplus_inverse
 
 
 def softplus(x, beta=2.0):
@@ -235,8 +410,69 @@ def softplus(x, beta=2.0):
     The implementation is numerically stable while matching
     `log(1 + exp(beta * x)) / beta`.
     """
-    x = np.asarray(x)
+    x = np.asarray(x, dtype=np.float64)
     return np.logaddexp(beta * x, 0.0) / beta
+
+
+def softplus_derivative_from_x(x, beta=2.0):
+    """
+    Evaluate d softplus(x) / dx as a stable sigmoid(beta * x).
+    """
+    z = float(beta) * np.asarray(x, dtype=np.float64)
+    return np.where(z >= 0.0, 1.0 / (1.0 + np.exp(-z)), np.exp(z) / (1.0 + np.exp(z)))
+
+
+def softplus_derivative_from_phi(phi, beta=2.0):
+    """
+    Evaluate the softplus derivative at x_star from phi_star directly.
+
+    Since phi_star = softplus(x_star), the derivative is
+    `1 - exp(-beta * phi_star)`, avoiding sigmoid evaluation at large negative
+    currents.
+    """
+    phi = np.asarray(phi, dtype=np.float64)
+    if not np.all(np.isfinite(phi)):
+        raise ValueError("phi contains NaN or infinite values")
+    if np.any(phi <= 0.0):
+        raise ValueError("softplus_derivative_from_phi requires strictly positive rates")
+    return 1.0 - np.exp(-float(beta) * phi)
+
+
+def current_space_jacobian(weights, phi_at_angle, beta=2.0, inhibition_c=0.0):
+    """
+    Build A(theta) = -I + (J - c/N) @ diag(phi_prime(theta)).
+    """
+    weights = np.asarray(weights, dtype=np.float64)
+    phi_at_angle = np.asarray(phi_at_angle, dtype=np.float64)
+    if weights.ndim != 2 or weights.shape[0] != weights.shape[1]:
+        raise ValueError("weights must be square")
+    n_neurons = weights.shape[0]
+    if phi_at_angle.shape != (n_neurons,):
+        raise ValueError("phi_at_angle must have one entry per neuron")
+    derivative = softplus_derivative_from_phi(phi_at_angle, beta=beta)
+    effective_weights = weights - float(inhibition_c) / n_neurons
+    jacobian = -np.eye(n_neurons, dtype=np.float64)
+    jacobian += effective_weights * derivative[None, :]
+    return jacobian
+
+
+def fixed_point_residual_from_weights(weights, x_star, phi_star, inhibition_c=0.0):
+    """
+    Compute -x_star + (J - c/N) phi_star + c on target manifold samples.
+    """
+    weights = np.asarray(weights, dtype=np.float64)
+    x_star = np.asarray(x_star, dtype=np.float64)
+    phi_star = np.asarray(phi_star, dtype=np.float64)
+    if phi_star.ndim != 2 or x_star.ndim != 2:
+        raise ValueError("x_star and phi_star must be 2D")
+    if x_star.shape != phi_star.shape:
+        raise ValueError("x_star and phi_star must have the same shape")
+    n_neurons = weights.shape[0]
+    if phi_star.shape[0] != n_neurons:
+        raise ValueError("phi_star must be shaped (n_neurons, n_angles)")
+    effective_weights = weights - float(inhibition_c) / n_neurons
+    residual = -x_star + np.einsum("ij,jk->ik", effective_weights, phi_star, optimize=False) + float(inhibition_c)
+    return residual
 
 
 def sinkhorn_normalize(matrix, max_iter=10000, tol=1e-10):
@@ -258,6 +494,52 @@ def sinkhorn_normalize(matrix, max_iter=10000, tol=1e-10):
     return out
 
 
+def invert_spd_cholesky(matrix, jitter=0.0):
+    """
+    Invert a small symmetric positive-definite matrix without LAPACK calls.
+
+    The local Windows scientific stack can crash inside BLAS/LAPACK routines.
+    The A2 dual kernels are only `n_angles x n_angles` (100 x 100 here), so a
+    direct Cholesky implementation is fast enough and keeps the computation
+    reproducible in this environment.
+    """
+    matrix = np.asarray(matrix, dtype=float)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("matrix must be square")
+
+    n = matrix.shape[0]
+    work = matrix.copy()
+    if jitter:
+        work[np.diag_indices(n)] += float(jitter)
+
+    lower = np.zeros_like(work)
+    for i in range(n):
+        for j in range(i + 1):
+            subtotal = float(np.sum(lower[i, :j] * lower[j, :j]))
+            if i == j:
+                value = work[i, i] - subtotal
+                if value <= 0:
+                    raise np.linalg.LinAlgError("matrix is not positive definite")
+                lower[i, j] = np.sqrt(value)
+            else:
+                lower[i, j] = (work[i, j] - subtotal) / lower[j, j]
+
+    identity = np.eye(n)
+    y = np.zeros_like(work)
+    for col in range(n):
+        for i in range(n):
+            subtotal = float(np.sum(lower[i, :i] * y[:i, col]))
+            y[i, col] = (identity[i, col] - subtotal) / lower[i, i]
+
+    inverse = np.zeros_like(work)
+    for col in range(n):
+        for i in range(n - 1, -1, -1):
+            subtotal = float(np.sum(lower[i + 1 :, i] * inverse[i + 1 :, col]))
+            inverse[i, col] = (y[i, col] - subtotal) / lower[i, i]
+
+    return inverse
+
+
 def circular_center_of_mass_angles(matrix, angles_rad):
     """
     Estimate each tuning curve's preferred direction by circular center of mass.
@@ -270,7 +552,7 @@ def circular_center_of_mass_angles(matrix, angles_rad):
     if matrix.shape[1] != len(angles_rad):
         raise ValueError("matrix columns must match angles_rad")
 
-    z = matrix @ np.exp(1j * angles_rad)
+    z = np.einsum("ij,j->i", matrix, np.exp(1j * angles_rad), optimize=False)
     return np.angle(z) % (2 * np.pi)
 
 
@@ -293,20 +575,20 @@ def optimized_recurrent_weights(phi, regularization=1e-6, activation_beta=2.0, d
 
     n_neurons, n_angles = phi.shape
     x_star = softplus_inverse(phi, beta=activation_beta)
-    kernel = (phi.T @ phi) / n_neurons
+    # Use explicit einsum to avoid Windows BLAS crashes seen with small Gram products.
+    kernel = np.einsum("ia,ib->ab", phi, phi, optimize=False) / n_neurons
     kernel += (regularization * n_angles / n_neurons) * np.eye(n_angles)
-    kernel_inv = np.linalg.inv(kernel)
-    presynaptic = phi.T / n_neurons
+    kernel_inv = invert_spd_cholesky(kernel)
 
     weights = np.empty((n_neurons, n_neurons), dtype=dtype)
-    inv_phi = kernel_inv @ phi.T
+    inv_phi = np.einsum("ab,ib->ai", kernel_inv, phi, optimize=False)
     for i in range(n_neurons):
         u = phi[i] / np.sqrt(n_neurons)
         v = inv_phi[:, i] / np.sqrt(n_neurons)
-        denom = max(1.0 - float(u @ v), 1e-12)
-        row_dual = x_star[i] @ kernel_inv
-        row_dual += (float(x_star[i] @ v) / denom) * v
-        weights[i] = row_dual @ presynaptic
+        denom = max(1.0 - float(np.sum(u * v)), 1e-12)
+        row_dual = np.einsum("a,ab->b", x_star[i], kernel_inv, optimize=False)
+        row_dual += (float(np.sum(x_star[i] * v)) / denom) * v
+        weights[i] = np.einsum("a,ja->j", row_dual, phi, optimize=False) / n_neurons
 
     np.fill_diagonal(weights, 0.0)
     return weights
@@ -335,12 +617,12 @@ def optimized_recurrent_factors(
 
     n_neurons, n_angles = phi.shape
     x_star = softplus_inverse(phi, beta=activation_beta)
-    kernel = (phi.T @ phi) / n_neurons
+    kernel = np.einsum("ia,ib->ab", phi, phi, optimize=False) / n_neurons
     kernel += (regularization * n_angles / n_neurons) * np.eye(n_angles)
-    kernel_inv = np.linalg.inv(kernel)
+    kernel_inv = invert_spd_cholesky(kernel)
 
-    a = x_star @ kernel_inv
-    inv_phi = kernel_inv @ phi.T
+    a = np.einsum("ia,ab->ib", x_star, kernel_inv, optimize=False)
+    inv_phi = np.einsum("ab,ib->ai", kernel_inv, phi, optimize=False)
     if enforce_zero_diagonal:
         numerator = np.sum(x_star * inv_phi.T, axis=1)
         leverage = np.sum(phi * inv_phi.T, axis=1) / n_neurons
@@ -350,6 +632,35 @@ def optimized_recurrent_factors(
     b = phi / n_neurons
     diagonal = np.sum(a * b, axis=1)
     return a.astype(dtype), b.astype(dtype), diagonal.astype(dtype)
+
+
+def materialize_lowrank_weights(a, b, diagonal=None, dtype=np.float32, chunk_size=128):
+    """
+    Materialize `A @ B.T - diag(diagonal)` without large BLAS calls.
+
+    The optimized data-derived matrix has low-rank factors with shape
+    `(n_neurons, n_angles)`. Building rows in chunks keeps memory predictable
+    and avoids the unstable dense matrix multiply path on this Windows setup.
+    """
+    a = np.asarray(a, dtype=float)
+    b = np.asarray(b, dtype=float)
+    if a.ndim != 2 or b.ndim != 2 or a.shape[1] != b.shape[1]:
+        raise ValueError("a and b must be 2D arrays with matching factor dimension")
+
+    n_rows = a.shape[0]
+    n_cols = b.shape[0]
+    weights = np.empty((n_rows, n_cols), dtype=dtype)
+    for start in range(0, n_rows, int(chunk_size)):
+        stop = min(n_rows, start + int(chunk_size))
+        weights[start:stop] = np.einsum("ik,jk->ij", a[start:stop], b, optimize=False)
+
+    if diagonal is not None:
+        diagonal = np.asarray(diagonal, dtype=float)
+        if n_rows != n_cols or diagonal.shape != (n_rows,):
+            raise ValueError("diagonal must have one entry per square matrix row")
+        idx = np.arange(n_rows)
+        weights[idx, idx] -= diagonal.astype(weights.dtype, copy=False)
+    return weights
 
 
 def circulant_from_diagonal_means(matrix):
@@ -389,19 +700,44 @@ def scramble_residuals(matrix, baseline, rng):
 
 def pca_basis(samples, n_components=3):
     """
-    Compute principal-component axes for row-wise samples.
+    Compute principal-component axes for row-wise samples by power iteration.
 
     Returns the sample mean and the first `n_components` right singular
     vectors, allowing high-dimensional network states to be projected for
-    visualization.
+    visualization. This avoids large SVD/LAPACK calls, which are unstable in
+    the local Windows numerical stack.
     """
     samples = np.asarray(samples, dtype=float)
     if samples.ndim != 2:
         raise ValueError("samples must be shaped (n_samples, n_features)")
 
     mean = np.mean(samples, axis=0)
-    _, _, vh = np.linalg.svd(samples - mean, full_matrices=False)
-    return mean.astype(np.float32), vh[:n_components].astype(np.float32)
+    centered = samples - mean
+    rng = np.random.default_rng(20260617)
+    components = []
+    for _ in range(int(n_components)):
+        vector = rng.normal(size=centered.shape[1])
+        for prev in components:
+            vector = vector - float(np.sum(vector * prev)) * prev
+        norm = np.sqrt(np.sum(vector * vector))
+        vector = vector / max(norm, 1e-12)
+
+        for _ in range(80):
+            scores = np.einsum("ij,j->i", centered, vector, optimize=False)
+            next_vector = np.einsum("ij,i->j", centered, scores, optimize=False)
+            for prev in components:
+                next_vector = next_vector - float(np.sum(next_vector * prev)) * prev
+            norm = np.sqrt(np.sum(next_vector * next_vector))
+            if norm <= 1e-12:
+                break
+            next_vector = next_vector / norm
+            if np.sqrt(np.sum((next_vector - vector) ** 2)) < 1e-7:
+                vector = next_vector
+                break
+            vector = next_vector
+        components.append(vector)
+
+    return mean.astype(np.float32), np.asarray(components, dtype=np.float32)
 
 
 def project_onto_basis(samples, mean, basis):
@@ -411,7 +747,7 @@ def project_onto_basis(samples, mean, basis):
     samples = np.asarray(samples, dtype=float)
     mean = np.asarray(mean, dtype=float)
     basis = np.asarray(basis, dtype=float)
-    return (samples - mean) @ basis.T
+    return np.einsum("...j,kj->...k", samples - mean, basis, optimize=False)
 
 
 def nearest_manifold_distance(states, manifold, return_l2=False):
@@ -430,12 +766,29 @@ def nearest_manifold_distance(states, manifold, return_l2=False):
     if states.shape[1] != manifold.shape[1]:
         raise ValueError("states and manifold must have the same feature count")
 
-    state_norm = np.sum(states * states, axis=1, keepdims=True)
-    manifold_norm = np.sum(manifold * manifold, axis=1)[None, :]
-    squared = state_norm + manifold_norm - 2.0 * (states @ manifold.T)
-    squared = np.maximum(squared, 0.0)
-    nearest = np.argmin(squared, axis=1)
-    nearest_l2 = np.sqrt(squared[np.arange(len(states)), nearest])
+    nearest = np.full(len(states), -1, dtype=int)
+    nearest_l2 = np.full(len(states), np.nan, dtype=float)
+    finite_states = np.all(np.isfinite(states), axis=1)
+    finite_manifold = np.all(np.isfinite(manifold), axis=1)
+    manifold_finite = manifold[finite_manifold]
+    manifold_indices = np.flatnonzero(finite_manifold)
+    if len(manifold_finite) == 0:
+        if return_l2:
+            return nearest_l2, nearest, nearest_l2
+        return nearest_l2, nearest
+
+    manifold_norm = np.sum(manifold_finite * manifold_finite, axis=1)[None, :]
+    good_rows = np.flatnonzero(finite_states)
+    chunk_size = 512
+    for start in range(0, len(good_rows), chunk_size):
+        row_idx = good_rows[start : start + chunk_size]
+        chunk = states[row_idx]
+        state_norm = np.sum(chunk * chunk, axis=1, keepdims=True)
+        cross = np.einsum("ij,kj->ik", chunk, manifold_finite, optimize=False)
+        squared = np.maximum(state_norm + manifold_norm - 2.0 * cross, 0.0)
+        local_nearest = np.argmin(squared, axis=1)
+        nearest[row_idx] = manifold_indices[local_nearest]
+        nearest_l2[row_idx] = np.sqrt(squared[np.arange(len(row_idx)), local_nearest])
     normalized = nearest_l2 / np.sqrt(states.shape[1])
     if return_l2:
         return normalized, nearest, nearest_l2
@@ -452,6 +805,7 @@ def simulate_rate_network(
     activation_beta=2.0,
     record_every_s=0.5,
     current_clip=None,
+    stop_abs=None,
     progress_label=None,
     progress_interval_wall_s=10.0,
 ):
@@ -465,7 +819,7 @@ def simulate_rate_network(
     weights_t = np.asarray(weights, dtype=float).T
 
     def drive(rates):
-        return rates @ weights_t
+        return np.einsum("tn,nj->tj", rates, weights_t, optimize=False)
 
     return simulate_rate_network_with_drive(
         drive,
@@ -477,6 +831,7 @@ def simulate_rate_network(
         activation_beta=activation_beta,
         record_every_s=record_every_s,
         current_clip=current_clip,
+        stop_abs=stop_abs,
         progress_label=progress_label,
         progress_interval_wall_s=progress_interval_wall_s,
     )
@@ -492,6 +847,7 @@ def simulate_rate_network_with_drive(
     activation_beta=2.0,
     record_every_s=0.5,
     current_clip=None,
+    stop_abs=None,
     progress_label=None,
     progress_interval_wall_s=10.0,
 ):
@@ -501,7 +857,9 @@ def simulate_rate_network_with_drive(
     `recurrent_drive(rates)` must return recurrent input for a batch of
     firing-rate states shaped `(n_trials, n_neurons)`. The reference Euler
     dynamics do not clip input currents; `current_clip` is therefore disabled
-    by default and exists only for explicit numerical stress tests.
+    by default and exists only for explicit numerical stress tests. `stop_abs`
+    does not alter the dynamics; it stops recording once states have already
+    exceeded a diagnostic magnitude threshold.
     """
     x = np.asarray(initial_states, dtype=float).copy()
     if x.ndim != 2:
@@ -525,7 +883,13 @@ def simulate_rate_network_with_drive(
         if current_clip is not None:
             x = np.clip(x, -float(current_clip), float(current_clip))
 
-        if step % record_every == 0 or step == n_steps:
+        should_stop = False
+        if not np.isfinite(x).all():
+            should_stop = True
+        elif stop_abs is not None and np.max(np.abs(x)) > float(stop_abs):
+            should_stop = True
+
+        if step % record_every == 0 or step == n_steps or should_stop:
             times.append(step * dt_s)
             trajectory.append(x.copy())
 
@@ -541,6 +905,15 @@ def simulate_rate_network_with_drive(
                     flush=True,
                 )
                 next_progress_wall = now + progress_interval_wall_s
+
+        if should_stop:
+            if progress_label is not None:
+                print(
+                    f"[{progress_label}] stopping early at step {step}/{n_steps}; "
+                    "state magnitude became non-finite or exceeded stop_abs",
+                    flush=True,
+                )
+            break
 
     return np.asarray(times), np.asarray(trajectory, dtype=np.float32)
 
@@ -616,7 +989,8 @@ def lowrank_recurrent_drive(a, b, diagonal=None):
 
     def drive(rates):
         rates = np.asarray(rates, dtype=float)
-        recurrent = (rates @ b) @ a.T
+        latent = np.einsum("tn,nk->tk", rates, b, optimize=False)
+        recurrent = np.einsum("tk,nk->tn", latent, a, optimize=False)
         if diagonal is not None:
             recurrent = recurrent - rates * diagonal
         return recurrent

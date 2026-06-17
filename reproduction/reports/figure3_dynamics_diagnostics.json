@@ -1,0 +1,42 @@
+{
+  "status": "unresolved_under_paper_parameters",
+  "summary": "Non-paper target-point feedback was removed. With the Clark paper Setting 1 dynamics, lambda=1e-6, c=1, dt=1 ms, and distances measured to the original target manifold, the current DANDI-derived target manifold is locally unstable and trajectories diverge.",
+  "paper_constraints": {
+    "activation_beta": 2.0,
+    "regularization": 1e-6,
+    "uniform_inhibition_c": 1.0,
+    "dt_s": 0.001,
+    "tau_s": 0.05,
+    "target_relaxation_used": false,
+    "target_point_feedback_used": false
+  },
+  "current_run": {
+    "weight_formula_version": "paper_a2_discrete_kernel_b2_preprocessing_v7",
+    "distance_target": "target_manifold",
+    "duration_s": 30.0,
+    "initial_distance_median": 0.05004473775625229,
+    "initial_distance_max": 0.052469346672296524,
+    "min_distance_median": 0.05004473775625229,
+    "min_distance_time_s": 0.0,
+    "final_distance_median": 22.63711166381836,
+    "final_distance_max": 23.093507766723633,
+    "target_flow_residual_median": 0.003329808358103037,
+    "target_flow_residual_max": 0.00437886780127883
+  },
+  "diagnostic_observations": {
+    "unit_selection": "31 mice and 1533 QC-passing excitatory head-direction cells, matching the paper count.",
+    "wake_opto": "NWB epochs separate wake_square and wake_opto; current extraction uses wake_square only.",
+    "target_point_feedback": "A previous diagnostic-only feedback gain produced an artificially flat trace and has been removed because it is not in the Clark paper.",
+    "regularization_grid": "Increasing lambda to about 1e-4 to 1e-3 reduces divergence and produces slow drift, but Appendix B4.4 states that larger lambda stabilizes a different, smaller-radius manifold, so this is not used as the default reproduction.",
+    "jacobian_sample_max_real": {
+      "lambda_1e-6_c1_jii0": [0.5132300724763198, 0.43692076951534026, 0.3354285812819755, 1.4412110749973],
+      "lambda_1e-4_c1_jii0": [0.0004435885936721305, 0.030039513880091885, 0.0002905151471571839, -0.0006017619411603364],
+      "lambda_1e-3_c1_jii0": [0.000484137022405344, 0.0019227730538194793, 0.0009961987298864744, 0.00068899977832515]
+    }
+  },
+  "next_debug_targets": [
+    "Compare preprocessing against the paper/code at the level of tuning-curve arrays, not only unit counts.",
+    "Check whether Clark used a released tuning matrix or extra smoothing/postprocessing not captured by the NWB reconstruction.",
+    "If keeping the reconstructed NWB target, report the lambda-dependence as a reproduction discrepancy rather than silently changing lambda."
+  ]
+}

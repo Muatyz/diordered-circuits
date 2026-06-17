@@ -171,7 +171,9 @@ def split_half_reliability(counts_a, counts_b, occ_a, occ_b, min_occupancy_s):
     for i in range(rate_a.shape[0]):
         valid = np.isfinite(rate_a[i]) & np.isfinite(rate_b[i])
         if valid.sum() >= 5 and np.std(rate_a[i, valid]) > 0 and np.std(rate_b[i, valid]) > 0:
-            out[i] = np.corrcoef(rate_a[i, valid], rate_b[i, valid])[0, 1]
+            x = rate_a[i, valid] - np.mean(rate_a[i, valid])
+            y = rate_b[i, valid] - np.mean(rate_b[i, valid])
+            out[i] = float(np.dot(x, y) / np.sqrt(np.dot(x, x) * np.dot(y, y)))
     return out
 
 
@@ -201,14 +203,14 @@ def choose_poisson_cv_sigmas(
     scoring_units=None,
 ):
     """
-    Select recording-level smoothing widths by cross-partition Poisson likelihood.
+    Select per-neuron smoothing widths by cross-partition Poisson likelihood.
 
-    Methods B2 writes the validation likelihood with an explicit sum over
-    neurons in the same recording. The Gaussian width is therefore selected
-    once per partition by summing the held-out Poisson log likelihood over the
-    QC-passing HD cells, then the two optimally smoothed partition curves are
-    averaged. Returning per-unit arrays filled with the selected recording-level
-    widths keeps the saved file format compatible with earlier diagnostics.
+    Methods B2 states that each neuron is smoothed by a Gaussian kernel whose
+    width is chosen by maximizing held-out Poisson likelihood between two
+    temporal partitions. This function keeps the per-neuron scores and chooses
+    a separate width for every scoring neuron in each partition. Pooled scores
+    are still returned as diagnostics, but they do not overwrite the unitwise
+    choices used to build the final tuning curves.
     """
     n_units = counts_a.shape[0]
     if scoring_units is None:
@@ -220,17 +222,119 @@ def choose_poisson_cv_sigmas(
     rate_a = rate_from_counts(counts_a, occ_a, min_occupancy_s)
     rate_b = rate_from_counts(counts_b, occ_b, min_occupancy_s)
 
-    scores_a_to_b = np.full(len(sigma_candidates), np.nan)
-    scores_b_to_a = np.full(len(sigma_candidates), np.nan)
+    scores_a_to_b = np.full((n_units, len(sigma_candidates)), np.nan)
+    scores_b_to_a = np.full((n_units, len(sigma_candidates)), np.nan)
+    selected_sigma_a_by_unit = np.full(n_units, np.nan)
+    selected_sigma_b_by_unit = np.full(n_units, np.nan)
+
+    for unit_i in np.flatnonzero(scoring_units):
+        for sigma_i, kernel_sigma in enumerate(sigma_candidates):
+            pred_a = circular_smooth(rate_a[unit_i], kernel_sigma)
+            pred_b = circular_smooth(rate_b[unit_i], kernel_sigma)
+            scores_a_to_b[unit_i, sigma_i] = poisson_log_likelihood(
+                counts_b[unit_i],
+                occ_b,
+                pred_a,
+                min_occupancy_s,
+            )
+            scores_b_to_a[unit_i, sigma_i] = poisson_log_likelihood(
+                counts_a[unit_i],
+                occ_a,
+                pred_b,
+                min_occupancy_s,
+            )
+
+    total_a_to_b = np.full(len(sigma_candidates), np.nan)
+    total_b_to_a = np.full(len(sigma_candidates), np.nan)
+    for sigma_i in range(len(sigma_candidates)):
+        finite_a = scores_a_to_b[scoring_units, sigma_i]
+        finite_a = finite_a[np.isfinite(finite_a)]
+        finite_b = scores_b_to_a[scoring_units, sigma_i]
+        finite_b = finite_b[np.isfinite(finite_b)]
+        if len(finite_a):
+            total_a_to_b[sigma_i] = float(np.sum(finite_a))
+        if len(finite_b):
+            total_b_to_a[sigma_i] = float(np.sum(finite_b))
+
+    for unit_i in np.flatnonzero(scoring_units):
+        if np.isfinite(scores_a_to_b[unit_i]).any():
+            selected_sigma_a_by_unit[unit_i] = float(
+                sigma_candidates[int(np.nanargmax(scores_a_to_b[unit_i]))]
+            )
+        if np.isfinite(scores_b_to_a[unit_i]).any():
+            selected_sigma_b_by_unit[unit_i] = float(
+                sigma_candidates[int(np.nanargmax(scores_b_to_a[unit_i]))]
+            )
+
+    selected_sigma_a = (
+        float(np.nanmedian(selected_sigma_a_by_unit[scoring_units]))
+        if np.isfinite(selected_sigma_a_by_unit[scoring_units]).any()
+        else np.nan
+    )
+    selected_sigma_b = (
+        float(np.nanmedian(selected_sigma_b_by_unit[scoring_units]))
+        if np.isfinite(selected_sigma_b_by_unit[scoring_units]).any()
+        else np.nan
+    )
+
+    return (
+        selected_sigma_a_by_unit,
+        selected_sigma_b_by_unit,
+        scores_a_to_b,
+        scores_b_to_a,
+        total_a_to_b,
+        total_b_to_a,
+        rate_a,
+        rate_b,
+        selected_sigma_a,
+        selected_sigma_b,
+    )
+
+
+def choose_session_poisson_cv_sigmas(
+    counts_a,
+    counts_b,
+    occ_a,
+    occ_b,
+    min_occupancy_s,
+    sigma_candidates,
+    scoring_units=None,
+):
+    """
+    Select one smoothing width per partition by pooled Poisson likelihood.
+
+    Appendix B2 writes the cross-validated likelihood with an explicit sum over
+    neurons in the same mouse/session. This function follows that expression:
+    for each candidate Gaussian width, it smooths every scoring neuron's
+    partition tuning curve, sums finite held-out Poisson log-likelihoods across
+    neurons, and picks one width for partition A and one for partition B.
+    """
+    n_units = counts_a.shape[0]
+    if scoring_units is None:
+        scoring_units = np.ones(n_units, dtype=bool)
+    scoring_units = np.asarray(scoring_units, dtype=bool)
+    if scoring_units.shape != (n_units,):
+        raise ValueError("scoring_units must have one boolean per unit")
+
+    rate_a = rate_from_counts(counts_a, occ_a, min_occupancy_s)
+    rate_b = rate_from_counts(counts_b, occ_b, min_occupancy_s)
+    cv_total_a_to_b = np.full(len(sigma_candidates), np.nan)
+    cv_total_b_to_a = np.full(len(sigma_candidates), np.nan)
+    smoothed_a_candidates = []
+    smoothed_b_candidates = []
+
+    scoring_indices = np.flatnonzero(scoring_units)
     for sigma_i, kernel_sigma in enumerate(sigma_candidates):
         pred_a = circular_smooth(rate_a, kernel_sigma)
         pred_b = circular_smooth(rate_b, kernel_sigma)
+        smoothed_a_candidates.append(pred_a)
+        smoothed_b_candidates.append(pred_b)
 
-        total_a_to_b = 0.0
-        total_b_to_a = 0.0
-        n_valid_a = 0
-        n_valid_b = 0
-        for unit_i in np.flatnonzero(scoring_units):
+        score_a = 0.0
+        score_b = 0.0
+        n_score_a = 0
+        n_score_b = 0
+        for unit_i in scoring_indices:
             ll_a = poisson_log_likelihood(
                 counts_b[unit_i],
                 occ_b,
@@ -244,31 +348,33 @@ def choose_poisson_cv_sigmas(
                 min_occupancy_s,
             )
             if np.isfinite(ll_a):
-                total_a_to_b += ll_a
-                n_valid_a += 1
+                score_a += ll_a
+                n_score_a += 1
             if np.isfinite(ll_b):
-                total_b_to_a += ll_b
-                n_valid_b += 1
+                score_b += ll_b
+                n_score_b += 1
 
-        if n_valid_a:
-            scores_a_to_b[sigma_i] = total_a_to_b
-        if n_valid_b:
-            scores_b_to_a[sigma_i] = total_b_to_a
+        if n_score_a:
+            cv_total_a_to_b[sigma_i] = score_a
+        if n_score_b:
+            cv_total_b_to_a[sigma_i] = score_b
 
-    selected_sigma_a = float(sigma_candidates[int(np.nanargmax(scores_a_to_b))])
-    selected_sigma_b = float(sigma_candidates[int(np.nanargmax(scores_b_to_a))])
-    selected_sigma_a_by_unit = np.full(n_units, selected_sigma_a)
-    selected_sigma_b_by_unit = np.full(n_units, selected_sigma_b)
+    if not np.isfinite(cv_total_a_to_b).any() or not np.isfinite(cv_total_b_to_a).any():
+        raise ValueError("No finite sessionwise Poisson CV scores were computed")
 
+    best_a = int(np.nanargmax(cv_total_a_to_b))
+    best_b = int(np.nanargmax(cv_total_b_to_a))
+    selected_sigma_a = float(sigma_candidates[best_a])
+    selected_sigma_b = float(sigma_candidates[best_b])
     return (
-        selected_sigma_a_by_unit,
-        selected_sigma_b_by_unit,
-        scores_a_to_b,
-        scores_b_to_a,
-        rate_a,
-        rate_b,
         selected_sigma_a,
         selected_sigma_b,
+        smoothed_a_candidates[best_a],
+        smoothed_b_candidates[best_b],
+        cv_total_a_to_b,
+        cv_total_b_to_a,
+        rate_a,
+        rate_b,
     )
 
 
@@ -389,14 +495,16 @@ def process_session(row, n_bins, min_occupancy_s, sigma_candidates):
 
     included_qc = units["included_qc"].astype(bool).to_numpy()
     (
-        chosen_sigma_a,
-        chosen_sigma_b,
-        cv_a_to_b,
-        cv_b_to_a,
+        unitwise_sigma_a,
+        unitwise_sigma_b,
+        unitwise_cv_a_to_b,
+        unitwise_cv_b_to_a,
+        unitwise_cv_total_a_to_b,
+        unitwise_cv_total_b_to_a,
         rate_a,
         rate_b,
-        chosen_sigma_session_a,
-        chosen_sigma_session_b,
+        _unitwise_median_sigma_a,
+        _unitwise_median_sigma_b,
     ) = choose_poisson_cv_sigmas(
         counts2[0],
         counts2[1],
@@ -408,19 +516,45 @@ def process_session(row, n_bins, min_occupancy_s, sigma_candidates):
     )
     smoothed_a = np.vstack(
         [
-            circular_smooth(rate_a[i], chosen_sigma_a[i] if np.isfinite(chosen_sigma_a[i]) else 2.0)
+            circular_smooth(rate_a[i], unitwise_sigma_a[i] if np.isfinite(unitwise_sigma_a[i]) else 2.0)
             for i in range(len(unit_ids))
         ]
     )
     smoothed_b = np.vstack(
         [
-            circular_smooth(rate_b[i], chosen_sigma_b[i] if np.isfinite(chosen_sigma_b[i]) else 2.0)
+            circular_smooth(rate_b[i], unitwise_sigma_b[i] if np.isfinite(unitwise_sigma_b[i]) else 2.0)
             for i in range(len(unit_ids))
         ]
     )
+    (
+        sessionwise_sigma_a,
+        sessionwise_sigma_b,
+        _sessionwise_smoothed_a,
+        _sessionwise_smoothed_b,
+        cv_total_a_to_b,
+        cv_total_b_to_a,
+        _,
+        _,
+    ) = choose_session_poisson_cv_sigmas(
+        counts2[0],
+        counts2[1],
+        occ2[0],
+        occ2[1],
+        min_occupancy_s,
+        sigma_candidates,
+        scoring_units=included_qc,
+    )
     smoothed = np.nanmean(np.stack([smoothed_a, smoothed_b]), axis=0)
     normalized, unit_mean_rate_hz = mean_normalize(smoothed)
-    chosen_sigma = np.nanmean(np.stack([chosen_sigma_a, chosen_sigma_b]), axis=0)
+    sigma_stack = np.stack([unitwise_sigma_a, unitwise_sigma_b])
+    sigma_count = np.sum(np.isfinite(sigma_stack), axis=0)
+    chosen_sigma = np.full(len(unit_ids), np.nan, dtype=float)
+    np.divide(
+        np.nansum(sigma_stack, axis=0),
+        sigma_count,
+        out=chosen_sigma,
+        where=sigma_count > 0,
+    )
 
     split_half_r = split_half_reliability(counts2[0], counts2[1], occ2[0], occ2[1], min_occupancy_s)
 
@@ -439,13 +573,24 @@ def process_session(row, n_bins, min_occupancy_s, sigma_candidates):
         normalized_rate=normalized,
         unit_mean_rate_hz=unit_mean_rate_hz,
         chosen_sigma_bins=chosen_sigma,
-        chosen_sigma_partition_a_bins=chosen_sigma_a,
-        chosen_sigma_partition_b_bins=chosen_sigma_b,
-        chosen_sigma_session_a_bins=chosen_sigma_session_a,
-        chosen_sigma_session_b_bins=chosen_sigma_session_b,
+        chosen_sigma_partition_a_bins=unitwise_sigma_a,
+        chosen_sigma_partition_b_bins=unitwise_sigma_b,
+        smoothing_sigma_partition_a_bins=unitwise_sigma_a,
+        smoothing_sigma_partition_b_bins=unitwise_sigma_b,
+        median_chosen_sigma_partition_a_bins=_unitwise_median_sigma_a,
+        median_chosen_sigma_partition_b_bins=_unitwise_median_sigma_b,
+        sessionwise_chosen_sigma_partition_a_bins=sessionwise_sigma_a,
+        sessionwise_chosen_sigma_partition_b_bins=sessionwise_sigma_b,
+        unitwise_chosen_sigma_partition_a_bins=unitwise_sigma_a,
+        unitwise_chosen_sigma_partition_b_bins=unitwise_sigma_b,
         cv_sigma_candidates=np.asarray(sigma_candidates),
-        cv_poisson_a_to_b=cv_a_to_b,
-        cv_poisson_b_to_a=cv_b_to_a,
+        cv_poisson_a_to_b=unitwise_cv_a_to_b,
+        cv_poisson_b_to_a=unitwise_cv_b_to_a,
+        cv_poisson_total_a_to_b=cv_total_a_to_b,
+        cv_poisson_total_b_to_a=cv_total_b_to_a,
+        unitwise_cv_poisson_total_a_to_b=unitwise_cv_total_a_to_b,
+        unitwise_cv_poisson_total_b_to_a=unitwise_cv_total_b_to_a,
+        smoothing_selection_mode="per_neuron_poisson_likelihood",
         split_half_r=split_half_r,
         included_qc=included_qc,
     )
@@ -456,7 +601,7 @@ def process_session(row, n_bins, min_occupancy_s, sigma_candidates):
         "n_units": len(unit_ids),
         "n_included_qc": int(units["included_qc"].sum()),
         "total_occupancy_s": float(occ.sum()),
-        "median_chosen_sigma_bins": float(np.nanmedian(chosen_sigma)),
+        "median_chosen_sigma_bins": float(np.nanmedian(chosen_sigma[included_qc])),
         "median_split_half_r": float(np.nanmedian(split_half_r)),
         "tuning_path": str(out_path),
     }

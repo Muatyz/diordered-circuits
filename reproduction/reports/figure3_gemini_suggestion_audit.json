@@ -1,0 +1,277 @@
+{
+  "status": "diagnostic_only_no_pipeline_change",
+  "question": "Do the four suggested paper mechanisms explain the remaining positive Jacobian modes?",
+  "paper_parameters": {
+    "activation_beta": 2.0,
+    "regularization": 1e-06,
+    "uniform_inhibition_default_c": 1.0,
+    "weight_formula_version": "paper_a2_discrete_kernel_b2_preprocessing_v10"
+  },
+  "double_normalization_and_global_inhibition": {
+    "neuron_mean_over_angles": {
+      "p0": 0.99999999994851,
+      "p50": 0.9999999999987778,
+      "p100": 1.0000000000557143
+    },
+    "population_mean_over_neurons": {
+      "p0": 0.999999999999995,
+      "p50": 0.9999999999999998,
+      "p100": 1.0000000000000038
+    },
+    "max_abs_neuron_mean_error": 5.571432204476423e-11,
+    "max_abs_population_mean_error": 4.9960036108132044e-15,
+    "c_sweep": {
+      "0.0": {
+        "sampled_max_real": 0.7902446902259261,
+        "leading_modes": {
+          "0": {
+            "max_real": 0.4203190424658551,
+            "imag": 1.1198201361233928,
+            "cosine_with_uniform_current": 0.00707620889841008,
+            "cosine_with_current_tangent": 0.05551368720365028
+          },
+          "25": {
+            "max_real": 0.6371988565625368,
+            "imag": 0.0,
+            "cosine_with_uniform_current": 0.028730814843760034,
+            "cosine_with_current_tangent": 0.07962401231763745
+          },
+          "50": {
+            "max_real": 0.4556167389932986,
+            "imag": 0.1467821024712754,
+            "cosine_with_uniform_current": 0.02129538285694914,
+            "cosine_with_current_tangent": 0.06645506160783353
+          },
+          "75": {
+            "max_real": 0.7902446902259261,
+            "imag": 0.009141451800496317,
+            "cosine_with_uniform_current": 0.030079998248935577,
+            "cosine_with_current_tangent": 0.11063023079545499
+          }
+        }
+      },
+      "0.5": {
+        "sampled_max_real": 0.7937008662378224,
+        "leading_modes": {
+          "0": {
+            "max_real": 0.42001355468552326,
+            "imag": -1.1193030919785079,
+            "cosine_with_uniform_current": 0.007369335991632179,
+            "cosine_with_current_tangent": 0.05555070735343332
+          },
+          "25": {
+            "max_real": 0.6372234956815007,
+            "imag": 0.0,
+            "cosine_with_uniform_current": 0.027796752196036768,
+            "cosine_with_current_tangent": 0.079608643786492
+          },
+          "50": {
+            "max_real": 0.4519217780547544,
+            "imag": 0.1421411369160028,
+            "cosine_with_uniform_current": 0.02356707966211806,
+            "cosine_with_current_tangent": 0.06618584201194003
+          },
+          "75": {
+            "max_real": 0.7937008662378224,
+            "imag": -0.01569549050437107,
+            "cosine_with_uniform_current": 0.02735418802578474,
+            "cosine_with_current_tangent": 0.10681844897590166
+          }
+        }
+      },
+      "1.0": {
+        "sampled_max_real": 0.796094722903981,
+        "leading_modes": {
+          "0": {
+            "max_real": 0.41986001475363893,
+            "imag": 1.1188324972690629,
+            "cosine_with_uniform_current": 0.0085293790600903,
+            "cosine_with_current_tangent": 0.05556663722508558
+          },
+          "25": {
+            "max_real": 0.6372399340313184,
+            "imag": 0.0,
+            "cosine_with_uniform_current": 0.027173681626293942,
+            "cosine_with_current_tangent": 0.07959828780812885
+          },
+          "50": {
+            "max_real": 0.4499962501735657,
+            "imag": -0.13891234326728938,
+            "cosine_with_uniform_current": 0.025169357167390705,
+            "cosine_with_current_tangent": 0.06609431733017425
+          },
+          "75": {
+            "max_real": 0.796094722903981,
+            "imag": 0.018606115033819988,
+            "cosine_with_uniform_current": 0.02560218647756864,
+            "cosine_with_current_tangent": 0.10421616296023192
+          }
+        }
+      },
+      "2.0": {
+        "sampled_max_real": 0.7992107798848778,
+        "leading_modes": {
+          "0": {
+            "max_real": 0.4198092020531999,
+            "imag": 1.1180916821071174,
+            "cosine_with_uniform_current": 0.011140176864880696,
+            "cosine_with_current_tangent": 0.055564532335793754
+          },
+          "25": {
+            "max_real": 0.6372604962479633,
+            "imag": 0.0,
+            "cosine_with_uniform_current": 0.026394421622743136,
+            "cosine_with_current_tangent": 0.07958521834330924
+          },
+          "50": {
+            "max_real": 0.4481532238385295,
+            "imag": 0.1348845529081926,
+            "cosine_with_uniform_current": 0.027154156713129478,
+            "cosine_with_current_tangent": 0.06606125499822524
+          },
+          "75": {
+            "max_real": 0.7992107798848778,
+            "imag": -0.021455117012772702,
+            "cosine_with_uniform_current": 0.023524099924966155,
+            "cosine_with_current_tangent": 0.1008546015451578
+          }
+        }
+      },
+      "10.0": {
+        "sampled_max_real": 0.805979389102037,
+        "leading_modes": {
+          "0": {
+            "max_real": 0.4206311306513517,
+            "imag": 1.116424713360091,
+            "cosine_with_uniform_current": 0.01871856445425608,
+            "cosine_with_current_tangent": 0.05542562651606889
+          },
+          "25": {
+            "max_real": 0.6373016702962174,
+            "imag": 0.0,
+            "cosine_with_uniform_current": 0.024834434600800124,
+            "cosine_with_current_tangent": 0.07955866263114864
+          },
+          "50": {
+            "max_real": 0.4459859541601634,
+            "imag": 0.12728426593099254,
+            "cosine_with_uniform_current": 0.030805892973339927,
+            "cosine_with_current_tangent": 0.06618106623084367
+          },
+          "75": {
+            "max_real": 0.805979389102037,
+            "imag": -0.025428084743698384,
+            "cosine_with_uniform_current": 0.0200849722198669,
+            "cosine_with_current_tangent": 0.09354474271390117
+          }
+        }
+      }
+    },
+    "interpretation": "The B4.2 c term is present and the target is doubly normalized; remaining leading modes have low uniform-current cosine, so they are not primarily mean-activity modes."
+  },
+  "zero_self_connection_constraint": {
+    "constrained_diag_abs_max": 0.0,
+    "unconstrained_diag": {
+      "p0": -0.5742046798838005,
+      "p1": -0.017318787370226376,
+      "p50": 0.028353249504995463,
+      "p99": 0.40978248833153935,
+      "p100": 1.3060324258742644
+    },
+    "unconstrained_diag_abs": {
+      "p0": 8.09495897399741e-05,
+      "p1": 0.0028718806114605942,
+      "p50": 0.028851489884896327,
+      "p99": 0.4369286378438108,
+      "p100": 1.3060324258742644
+    },
+    "constrained_vs_unconstrained": {
+      "flow_residual_constrained": {
+        "p0": 0.0033923659478797357,
+        "p1": 0.003774583577470041,
+        "p50": 0.0070409155346314424,
+        "p99": 0.009658090206811605,
+        "p100": 0.009898732187862651
+      },
+      "flow_residual_unconstrained": {
+        "p0": 0.0033914795402381925,
+        "p1": 0.003774285627731715,
+        "p50": 0.007039204393541213,
+        "p99": 0.009657089179598257,
+        "p100": 0.009898332222663397
+      },
+      "c1_modes_constrained": {
+        "0": {
+          "max_real": 0.41986001475363893,
+          "imag": 1.1188324972690629,
+          "cosine_with_uniform_current": 0.0085293790600903,
+          "cosine_with_current_tangent": 0.05556663722508558
+        },
+        "25": {
+          "max_real": 0.6372399340313184,
+          "imag": 0.0,
+          "cosine_with_uniform_current": 0.027173681626293942,
+          "cosine_with_current_tangent": 0.07959828780812885
+        },
+        "50": {
+          "max_real": 0.4499962501735657,
+          "imag": -0.13891234326728938,
+          "cosine_with_uniform_current": 0.025169357167390705,
+          "cosine_with_current_tangent": 0.06609431733017425
+        },
+        "75": {
+          "max_real": 0.796094722903981,
+          "imag": 0.018606115033819988,
+          "cosine_with_uniform_current": 0.02560218647756864,
+          "cosine_with_current_tangent": 0.10421616296023192
+        }
+      },
+      "c1_modes_unconstrained": {
+        "0": {
+          "max_real": 0.6385507294907697,
+          "imag": -1.179065167288971,
+          "cosine_with_uniform_current": 0.006771130237274438,
+          "cosine_with_current_tangent": 0.04306830461003444
+        },
+        "25": {
+          "max_real": 0.6779408431132816,
+          "imag": 0.0,
+          "cosine_with_uniform_current": 0.02231513465891337,
+          "cosine_with_current_tangent": 0.09741718704465675
+        },
+        "50": {
+          "max_real": 0.7415427114990859,
+          "imag": -0.27707841485989526,
+          "cosine_with_uniform_current": 0.02480299006038377,
+          "cosine_with_current_tangent": 0.05575885774805555
+        },
+        "75": {
+          "max_real": 1.0205035381997152,
+          "imag": 0.0,
+          "cosine_with_uniform_current": 0.030116413794254875,
+          "cosine_with_current_tangent": 0.09956312897930156
+        }
+      }
+    },
+    "eq41_vs_sherman": {
+      "max_abs": 4.3102233079961305e-05,
+      "rms": 8.653923728153486e-07
+    },
+    "factor_formula_vs_dense_function": {
+      "max_abs": 3.129094761078477e-10,
+      "rms": 1.5808033465051914e-11
+    }
+  },
+  "lambda_scaling": {
+    "used_kernel_regularizer": "regularization * n_angles / n_neurons added to the Ntheta x Ntheta kernel",
+    "n_neurons": 1533,
+    "n_angles": 100,
+    "kernel_diagonal_increment": 6.523157208088714e-08,
+    "appendix_basis": "A2 Eq.31 discrete-continuous correspondence; equivalent to lambda in the N x N Omega form used by Eq.41."
+  },
+  "saturating_activation_boundary": {
+    "setting_1_softplus_used_for_data_derived_network": true,
+    "setting_3_erf_not_applied": true,
+    "reason": "Switching to erf would leave the data-derived Setting 1 reproduction and enter the synthetic/generative-process network setting."
+  }
+}

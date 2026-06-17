@@ -1,0 +1,17 @@
+name: random
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - dandi
+  - h5py
+  - ipykernel
+  - matplotlib
+  - numpy
+  - pandas
+  - pyarrow
+  - pynwb
+  - scipy
+  - tqdm

@@ -1,0 +1,1944 @@
+{
+  "status": "debug_no_dense_lapack_eigensolver",
+  "matrix_path": "D:\\codefiles\\python\\diordered-circuits\\data\\processed\\figure3_abcd_weight_matrices.npz",
+  "n_neurons": 1533,
+  "n_angles": 100,
+  "activation_beta": 2.0,
+  "regularization": 1e-06,
+  "inhibition_c": 1.0,
+  "sample_bins": [
+    0,
+    25,
+    50,
+    75
+  ],
+  "arnoldi": {
+    "n_iter": 100,
+    "spectral_shift": 2.0,
+    "random_starts_per_angle": 4,
+    "note": "Ritz residuals are for the shifted Arnoldi approximation; smaller is more trustworthy."
+  },
+  "tuning": {
+    "phi_percentiles": {
+      "p0": 8.523330715552785e-13,
+      "p1": 1.1767404771427102e-12,
+      "p5": 0.0026950034957701906,
+      "p50": 0.2912082424009905,
+      "p95": 4.7355697720134335,
+      "p99": 7.352786354081203,
+      "p100": 12.876161635266229
+    },
+    "row_mean_error_abs": {
+      "p0": 4.651834473179406e-14,
+      "p50": 1.9739432310927896e-11,
+      "p95": 4.320561686199652e-11,
+      "p99": 4.7501069744271266e-11,
+      "p100": 4.9428239279336594e-11
+    },
+    "angle_mean_error_abs": {
+      "p0": 0.0,
+      "p50": 1.2212453270876722e-15,
+      "p95": 3.2251978865360794e-15,
+      "p99": 4.775069228912799e-15,
+      "p100": 4.884981308350689e-15
+    },
+    "target_current_percentiles": {
+      "p0": -13.4689369676838,
+      "p1": -13.387562814730341,
+      "p5": -2.6102561985018156,
+      "p50": -0.11763363366500298,
+      "p95": 4.73553124874758,
+      "p99": 7.352786148766045,
+      "p100": 12.876161635266229
+    }
+  },
+  "weights": {
+    "factor_a_abs_percentiles": {
+      "p0": 0.000652341013379458,
+      "p1": 0.7019494364569123,
+      "p5": 3.4643261886343364,
+      "p50": 85.69964094313679,
+      "p95": 2743.6060009403136,
+      "p99": 9609.144439292422,
+      "p100": 165688.18152803314
+    },
+    "factor_b_abs_percentiles": {
+      "p0": 5.559902619408209e-16,
+      "p1": 7.676063125523224e-16,
+      "p5": 1.7579931479257604e-06,
+      "p50": 0.0001899597145472867,
+      "p95": 0.003089086609271646,
+      "p99": 0.004796338130516113,
+      "p100": 0.008399322658360228
+    },
+    "factor_diagonal_percentiles": {
+      "p0": 0.000709687036009985,
+      "p1": 0.0013103277312562348,
+      "p5": 0.0031966393206770724,
+      "p50": 0.029024019459437334,
+      "p95": 0.3886169235730796,
+      "p99": 1.8329045729114477,
+      "p100": 78.10810196507829
+    },
+    "zero_diag_correction_times_gain_percentiles_by_angle": {
+      "0": {
+        "p0": 5.95882370966802e-14,
+        "p1": 3.932768836302679e-12,
+        "p5": 0.0001233664920707392,
+        "p50": 0.008433952269322045,
+        "p95": 0.12976212160024406,
+        "p99": 0.7848885206369959,
+        "p100": 78.10740095426391
+      },
+      "25": {
+        "p0": 7.366488803251732e-14,
+        "p1": 1.051013603721838e-09,
+        "p5": 0.0002430926475556842,
+        "p50": 0.007837774032871093,
+        "p95": 0.15838595858804436,
+        "p99": 0.6994438697598206,
+        "p100": 45.74971933784886
+      },
+      "50": {
+        "p0": 3.304236869383201e-14,
+        "p1": 6.568930348122087e-13,
+        "p5": 0.0001381722283694609,
+        "p50": 0.007805361947817408,
+        "p95": 0.1542831174652015,
+        "p99": 0.6133312275635845,
+        "p100": 73.03723533949626
+      },
+      "75": {
+        "p0": 5.8145470493676e-14,
+        "p1": 7.499311412746155e-08,
+        "p5": 0.00031106371007337346,
+        "p50": 0.007708182367830834,
+        "p95": 0.17775727879808922,
+        "p99": 0.7732880140266343,
+        "p100": 32.51910777346469
+      }
+    },
+    "target_flow_residual_l2_div_sqrt_n": {
+      "p0": 5.684590413307414e-05,
+      "p1": 5.9959941890208955e-05,
+      "p50": 0.0001312037236765913,
+      "p95": 0.00030008370294429314,
+      "p99": 0.0003519375156682945,
+      "p100": 0.00037042318058574453
+    }
+  },
+  "jacobian": {
+    "0": {
+      "unconstrained_exact": [
+        {
+          "rank": 0,
+          "real": 0.9759764800044266,
+          "imag": 0.0
+        },
+        {
+          "rank": 1,
+          "real": 0.43582212318265356,
+          "imag": -0.06560750283270803
+        },
+        {
+          "rank": 2,
+          "real": 0.43582212318265356,
+          "imag": 0.06560750283270803
+        },
+        {
+          "rank": 3,
+          "real": 0.057112769983259426,
+          "imag": 0.0
+        },
+        {
+          "rank": 4,
+          "real": 0.009023470853377624,
+          "imag": 0.0
+        },
+        {
+          "rank": 5,
+          "real": 0.0050398603215231486,
+          "imag": -0.2303556556629115
+        },
+        {
+          "rank": 6,
+          "real": 0.0050398603215231486,
+          "imag": 0.2303556556629115
+        },
+        {
+          "rank": 7,
+          "real": 0.0020403345513171356,
+          "imag": -0.024567099928222372
+        }
+      ],
+      "constrained_arnoldi": {
+        "best_by_real_part": {
+          "start": "tangent",
+          "rank": 0,
+          "real": 0.4277945008809412,
+          "imag": 0.0,
+          "ritz_residual": 8.717845708642913e-41,
+          "cosine_with_current_tangent": 0.0049183980375042975,
+          "cosine_with_uniform_current": 0.003944946632425931
+        },
+        "runs": {
+          "tangent": [
+            {
+              "rank": 0,
+              "real": 0.4277945008809412,
+              "imag": 0.0,
+              "ritz_residual": 8.717845708642913e-41,
+              "cosine_with_current_tangent": 0.0049183980375042975,
+              "cosine_with_uniform_current": 0.003944946632425931
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223755163386,
+              "imag": -0.1501353338967852,
+              "ritz_residual": 6.618458328137722e-29,
+              "cosine_with_current_tangent": 0.044719276524508786,
+              "cosine_with_uniform_current": 0.012571321039871115
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223755163386,
+              "imag": 0.1501353338967852,
+              "ritz_residual": 6.618458328137722e-29,
+              "cosine_with_current_tangent": 0.044719276524508786,
+              "cosine_with_uniform_current": 0.012571321039871115
+            },
+            {
+              "rank": 3,
+              "real": 0.08141992748035376,
+              "imag": 0.24582611809794802,
+              "ritz_residual": 2.1545316690750557e-30,
+              "cosine_with_current_tangent": 0.06606157806551184,
+              "cosine_with_uniform_current": 0.010857080368413461
+            },
+            {
+              "rank": 4,
+              "real": 0.08141992748035376,
+              "imag": -0.24582611809794802,
+              "ritz_residual": 2.1545316690750557e-30,
+              "cosine_with_current_tangent": 0.06606157806551184,
+              "cosine_with_uniform_current": 0.010857080368413461
+            },
+            {
+              "rank": 5,
+              "real": 0.010947826193539623,
+              "imag": 0.041280348823442725,
+              "ritz_residual": 2.01454084809226e-20,
+              "cosine_with_current_tangent": 0.14573069123147497,
+              "cosine_with_uniform_current": 0.021055957683817877
+            },
+            {
+              "rank": 6,
+              "real": 0.010947826193539623,
+              "imag": -0.041280348823442725,
+              "ritz_residual": 2.01454084809226e-20,
+              "cosine_with_current_tangent": 0.14573069123147497,
+              "cosine_with_uniform_current": 0.021055957683817877
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466934920605,
+              "imag": 0.0,
+              "ritz_residual": 1.1982591027708703e-19,
+              "cosine_with_current_tangent": 0.9540851526821501,
+              "cosine_with_uniform_current": 0.006468420400155153
+            }
+          ],
+          "uniform": [
+            {
+              "rank": 0,
+              "real": 0.4277945008802182,
+              "imag": 0.0,
+              "ritz_residual": 3.5575865474426956e-39,
+              "cosine_with_current_tangent": 0.004918398038118711,
+              "cosine_with_uniform_current": 0.00394494663242525
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223755601392,
+              "imag": -0.15013533389328476,
+              "ritz_residual": 7.901353765944775e-27,
+              "cosine_with_current_tangent": 0.04471927652206033,
+              "cosine_with_uniform_current": 0.012571321039725233
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223755601392,
+              "imag": 0.15013533389328476,
+              "ritz_residual": 7.901353765944775e-27,
+              "cosine_with_current_tangent": 0.04471927652206033,
+              "cosine_with_uniform_current": 0.012571321039725233
+            },
+            {
+              "rank": 3,
+              "real": 0.08141992748079874,
+              "imag": -0.2458261180996376,
+              "ritz_residual": 1.1842530518461136e-28,
+              "cosine_with_current_tangent": 0.06606157806556778,
+              "cosine_with_uniform_current": 0.010857080368419963
+            },
+            {
+              "rank": 4,
+              "real": 0.08141992748079874,
+              "imag": 0.2458261180996376,
+              "ritz_residual": 1.1842530518461136e-28,
+              "cosine_with_current_tangent": 0.06606157806556778,
+              "cosine_with_uniform_current": 0.010857080368419963
+            },
+            {
+              "rank": 5,
+              "real": 0.01094782618913026,
+              "imag": 0.041280348823831046,
+              "ritz_residual": 4.067464406682498e-18,
+              "cosine_with_current_tangent": 0.14573069122029772,
+              "cosine_with_uniform_current": 0.021055957683585477
+            },
+            {
+              "rank": 6,
+              "real": 0.01094782618913026,
+              "imag": -0.041280348823831046,
+              "ritz_residual": 4.067464406682498e-18,
+              "cosine_with_current_tangent": 0.14573069122029772,
+              "cosine_with_uniform_current": 0.021055957683585477
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466934356612,
+              "imag": 0.0,
+              "ritz_residual": 2.0404751534776346e-15,
+              "cosine_with_current_tangent": 0.954085152710836,
+              "cosine_with_uniform_current": 0.006468420399219523
+            }
+          ],
+          "random_0": [
+            {
+              "rank": 0,
+              "real": 0.4277945008798274,
+              "imag": 0.0,
+              "ritz_residual": 8.182004522348046e-42,
+              "cosine_with_current_tangent": 0.00491839803796741,
+              "cosine_with_uniform_current": 0.00394494663243887
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223755409678,
+              "imag": -0.1501353338970222,
+              "ritz_residual": 1.222839763035221e-27,
+              "cosine_with_current_tangent": 0.044719276524047426,
+              "cosine_with_uniform_current": 0.01257132103965223
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223755409678,
+              "imag": 0.1501353338970222,
+              "ritz_residual": 1.222839763035221e-27,
+              "cosine_with_current_tangent": 0.044719276524047426,
+              "cosine_with_uniform_current": 0.01257132103965223
+            },
+            {
+              "rank": 3,
+              "real": 0.08141992747903792,
+              "imag": 0.2458261180995104,
+              "ritz_residual": 3.5972704386960635e-29,
+              "cosine_with_current_tangent": 0.06606157806553688,
+              "cosine_with_uniform_current": 0.010857080368570153
+            },
+            {
+              "rank": 4,
+              "real": 0.08141992747903792,
+              "imag": -0.2458261180995104,
+              "ritz_residual": 3.5972704386960635e-29,
+              "cosine_with_current_tangent": 0.06606157806553688,
+              "cosine_with_uniform_current": 0.010857080368570153
+            },
+            {
+              "rank": 5,
+              "real": 0.010947826192083898,
+              "imag": 0.04128034882441687,
+              "ritz_residual": 1.3591173991252186e-18,
+              "cosine_with_current_tangent": 0.14573069122630175,
+              "cosine_with_uniform_current": 0.021055957683824036
+            },
+            {
+              "rank": 6,
+              "real": 0.010947826192083898,
+              "imag": -0.04128034882441687,
+              "ritz_residual": 1.3591173991252186e-18,
+              "cosine_with_current_tangent": 0.14573069122630175,
+              "cosine_with_uniform_current": 0.021055957683824036
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466930683994,
+              "imag": 0.0,
+              "ritz_residual": 1.9911998489817456e-15,
+              "cosine_with_current_tangent": 0.9540851527269142,
+              "cosine_with_uniform_current": 0.0064684203991364694
+            }
+          ],
+          "random_1": [
+            {
+              "rank": 0,
+              "real": 0.42779450088023774,
+              "imag": 0.0,
+              "ritz_residual": 1.9782526518689606e-42,
+              "cosine_with_current_tangent": 0.004918398037863761,
+              "cosine_with_uniform_current": 0.0039449466324306525
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223755267836,
+              "imag": -0.15013533390014067,
+              "ritz_residual": 1.6357086364712186e-27,
+              "cosine_with_current_tangent": 0.04471927652537724,
+              "cosine_with_uniform_current": 0.012571321039482606
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223755267836,
+              "imag": 0.15013533390014067,
+              "ritz_residual": 1.6357086364712186e-27,
+              "cosine_with_current_tangent": 0.04471927652537724,
+              "cosine_with_uniform_current": 0.012571321039482606
+            },
+            {
+              "rank": 3,
+              "real": 0.08141992747946603,
+              "imag": 0.24582611809614488,
+              "ritz_residual": 3.1085488848248894e-29,
+              "cosine_with_current_tangent": 0.06606157806543059,
+              "cosine_with_uniform_current": 0.01085708036847041
+            },
+            {
+              "rank": 4,
+              "real": 0.08141992747946603,
+              "imag": -0.24582611809614488,
+              "ritz_residual": 3.1085488848248894e-29,
+              "cosine_with_current_tangent": 0.06606157806543059,
+              "cosine_with_uniform_current": 0.01085708036847041
+            },
+            {
+              "rank": 5,
+              "real": 0.010947826191675336,
+              "imag": 0.04128034882534088,
+              "ritz_residual": 3.624003790482116e-18,
+              "cosine_with_current_tangent": 0.14573069122371643,
+              "cosine_with_uniform_current": 0.02105595768420119
+            },
+            {
+              "rank": 6,
+              "real": 0.010947826191675336,
+              "imag": -0.04128034882534088,
+              "ritz_residual": 3.624003790482116e-18,
+              "cosine_with_current_tangent": 0.14573069122371643,
+              "cosine_with_uniform_current": 0.02105595768420119
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466940649356,
+              "imag": 0.0,
+              "ritz_residual": 5.528026945274027e-16,
+              "cosine_with_current_tangent": 0.9540851527129035,
+              "cosine_with_uniform_current": 0.006468420399963102
+            }
+          ],
+          "random_2": [
+            {
+              "rank": 0,
+              "real": 0.42779450087982296,
+              "imag": 0.0,
+              "ritz_residual": 5.568380579902043e-42,
+              "cosine_with_current_tangent": 0.004918398038086996,
+              "cosine_with_uniform_current": 0.0039449466324458365
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223755002182,
+              "imag": -0.15013533389878497,
+              "ritz_residual": 9.277407018039014e-28,
+              "cosine_with_current_tangent": 0.044719276525699576,
+              "cosine_with_uniform_current": 0.012571321039892695
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223755002182,
+              "imag": 0.15013533389878497,
+              "ritz_residual": 9.277407018039014e-28,
+              "cosine_with_current_tangent": 0.044719276525699576,
+              "cosine_with_uniform_current": 0.012571321039892695
+            },
+            {
+              "rank": 3,
+              "real": 0.08141992748107096,
+              "imag": 0.24582611809697835,
+              "ritz_residual": 2.507133769284488e-29,
+              "cosine_with_current_tangent": 0.0660615780652867,
+              "cosine_with_uniform_current": 0.010857080368303193
+            },
+            {
+              "rank": 4,
+              "real": 0.08141992748107096,
+              "imag": -0.24582611809697835,
+              "ritz_residual": 2.507133769284488e-29,
+              "cosine_with_current_tangent": 0.0660615780652867,
+              "cosine_with_uniform_current": 0.010857080368303193
+            },
+            {
+              "rank": 5,
+              "real": 0.010947826194020127,
+              "imag": 0.04128034882411718,
+              "ritz_residual": 5.48267097271447e-19,
+              "cosine_with_current_tangent": 0.14573069123144314,
+              "cosine_with_uniform_current": 0.021055957684038364
+            },
+            {
+              "rank": 6,
+              "real": 0.010947826194020127,
+              "imag": -0.04128034882411718,
+              "ritz_residual": 5.48267097271447e-19,
+              "cosine_with_current_tangent": 0.14573069123144314,
+              "cosine_with_uniform_current": 0.021055957684038364
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466936683639,
+              "imag": 0.0,
+              "ritz_residual": 2.8196320620313083e-16,
+              "cosine_with_current_tangent": 0.9540851526891223,
+              "cosine_with_uniform_current": 0.006468420398878167
+            }
+          ],
+          "random_3": [
+            {
+              "rank": 0,
+              "real": 0.42779450088008275,
+              "imag": 0.0,
+              "ritz_residual": 7.916659508652858e-43,
+              "cosine_with_current_tangent": 0.004918398037731157,
+              "cosine_with_uniform_current": 0.003944946632424192
+            },
+            {
+              "rank": 1,
+              "real": 0.10224223754885786,
+              "imag": -0.15013533390045716,
+              "ritz_residual": 3.5153811391272214e-27,
+              "cosine_with_current_tangent": 0.0447192765265061,
+              "cosine_with_uniform_current": 0.012571321039902082
+            },
+            {
+              "rank": 2,
+              "real": 0.10224223754885786,
+              "imag": 0.15013533390045716,
+              "ritz_residual": 3.5153811391272214e-27,
+              "cosine_with_current_tangent": 0.0447192765265061,
+              "cosine_with_uniform_current": 0.012571321039902082
+            },
+            {
+              "rank": 3,
+              "real": 0.081419927480606,
+              "imag": 0.24582611809540228,
+              "ritz_residual": 9.540664061894579e-29,
+              "cosine_with_current_tangent": 0.06606157806533285,
+              "cosine_with_uniform_current": 0.01085708036835963
+            },
+            {
+              "rank": 4,
+              "real": 0.081419927480606,
+              "imag": -0.24582611809540228,
+              "ritz_residual": 9.540664061894579e-29,
+              "cosine_with_current_tangent": 0.06606157806533285,
+              "cosine_with_uniform_current": 0.01085708036835963
+            },
+            {
+              "rank": 5,
+              "real": 0.010947826194816379,
+              "imag": 0.04128034882336237,
+              "ritz_residual": 1.0989280791242562e-18,
+              "cosine_with_current_tangent": 0.14573069123447066,
+              "cosine_with_uniform_current": 0.02105595768422936
+            },
+            {
+              "rank": 6,
+              "real": 0.010947826194816379,
+              "imag": -0.04128034882336237,
+              "ritz_residual": 1.0989280791242562e-18,
+              "cosine_with_current_tangent": 0.14573069123447066,
+              "cosine_with_uniform_current": 0.02105595768422936
+            },
+            {
+              "rank": 7,
+              "real": 0.0008258466942927534,
+              "imag": 0.0,
+              "ritz_residual": 4.2780578831406394e-16,
+              "cosine_with_current_tangent": 0.9540851526688096,
+              "cosine_with_uniform_current": 0.006468420400261427
+            }
+          ]
+        }
+      }
+    },
+    "25": {
+      "unconstrained_exact": [
+        {
+          "rank": 0,
+          "real": 0.14972493880344007,
+          "imag": 0.0877423109384804
+        },
+        {
+          "rank": 1,
+          "real": 0.14972493880344007,
+          "imag": -0.0877423109384804
+        },
+        {
+          "rank": 2,
+          "real": 0.1367433864636438,
+          "imag": 0.10031479011873647
+        },
+        {
+          "rank": 3,
+          "real": 0.1367433864636438,
+          "imag": -0.10031479011873647
+        },
+        {
+          "rank": 4,
+          "real": -0.00018439188885976954,
+          "imag": 0.0
+        },
+        {
+          "rank": 5,
+          "real": -0.0032427250068436386,
+          "imag": -0.05037724834607554
+        },
+        {
+          "rank": 6,
+          "real": -0.0032427250068436386,
+          "imag": 0.05037724834607554
+        },
+        {
+          "rank": 7,
+          "real": -0.033250002034357684,
+          "imag": -0.024177215953177587
+        }
+      ],
+      "constrained_arnoldi": {
+        "best_by_real_part": {
+          "start": "tangent",
+          "rank": 0,
+          "real": 0.11045599028865549,
+          "imag": 0.0,
+          "ritz_residual": 8.245673810199525e-28,
+          "cosine_with_current_tangent": 0.1838624068727656,
+          "cosine_with_uniform_current": 0.021988984923354514
+        },
+        "runs": {
+          "tangent": [
+            {
+              "rank": 0,
+              "real": 0.11045599028865549,
+              "imag": 0.0,
+              "ritz_residual": 8.245673810199525e-28,
+              "cosine_with_current_tangent": 0.1838624068727656,
+              "cosine_with_uniform_current": 0.021988984923354514
+            },
+            {
+              "rank": 1,
+              "real": 0.08220190194613641,
+              "imag": 0.12554462314182704,
+              "ritz_residual": 1.6934514291087574e-27,
+              "cosine_with_current_tangent": 0.11468174216068862,
+              "cosine_with_uniform_current": 0.006118709687707574
+            },
+            {
+              "rank": 2,
+              "real": 0.08220190194613641,
+              "imag": -0.12554462314182704,
+              "ritz_residual": 1.6934514291087574e-27,
+              "cosine_with_current_tangent": 0.11468174216068862,
+              "cosine_with_uniform_current": 0.006118709687707574
+            },
+            {
+              "rank": 3,
+              "real": 0.029837142207994383,
+              "imag": 0.0,
+              "ritz_residual": 2.6457962493133516e-21,
+              "cosine_with_current_tangent": 0.2437378817182951,
+              "cosine_with_uniform_current": 0.0001794403398794154
+            },
+            {
+              "rank": 4,
+              "real": 0.014711610656025886,
+              "imag": -0.0883658600915211,
+              "ritz_residual": 1.1507212130994547e-22,
+              "cosine_with_current_tangent": 0.14936620849309526,
+              "cosine_with_uniform_current": 0.028177793057928995
+            },
+            {
+              "rank": 5,
+              "real": 0.014711610656025886,
+              "imag": 0.0883658600915211,
+              "ritz_residual": 1.1507212130994547e-22,
+              "cosine_with_current_tangent": 0.14936620849309526,
+              "cosine_with_uniform_current": 0.028177793057928995
+            },
+            {
+              "rank": 6,
+              "real": 0.001007944529008764,
+              "imag": 0.0,
+              "ritz_residual": 2.843202594100144e-20,
+              "cosine_with_current_tangent": 0.9943603237043105,
+              "cosine_with_uniform_current": 0.02298858821316233
+            },
+            {
+              "rank": 7,
+              "real": -0.02179344593209831,
+              "imag": 0.0,
+              "ritz_residual": 1.6158718278178552e-16,
+              "cosine_with_current_tangent": 0.454662846983094,
+              "cosine_with_uniform_current": 0.0033847831845724135
+            }
+          ],
+          "uniform": [
+            {
+              "rank": 0,
+              "real": 0.11045599028749065,
+              "imag": 0.0,
+              "ritz_residual": 1.954480707393724e-25,
+              "cosine_with_current_tangent": 0.18386240687577413,
+              "cosine_with_uniform_current": 0.021988984924686667
+            },
+            {
+              "rank": 1,
+              "real": 0.08220190194598676,
+              "imag": 0.12554462314159875,
+              "ritz_residual": 5.278312768609263e-26,
+              "cosine_with_current_tangent": 0.1146817421612244,
+              "cosine_with_uniform_current": 0.006118709686558595
+            },
+            {
+              "rank": 2,
+              "real": 0.08220190194598676,
+              "imag": -0.12554462314159875,
+              "ritz_residual": 5.278312768609263e-26,
+              "cosine_with_current_tangent": 0.1146817421612244,
+              "cosine_with_uniform_current": 0.006118709686558595
+            },
+            {
+              "rank": 3,
+              "real": 0.029837142213814172,
+              "imag": 0.0,
+              "ritz_residual": 2.5082218364380107e-20,
+              "cosine_with_current_tangent": 0.2437378816373089,
+              "cosine_with_uniform_current": 0.0001794403400600719
+            },
+            {
+              "rank": 4,
+              "real": 0.01471161066097304,
+              "imag": -0.0883658600926786,
+              "ritz_residual": 3.514531058867054e-21,
+              "cosine_with_current_tangent": 0.14936620849805163,
+              "cosine_with_uniform_current": 0.028177793056676073
+            },
+            {
+              "rank": 5,
+              "real": 0.01471161066097304,
+              "imag": 0.0883658600926786,
+              "ritz_residual": 3.514531058867054e-21,
+              "cosine_with_current_tangent": 0.14936620849805163,
+              "cosine_with_uniform_current": 0.028177793056676073
+            },
+            {
+              "rank": 6,
+              "real": 0.0010079444936001991,
+              "imag": 0.0,
+              "ritz_residual": 7.269642679397855e-18,
+              "cosine_with_current_tangent": 0.994360323871022,
+              "cosine_with_uniform_current": 0.022988588258580415
+            },
+            {
+              "rank": 7,
+              "real": -0.02179344592568877,
+              "imag": 0.0,
+              "ritz_residual": 3.653286055040006e-16,
+              "cosine_with_current_tangent": 0.45466284759707826,
+              "cosine_with_uniform_current": 0.003384783126883049
+            }
+          ],
+          "random_0": [
+            {
+              "rank": 0,
+              "real": 0.11045599028821407,
+              "imag": 0.0,
+              "ritz_residual": 1.3652847410709153e-26,
+              "cosine_with_current_tangent": 0.18386240687260672,
+              "cosine_with_uniform_current": 0.021988984922734624
+            },
+            {
+              "rank": 1,
+              "real": 0.0822019019468554,
+              "imag": -0.12554462314257323,
+              "ritz_residual": 1.2871692597347544e-26,
+              "cosine_with_current_tangent": 0.11468174216151446,
+              "cosine_with_uniform_current": 0.006118709687278521
+            },
+            {
+              "rank": 2,
+              "real": 0.0822019019468554,
+              "imag": 0.12554462314257323,
+              "ritz_residual": 1.2871692597347544e-26,
+              "cosine_with_current_tangent": 0.11468174216151446,
+              "cosine_with_uniform_current": 0.006118709687278521
+            },
+            {
+              "rank": 3,
+              "real": 0.02983714221773015,
+              "imag": 0.0,
+              "ritz_residual": 1.7546484092546307e-20,
+              "cosine_with_current_tangent": 0.2437378815672305,
+              "cosine_with_uniform_current": 0.00017944033893531994
+            },
+            {
+              "rank": 4,
+              "real": 0.01471161065749449,
+              "imag": -0.08836586009174711,
+              "ritz_residual": 7.313776615722441e-22,
+              "cosine_with_current_tangent": 0.1493662084938435,
+              "cosine_with_uniform_current": 0.028177793057702925
+            },
+            {
+              "rank": 5,
+              "real": 0.01471161065749449,
+              "imag": 0.08836586009174711,
+              "ritz_residual": 7.313776615722441e-22,
+              "cosine_with_current_tangent": 0.1493662084938435,
+              "cosine_with_uniform_current": 0.028177793057702925
+            },
+            {
+              "rank": 6,
+              "real": 0.0010079444983097652,
+              "imag": 0.0,
+              "ritz_residual": 3.6133690606277755e-18,
+              "cosine_with_current_tangent": 0.9943603238500172,
+              "cosine_with_uniform_current": 0.022988588251802947
+            },
+            {
+              "rank": 7,
+              "real": -0.021793445926944433,
+              "imag": 0.0,
+              "ritz_residual": 2.297196896254884e-16,
+              "cosine_with_current_tangent": 0.45466284745601304,
+              "cosine_with_uniform_current": 0.0033847831412250253
+            }
+          ],
+          "random_1": [
+            {
+              "rank": 0,
+              "real": 0.11045599028738673,
+              "imag": 0.0,
+              "ritz_residual": 5.544031694940818e-26,
+              "cosine_with_current_tangent": 0.18386240687298097,
+              "cosine_with_uniform_current": 0.021988984922932005
+            },
+            {
+              "rank": 1,
+              "real": 0.0822019019476854,
+              "imag": 0.125544623142362,
+              "ritz_residual": 5.288011001438265e-27,
+              "cosine_with_current_tangent": 0.1146817421598742,
+              "cosine_with_uniform_current": 0.006118709687434169
+            },
+            {
+              "rank": 2,
+              "real": 0.0822019019476854,
+              "imag": -0.125544623142362,
+              "ritz_residual": 5.288011001438265e-27,
+              "cosine_with_current_tangent": 0.1146817421598742,
+              "cosine_with_uniform_current": 0.006118709687434169
+            },
+            {
+              "rank": 3,
+              "real": 0.02983714221754452,
+              "imag": 0.0,
+              "ritz_residual": 6.25125248134849e-20,
+              "cosine_with_current_tangent": 0.24373788155711976,
+              "cosine_with_uniform_current": 0.00017944033758848733
+            },
+            {
+              "rank": 4,
+              "real": 0.014711610657047736,
+              "imag": -0.08836586009243645,
+              "ritz_residual": 1.349326653904942e-21,
+              "cosine_with_current_tangent": 0.14936620849408738,
+              "cosine_with_uniform_current": 0.02817779305808603
+            },
+            {
+              "rank": 5,
+              "real": 0.014711610657047736,
+              "imag": 0.08836586009243645,
+              "ritz_residual": 1.349326653904942e-21,
+              "cosine_with_current_tangent": 0.14936620849408738,
+              "cosine_with_uniform_current": 0.02817779305808603
+            },
+            {
+              "rank": 6,
+              "real": 0.0010079445023802869,
+              "imag": 0.0,
+              "ritz_residual": 9.91573180875852e-17,
+              "cosine_with_current_tangent": 0.994360323824548,
+              "cosine_with_uniform_current": 0.022988588252648413
+            },
+            {
+              "rank": 7,
+              "real": -0.02179344593511434,
+              "imag": 0.0,
+              "ritz_residual": 3.2811380898646843e-16,
+              "cosine_with_current_tangent": 0.4546628471079762,
+              "cosine_with_uniform_current": 0.00338478316897135
+            }
+          ],
+          "random_2": [
+            {
+              "rank": 0,
+              "real": 0.11045599028817721,
+              "imag": 0.0,
+              "ritz_residual": 2.241450791278786e-24,
+              "cosine_with_current_tangent": 0.18386240687897104,
+              "cosine_with_uniform_current": 0.021988984923511826
+            },
+            {
+              "rank": 1,
+              "real": 0.08220190194716936,
+              "imag": 0.12554462314198414,
+              "ritz_residual": 2.3697903157024424e-26,
+              "cosine_with_current_tangent": 0.11468174216227987,
+              "cosine_with_uniform_current": 0.00611870968726168
+            },
+            {
+              "rank": 2,
+              "real": 0.08220190194716936,
+              "imag": -0.12554462314198414,
+              "ritz_residual": 2.3697903157024424e-26,
+              "cosine_with_current_tangent": 0.11468174216227987,
+              "cosine_with_uniform_current": 0.00611870968726168
+            },
+            {
+              "rank": 3,
+              "real": 0.029837142214343082,
+              "imag": 0.0,
+              "ritz_residual": 2.0523217301537268e-20,
+              "cosine_with_current_tangent": 0.2437378816350128,
+              "cosine_with_uniform_current": 0.000179440339964537
+            },
+            {
+              "rank": 4,
+              "real": 0.014711610659522645,
+              "imag": -0.08836586009096649,
+              "ritz_residual": 8.995183766440042e-22,
+              "cosine_with_current_tangent": 0.149366208497672,
+              "cosine_with_uniform_current": 0.02817779305733117
+            },
+            {
+              "rank": 5,
+              "real": 0.014711610659522645,
+              "imag": 0.08836586009096649,
+              "ritz_residual": 8.995183766440042e-22,
+              "cosine_with_current_tangent": 0.149366208497672,
+              "cosine_with_uniform_current": 0.02817779305733117
+            },
+            {
+              "rank": 6,
+              "real": 0.0010079444998005727,
+              "imag": 0.0,
+              "ritz_residual": 5.550497118564845e-18,
+              "cosine_with_current_tangent": 0.9943603238405216,
+              "cosine_with_uniform_current": 0.022988588250443087
+            },
+            {
+              "rank": 7,
+              "real": -0.02179344593084398,
+              "imag": 0.0,
+              "ritz_residual": 8.380117793965585e-16,
+              "cosine_with_current_tangent": 0.45466284733496953,
+              "cosine_with_uniform_current": 0.0033847831496790458
+            }
+          ],
+          "random_3": [
+            {
+              "rank": 0,
+              "real": 0.11045599028811814,
+              "imag": 0.0,
+              "ritz_residual": 8.58099150821088e-27,
+              "cosine_with_current_tangent": 0.1838624068731081,
+              "cosine_with_uniform_current": 0.021988984922832883
+            },
+            {
+              "rank": 1,
+              "real": 0.08220190194646815,
+              "imag": 0.12554462314242262,
+              "ritz_residual": 8.101435100701021e-27,
+              "cosine_with_current_tangent": 0.11468174216079867,
+              "cosine_with_uniform_current": 0.006118709687641046
+            },
+            {
+              "rank": 2,
+              "real": 0.08220190194646815,
+              "imag": -0.12554462314242262,
+              "ritz_residual": 8.101435100701021e-27,
+              "cosine_with_current_tangent": 0.11468174216079867,
+              "cosine_with_uniform_current": 0.006118709687641046
+            },
+            {
+              "rank": 3,
+              "real": 0.029837142220342727,
+              "imag": 0.0,
+              "ritz_residual": 1.993544958917236e-20,
+              "cosine_with_current_tangent": 0.24373788151817624,
+              "cosine_with_uniform_current": 0.00017944033816572226
+            },
+            {
+              "rank": 4,
+              "real": 0.014711610656517493,
+              "imag": -0.08836586009209049,
+              "ritz_residual": 1.3456449958398761e-21,
+              "cosine_with_current_tangent": 0.1493662084928135,
+              "cosine_with_uniform_current": 0.028177793058002682
+            },
+            {
+              "rank": 5,
+              "real": 0.014711610656517493,
+              "imag": 0.08836586009209049,
+              "ritz_residual": 1.3456449958398761e-21,
+              "cosine_with_current_tangent": 0.1493662084928135,
+              "cosine_with_uniform_current": 0.028177793058002682
+            },
+            {
+              "rank": 6,
+              "real": 0.0010079444988533304,
+              "imag": 0.0,
+              "ritz_residual": 5.940958444750267e-18,
+              "cosine_with_current_tangent": 0.9943603238402159,
+              "cosine_with_uniform_current": 0.02298858825564923
+            },
+            {
+              "rank": 7,
+              "real": -0.021793445930229804,
+              "imag": 0.0,
+              "ritz_residual": 4.2089805886092364e-14,
+              "cosine_with_current_tangent": 0.4546628473082845,
+              "cosine_with_uniform_current": 0.003384783153351867
+            }
+          ]
+        }
+      }
+    },
+    "50": {
+      "unconstrained_exact": [
+        {
+          "rank": 0,
+          "real": 0.0957491761522391,
+          "imag": -0.09632450692538652
+        },
+        {
+          "rank": 1,
+          "real": 0.0957491761522391,
+          "imag": 0.09632450692538652
+        },
+        {
+          "rank": 2,
+          "real": 0.09389094450782931,
+          "imag": -0.03635965499637404
+        },
+        {
+          "rank": 3,
+          "real": 0.09389094450782931,
+          "imag": 0.03635965499637404
+        },
+        {
+          "rank": 4,
+          "real": 0.0057921967721039636,
+          "imag": 0.023732404149470938
+        },
+        {
+          "rank": 5,
+          "real": 0.0057921967721039636,
+          "imag": -0.023732404149470938
+        },
+        {
+          "rank": 6,
+          "real": 0.0022787785681039896,
+          "imag": 0.0
+        },
+        {
+          "rank": 7,
+          "real": -0.027083442771264066,
+          "imag": 0.0
+        }
+      ],
+      "constrained_arnoldi": {
+        "best_by_real_part": {
+          "start": "random_2",
+          "rank": 0,
+          "real": 0.06749188844562237,
+          "imag": 0.0,
+          "ritz_residual": 1.0404468579854324e-23,
+          "cosine_with_current_tangent": 0.08515737920326535,
+          "cosine_with_uniform_current": 0.018823202122878916
+        },
+        "runs": {
+          "tangent": [
+            {
+              "rank": 0,
+              "real": 0.067491888442762,
+              "imag": 0.0,
+              "ritz_residual": 1.1779562648383424e-24,
+              "cosine_with_current_tangent": 0.08515737920683987,
+              "cosine_with_uniform_current": 0.018823202122192913
+            },
+            {
+              "rank": 1,
+              "real": 0.06423368315542088,
+              "imag": -0.06857047953143075,
+              "ritz_residual": 5.499774921481974e-26,
+              "cosine_with_current_tangent": 0.041665110970691074,
+              "cosine_with_uniform_current": 0.04830957119354029
+            },
+            {
+              "rank": 2,
+              "real": 0.06423368315542088,
+              "imag": 0.06857047953143075,
+              "ritz_residual": 5.499774921481974e-26,
+              "cosine_with_current_tangent": 0.041665110970691074,
+              "cosine_with_uniform_current": 0.04830957119354029
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631656556214,
+              "imag": -0.024229302709242933,
+              "ritz_residual": 6.399923636099622e-21,
+              "cosine_with_current_tangent": 0.3945808833528034,
+              "cosine_with_uniform_current": 0.02559740461379483
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631656556214,
+              "imag": 0.024229302709242933,
+              "ritz_residual": 6.399923636099622e-21,
+              "cosine_with_current_tangent": 0.3945808833528034,
+              "cosine_with_uniform_current": 0.02559740461379483
+            },
+            {
+              "rank": 5,
+              "real": -0.011164612446637134,
+              "imag": 0.0,
+              "ritz_residual": 7.837071840530552e-19,
+              "cosine_with_current_tangent": 0.5733586792157322,
+              "cosine_with_uniform_current": 0.024305007253130746
+            },
+            {
+              "rank": 6,
+              "real": -0.022780930629225038,
+              "imag": -0.008984104712554945,
+              "ritz_residual": 1.0056365970775466e-17,
+              "cosine_with_current_tangent": 0.09299918129482619,
+              "cosine_with_uniform_current": 0.013079647600993768
+            },
+            {
+              "rank": 7,
+              "real": -0.022780930629225038,
+              "imag": 0.008984104712554945,
+              "ritz_residual": 1.0056365970775466e-17,
+              "cosine_with_current_tangent": 0.09299918129482619,
+              "cosine_with_uniform_current": 0.013079647600993768
+            }
+          ],
+          "uniform": [
+            {
+              "rank": 0,
+              "real": 0.06749188844158471,
+              "imag": 0.0,
+              "ritz_residual": 1.6364182895561055e-22,
+              "cosine_with_current_tangent": 0.08515737920825278,
+              "cosine_with_uniform_current": 0.0188232021214367
+            },
+            {
+              "rank": 1,
+              "real": 0.06423368315379951,
+              "imag": -0.06857047953069544,
+              "ritz_residual": 2.7320251409590245e-23,
+              "cosine_with_current_tangent": 0.04166511097063051,
+              "cosine_with_uniform_current": 0.04830957119320401
+            },
+            {
+              "rank": 2,
+              "real": 0.06423368315379951,
+              "imag": 0.06857047953069544,
+              "ritz_residual": 2.7320251409590245e-23,
+              "cosine_with_current_tangent": 0.04166511097063051,
+              "cosine_with_uniform_current": 0.04830957119320401
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631659996129,
+              "imag": -0.024229302711477965,
+              "ritz_residual": 1.425879996082338e-17,
+              "cosine_with_current_tangent": 0.3945808833101677,
+              "cosine_with_uniform_current": 0.02559740461290789
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631659996129,
+              "imag": 0.024229302711477965,
+              "ritz_residual": 1.425879996082338e-17,
+              "cosine_with_current_tangent": 0.3945808833101677,
+              "cosine_with_uniform_current": 0.02559740461290789
+            },
+            {
+              "rank": 5,
+              "real": -0.01116461244714606,
+              "imag": 0.0,
+              "ritz_residual": 3.111596180050711e-15,
+              "cosine_with_current_tangent": 0.5733586792294607,
+              "cosine_with_uniform_current": 0.024305007247911525
+            },
+            {
+              "rank": 6,
+              "real": -0.02278093063115394,
+              "imag": 0.008984104713800643,
+              "ritz_residual": 1.075895617700842e-15,
+              "cosine_with_current_tangent": 0.09299918121736311,
+              "cosine_with_uniform_current": 0.013079647594900311
+            },
+            {
+              "rank": 7,
+              "real": -0.02278093063115394,
+              "imag": -0.008984104713800643,
+              "ritz_residual": 1.075895617700842e-15,
+              "cosine_with_current_tangent": 0.09299918121736311,
+              "cosine_with_uniform_current": 0.013079647594900311
+            }
+          ],
+          "random_0": [
+            {
+              "rank": 0,
+              "real": 0.06749188844541143,
+              "imag": 0.0,
+              "ritz_residual": 1.2327340678172304e-23,
+              "cosine_with_current_tangent": 0.08515737919969474,
+              "cosine_with_uniform_current": 0.018823202123038306
+            },
+            {
+              "rank": 1,
+              "real": 0.06423368315478628,
+              "imag": -0.0685704795323751,
+              "ritz_residual": 3.578913300917005e-24,
+              "cosine_with_current_tangent": 0.04166511097326087,
+              "cosine_with_uniform_current": 0.04830957119372225
+            },
+            {
+              "rank": 2,
+              "real": 0.06423368315478628,
+              "imag": 0.0685704795323751,
+              "ritz_residual": 3.578913300917005e-24,
+              "cosine_with_current_tangent": 0.04166511097326087,
+              "cosine_with_uniform_current": 0.04830957119372225
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631655164438,
+              "imag": -0.02422930271266731,
+              "ritz_residual": 7.01751140732115e-19,
+              "cosine_with_current_tangent": 0.3945808833175897,
+              "cosine_with_uniform_current": 0.02559740461745078
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631655164438,
+              "imag": 0.02422930271266731,
+              "ritz_residual": 7.01751140732115e-19,
+              "cosine_with_current_tangent": 0.3945808833175897,
+              "cosine_with_uniform_current": 0.02559740461745078
+            },
+            {
+              "rank": 5,
+              "real": -0.011164612446469269,
+              "imag": 0.0,
+              "ritz_residual": 2.757357522904569e-16,
+              "cosine_with_current_tangent": 0.5733586792418033,
+              "cosine_with_uniform_current": 0.024305007251894946
+            },
+            {
+              "rank": 6,
+              "real": -0.022780930629582086,
+              "imag": 0.008984104713064012,
+              "ritz_residual": 1.5808203808636183e-15,
+              "cosine_with_current_tangent": 0.09299918126395386,
+              "cosine_with_uniform_current": 0.013079647599734722
+            },
+            {
+              "rank": 7,
+              "real": -0.022780930629582086,
+              "imag": -0.008984104713064012,
+              "ritz_residual": 1.5808203808636183e-15,
+              "cosine_with_current_tangent": 0.09299918126395386,
+              "cosine_with_uniform_current": 0.013079647599734722
+            }
+          ],
+          "random_1": [
+            {
+              "rank": 0,
+              "real": 0.06749188844256748,
+              "imag": 0.0,
+              "ritz_residual": 2.5104035731293093e-23,
+              "cosine_with_current_tangent": 0.0851573792054113,
+              "cosine_with_uniform_current": 0.018823202121763062
+            },
+            {
+              "rank": 1,
+              "real": 0.06423368315594535,
+              "imag": -0.06857047953176863,
+              "ritz_residual": 2.1338537957307648e-24,
+              "cosine_with_current_tangent": 0.04166511097220738,
+              "cosine_with_uniform_current": 0.04830957119347994
+            },
+            {
+              "rank": 2,
+              "real": 0.06423368315594535,
+              "imag": 0.06857047953176863,
+              "ritz_residual": 2.1338537957307648e-24,
+              "cosine_with_current_tangent": 0.04166511097220738,
+              "cosine_with_uniform_current": 0.04830957119347994
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631655802594,
+              "imag": -0.024229302711585535,
+              "ritz_residual": 1.5748717385496781e-18,
+              "cosine_with_current_tangent": 0.3945808833179163,
+              "cosine_with_uniform_current": 0.025597404616665407
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631655802594,
+              "imag": 0.024229302711585535,
+              "ritz_residual": 1.5748717385496781e-18,
+              "cosine_with_current_tangent": 0.3945808833179163,
+              "cosine_with_uniform_current": 0.025597404616665407
+            },
+            {
+              "rank": 5,
+              "real": -0.011164612445336841,
+              "imag": 0.0,
+              "ritz_residual": 1.0930633023810509e-15,
+              "cosine_with_current_tangent": 0.5733586792927096,
+              "cosine_with_uniform_current": 0.024305007253157426
+            },
+            {
+              "rank": 6,
+              "real": -0.022780930629654028,
+              "imag": -0.008984104713371336,
+              "ritz_residual": 5.295838503728901e-15,
+              "cosine_with_current_tangent": 0.09299918128032536,
+              "cosine_with_uniform_current": 0.013079647600731272
+            },
+            {
+              "rank": 7,
+              "real": -0.022780930629654028,
+              "imag": 0.008984104713371336,
+              "ritz_residual": 5.295838503728901e-15,
+              "cosine_with_current_tangent": 0.09299918128032536,
+              "cosine_with_uniform_current": 0.013079647600731272
+            }
+          ],
+          "random_2": [
+            {
+              "rank": 0,
+              "real": 0.06749188844562237,
+              "imag": 0.0,
+              "ritz_residual": 1.0404468579854324e-23,
+              "cosine_with_current_tangent": 0.08515737920326535,
+              "cosine_with_uniform_current": 0.018823202122878916
+            },
+            {
+              "rank": 1,
+              "real": 0.0642336831559236,
+              "imag": -0.0685704795324565,
+              "ritz_residual": 6.200226648748049e-24,
+              "cosine_with_current_tangent": 0.04166511097030954,
+              "cosine_with_uniform_current": 0.04830957119364573
+            },
+            {
+              "rank": 2,
+              "real": 0.0642336831559236,
+              "imag": 0.0685704795324565,
+              "ritz_residual": 6.200226648748049e-24,
+              "cosine_with_current_tangent": 0.04166511097030954,
+              "cosine_with_uniform_current": 0.04830957119364573
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631654697256,
+              "imag": -0.02422930271371696,
+              "ritz_residual": 6.66261390464751e-19,
+              "cosine_with_current_tangent": 0.39458088330466184,
+              "cosine_with_uniform_current": 0.025597404618283272
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631654697256,
+              "imag": 0.02422930271371696,
+              "ritz_residual": 6.66261390464751e-19,
+              "cosine_with_current_tangent": 0.39458088330466184,
+              "cosine_with_uniform_current": 0.025597404618283272
+            },
+            {
+              "rank": 5,
+              "real": -0.011164612446745492,
+              "imag": 0.0,
+              "ritz_residual": 2.960750820737179e-16,
+              "cosine_with_current_tangent": 0.5733586792146056,
+              "cosine_with_uniform_current": 0.024305007251085652
+            },
+            {
+              "rank": 6,
+              "real": -0.022780930629588525,
+              "imag": 0.008984104713118174,
+              "ritz_residual": 5.168858730523128e-16,
+              "cosine_with_current_tangent": 0.09299918125042644,
+              "cosine_with_uniform_current": 0.013079647598341773
+            },
+            {
+              "rank": 7,
+              "real": -0.022780930629588525,
+              "imag": -0.008984104713118174,
+              "ritz_residual": 5.168858730523128e-16,
+              "cosine_with_current_tangent": 0.09299918125042644,
+              "cosine_with_uniform_current": 0.013079647598341773
+            }
+          ],
+          "random_3": [
+            {
+              "rank": 0,
+              "real": 0.06749188844338727,
+              "imag": 0.0,
+              "ritz_residual": 1.1096754975560733e-23,
+              "cosine_with_current_tangent": 0.08515737920533696,
+              "cosine_with_uniform_current": 0.018823202121939935
+            },
+            {
+              "rank": 1,
+              "real": 0.06423368315542399,
+              "imag": -0.06857047953242938,
+              "ritz_residual": 1.2883251190521552e-24,
+              "cosine_with_current_tangent": 0.04166511097134253,
+              "cosine_with_uniform_current": 0.0483095711937675
+            },
+            {
+              "rank": 2,
+              "real": 0.06423368315542399,
+              "imag": 0.06857047953242938,
+              "ritz_residual": 1.2883251190521552e-24,
+              "cosine_with_current_tangent": 0.04166511097134253,
+              "cosine_with_uniform_current": 0.0483095711937675
+            },
+            {
+              "rank": 3,
+              "real": 0.008507631658674963,
+              "imag": -0.024229302710594213,
+              "ritz_residual": 1.3132276794874457e-18,
+              "cosine_with_current_tangent": 0.3945808833234811,
+              "cosine_with_uniform_current": 0.025597404614449298
+            },
+            {
+              "rank": 4,
+              "real": 0.008507631658674963,
+              "imag": 0.024229302710594213,
+              "ritz_residual": 1.3132276794874457e-18,
+              "cosine_with_current_tangent": 0.3945808833234811,
+              "cosine_with_uniform_current": 0.025597404614449298
+            },
+            {
+              "rank": 5,
+              "real": -0.01116461244843392,
+              "imag": 0.0,
+              "ritz_residual": 7.036774093587909e-16,
+              "cosine_with_current_tangent": 0.5733586791169623,
+              "cosine_with_uniform_current": 0.02430500724975384
+            },
+            {
+              "rank": 6,
+              "real": -0.022780930629672458,
+              "imag": 0.008984104712346211,
+              "ritz_residual": 1.345958883080682e-15,
+              "cosine_with_current_tangent": 0.09299918127572376,
+              "cosine_with_uniform_current": 0.013079647597884703
+            },
+            {
+              "rank": 7,
+              "real": -0.022780930629672458,
+              "imag": -0.008984104712346211,
+              "ritz_residual": 1.345958883080682e-15,
+              "cosine_with_current_tangent": 0.09299918127572376,
+              "cosine_with_uniform_current": 0.013079647597884703
+            }
+          ]
+        }
+      }
+    },
+    "75": {
+      "unconstrained_exact": [
+        {
+          "rank": 0,
+          "real": 0.46243959367597687,
+          "imag": 0.09674313867345495
+        },
+        {
+          "rank": 1,
+          "real": 0.46243959367597687,
+          "imag": -0.09674313867345495
+        },
+        {
+          "rank": 2,
+          "real": 0.2632611313284545,
+          "imag": 0.3561995528226543
+        },
+        {
+          "rank": 3,
+          "real": 0.2632611313284545,
+          "imag": -0.3561995528226543
+        },
+        {
+          "rank": 4,
+          "real": 0.18700199248650828,
+          "imag": 0.0
+        },
+        {
+          "rank": 5,
+          "real": 0.1037192837790899,
+          "imag": -0.10417243410368425
+        },
+        {
+          "rank": 6,
+          "real": 0.1037192837790899,
+          "imag": 0.10417243410368425
+        },
+        {
+          "rank": 7,
+          "real": 0.02479375984001364,
+          "imag": -0.23664171644912238
+        }
+      ],
+      "constrained_arnoldi": {
+        "best_by_real_part": {
+          "start": "tangent",
+          "rank": 0,
+          "real": 0.42311321733323703,
+          "imag": 0.0,
+          "ritz_residual": 8.350147544033611e-38,
+          "cosine_with_current_tangent": 0.04091185914250737,
+          "cosine_with_uniform_current": 0.012560765925376163
+        },
+        "runs": {
+          "tangent": [
+            {
+              "rank": 0,
+              "real": 0.42311321733323703,
+              "imag": 0.0,
+              "ritz_residual": 8.350147544033611e-38,
+              "cosine_with_current_tangent": 0.04091185914250737,
+              "cosine_with_uniform_current": 0.012560765925376163
+            },
+            {
+              "rank": 1,
+              "real": 0.19028012153943008,
+              "imag": -0.12418175656286,
+              "ritz_residual": 7.127135912857426e-28,
+              "cosine_with_current_tangent": 0.11080705860598669,
+              "cosine_with_uniform_current": 0.022439070444516842
+            },
+            {
+              "rank": 2,
+              "real": 0.19028012153943008,
+              "imag": 0.12418175656286,
+              "ritz_residual": 7.127135912857426e-28,
+              "cosine_with_current_tangent": 0.11080705860598669,
+              "cosine_with_uniform_current": 0.022439070444516842
+            },
+            {
+              "rank": 3,
+              "real": 0.06287780201799009,
+              "imag": -0.23952659000127025,
+              "ritz_residual": 2.882177760529362e-24,
+              "cosine_with_current_tangent": 0.09715339743834292,
+              "cosine_with_uniform_current": 0.023854986726061622
+            },
+            {
+              "rank": 4,
+              "real": 0.06287780201799009,
+              "imag": 0.23952659000127025,
+              "ritz_residual": 2.882177760529362e-24,
+              "cosine_with_current_tangent": 0.09715339743834292,
+              "cosine_with_uniform_current": 0.023854986726061622
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204743447026,
+              "imag": -0.14923660547341724,
+              "ritz_residual": 2.6931459734813305e-19,
+              "cosine_with_current_tangent": 0.08798111758823061,
+              "cosine_with_uniform_current": 0.01133850741853197
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204743447026,
+              "imag": 0.14923660547341724,
+              "ritz_residual": 2.6931459734813305e-19,
+              "cosine_with_current_tangent": 0.08798111758823061,
+              "cosine_with_uniform_current": 0.01133850741853197
+            },
+            {
+              "rank": 7,
+              "real": 0.002391729942432086,
+              "imag": 0.5878074857184034,
+              "ritz_residual": 6.317648813388787e-33,
+              "cosine_with_current_tangent": 0.05919418003923513,
+              "cosine_with_uniform_current": 0.018292226804988408
+            }
+          ],
+          "uniform": [
+            {
+              "rank": 0,
+              "real": 0.42311321733258245,
+              "imag": 0.0,
+              "ritz_residual": 6.891995865967543e-36,
+              "cosine_with_current_tangent": 0.0409118591424848,
+              "cosine_with_uniform_current": 0.012560765925414654
+            },
+            {
+              "rank": 1,
+              "real": 0.19028012153980622,
+              "imag": -0.12418175656089486,
+              "ritz_residual": 5.283021620077163e-25,
+              "cosine_with_current_tangent": 0.1108070586060751,
+              "cosine_with_uniform_current": 0.02243907044440578
+            },
+            {
+              "rank": 2,
+              "real": 0.19028012153980622,
+              "imag": 0.12418175656089486,
+              "ritz_residual": 5.283021620077163e-25,
+              "cosine_with_current_tangent": 0.1108070586060751,
+              "cosine_with_uniform_current": 0.02243907044440578
+            },
+            {
+              "rank": 3,
+              "real": 0.06287780201773119,
+              "imag": -0.23952659000290027,
+              "ritz_residual": 7.119155120669005e-23,
+              "cosine_with_current_tangent": 0.09715339743759954,
+              "cosine_with_uniform_current": 0.023854986726053774
+            },
+            {
+              "rank": 4,
+              "real": 0.06287780201773119,
+              "imag": 0.23952659000290027,
+              "ritz_residual": 7.119155120669005e-23,
+              "cosine_with_current_tangent": 0.09715339743759954,
+              "cosine_with_uniform_current": 0.023854986726053774
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204743749895,
+              "imag": -0.14923660547295556,
+              "ritz_residual": 9.996667763923534e-18,
+              "cosine_with_current_tangent": 0.0879811175881207,
+              "cosine_with_uniform_current": 0.01133850741850543
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204743749895,
+              "imag": 0.14923660547295556,
+              "ritz_residual": 9.996667763923534e-18,
+              "cosine_with_current_tangent": 0.0879811175881207,
+              "cosine_with_uniform_current": 0.01133850741850543
+            },
+            {
+              "rank": 7,
+              "real": 0.0023917299429911942,
+              "imag": -0.5878074857179347,
+              "ritz_residual": 6.561810470029439e-32,
+              "cosine_with_current_tangent": 0.0591941800392243,
+              "cosine_with_uniform_current": 0.01829222680498135
+            }
+          ],
+          "random_0": [
+            {
+              "rank": 0,
+              "real": 0.4231132173317991,
+              "imag": 0.0,
+              "ritz_residual": 1.096271169016918e-36,
+              "cosine_with_current_tangent": 0.04091185914269559,
+              "cosine_with_uniform_current": 0.012560765925370322
+            },
+            {
+              "rank": 1,
+              "real": 0.19028012153982887,
+              "imag": -0.12418175656123077,
+              "ritz_residual": 3.857809757660245e-26,
+              "cosine_with_current_tangent": 0.1108070586062972,
+              "cosine_with_uniform_current": 0.022439070444377703
+            },
+            {
+              "rank": 2,
+              "real": 0.19028012153982887,
+              "imag": 0.12418175656123077,
+              "ritz_residual": 3.857809757660245e-26,
+              "cosine_with_current_tangent": 0.1108070586062972,
+              "cosine_with_uniform_current": 0.022439070444377703
+            },
+            {
+              "rank": 3,
+              "real": 0.06287780201816062,
+              "imag": 0.23952659000154575,
+              "ritz_residual": 7.935198837290573e-23,
+              "cosine_with_current_tangent": 0.09715339743827171,
+              "cosine_with_uniform_current": 0.023854986726054194
+            },
+            {
+              "rank": 4,
+              "real": 0.06287780201816062,
+              "imag": -0.23952659000154575,
+              "ritz_residual": 7.935198837290573e-23,
+              "cosine_with_current_tangent": 0.09715339743827171,
+              "cosine_with_uniform_current": 0.023854986726054194
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204743089978,
+              "imag": -0.14923660547289266,
+              "ritz_residual": 5.673940232895473e-18,
+              "cosine_with_current_tangent": 0.08798111758855523,
+              "cosine_with_uniform_current": 0.011338507418265045
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204743089978,
+              "imag": 0.14923660547289266,
+              "ritz_residual": 5.673940232895473e-18,
+              "cosine_with_current_tangent": 0.08798111758855523,
+              "cosine_with_uniform_current": 0.011338507418265045
+            },
+            {
+              "rank": 7,
+              "real": 0.002391729942766929,
+              "imag": -0.5878074857185085,
+              "ritz_residual": 1.9763058245943177e-32,
+              "cosine_with_current_tangent": 0.059194180039098244,
+              "cosine_with_uniform_current": 0.018292226804995582
+            }
+          ],
+          "random_1": [
+            {
+              "rank": 0,
+              "real": 0.4231132173323595,
+              "imag": 0.0,
+              "ritz_residual": 5.102331573479403e-37,
+              "cosine_with_current_tangent": 0.0409118591427133,
+              "cosine_with_uniform_current": 0.01256076592540073
+            },
+            {
+              "rank": 1,
+              "real": 0.19028012153993146,
+              "imag": -0.12418175656167799,
+              "ritz_residual": 9.802984229428507e-27,
+              "cosine_with_current_tangent": 0.11080705860593645,
+              "cosine_with_uniform_current": 0.02243907044450226
+            },
+            {
+              "rank": 2,
+              "real": 0.19028012153993146,
+              "imag": 0.12418175656167799,
+              "ritz_residual": 9.802984229428507e-27,
+              "cosine_with_current_tangent": 0.11080705860593645,
+              "cosine_with_uniform_current": 0.02243907044450226
+            },
+            {
+              "rank": 3,
+              "real": 0.0628778020166818,
+              "imag": -0.23952659000145438,
+              "ritz_residual": 8.4580238350598e-23,
+              "cosine_with_current_tangent": 0.09715339743839282,
+              "cosine_with_uniform_current": 0.023854986726099005
+            },
+            {
+              "rank": 4,
+              "real": 0.0628778020166818,
+              "imag": 0.23952659000145438,
+              "ritz_residual": 8.4580238350598e-23,
+              "cosine_with_current_tangent": 0.09715339743839282,
+              "cosine_with_uniform_current": 0.023854986726099005
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204744321882,
+              "imag": -0.149236605472932,
+              "ritz_residual": 9.86227309436908e-18,
+              "cosine_with_current_tangent": 0.08798111758711963,
+              "cosine_with_uniform_current": 0.011338507418519645
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204744321882,
+              "imag": 0.149236605472932,
+              "ritz_residual": 9.86227309436908e-18,
+              "cosine_with_current_tangent": 0.08798111758711963,
+              "cosine_with_uniform_current": 0.011338507418519645
+            },
+            {
+              "rank": 7,
+              "real": 0.0023917299425582073,
+              "imag": -0.587807485718517,
+              "ritz_residual": 2.04974086252243e-32,
+              "cosine_with_current_tangent": 0.059194180039230465,
+              "cosine_with_uniform_current": 0.018292226804968885
+            }
+          ],
+          "random_2": [
+            {
+              "rank": 0,
+              "real": 0.42311321733224627,
+              "imag": 0.0,
+              "ritz_residual": 4.156651884059412e-37,
+              "cosine_with_current_tangent": 0.04091185914272186,
+              "cosine_with_uniform_current": 0.012560765925405584
+            },
+            {
+              "rank": 1,
+              "real": 0.1902801215393275,
+              "imag": -0.12418175656221639,
+              "ritz_residual": 1.5528381289486918e-26,
+              "cosine_with_current_tangent": 0.11080705860636211,
+              "cosine_with_uniform_current": 0.022439070444473366
+            },
+            {
+              "rank": 2,
+              "real": 0.1902801215393275,
+              "imag": 0.12418175656221639,
+              "ritz_residual": 1.5528381289486918e-26,
+              "cosine_with_current_tangent": 0.11080705860636211,
+              "cosine_with_uniform_current": 0.022439070444473366
+            },
+            {
+              "rank": 3,
+              "real": 0.06287780201796211,
+              "imag": -0.23952659000092125,
+              "ritz_residual": 9.333441214530136e-23,
+              "cosine_with_current_tangent": 0.09715339743892551,
+              "cosine_with_uniform_current": 0.02385498672609526
+            },
+            {
+              "rank": 4,
+              "real": 0.06287780201796211,
+              "imag": 0.23952659000092125,
+              "ritz_residual": 9.333441214530136e-23,
+              "cosine_with_current_tangent": 0.09715339743892551,
+              "cosine_with_uniform_current": 0.02385498672609526
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204743281825,
+              "imag": -0.14923660547259934,
+              "ritz_residual": 7.845662983870712e-18,
+              "cosine_with_current_tangent": 0.08798111758776851,
+              "cosine_with_uniform_current": 0.011338507418248132
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204743281825,
+              "imag": 0.14923660547259934,
+              "ritz_residual": 7.845662983870712e-18,
+              "cosine_with_current_tangent": 0.08798111758776851,
+              "cosine_with_uniform_current": 0.011338507418248132
+            },
+            {
+              "rank": 7,
+              "real": 0.0023917299422051563,
+              "imag": 0.5878074857183034,
+              "ritz_residual": 1.748558721089367e-32,
+              "cosine_with_current_tangent": 0.05919418003910765,
+              "cosine_with_uniform_current": 0.018292226804957918
+            }
+          ],
+          "random_3": [
+            {
+              "rank": 0,
+              "real": 0.4231132173328529,
+              "imag": 0.0,
+              "ritz_residual": 2.0642703771200915e-37,
+              "cosine_with_current_tangent": 0.04091185914247244,
+              "cosine_with_uniform_current": 0.012560765925349403
+            },
+            {
+              "rank": 1,
+              "real": 0.1902801215395855,
+              "imag": -0.12418175656139123,
+              "ritz_residual": 2.6922394751545344e-27,
+              "cosine_with_current_tangent": 0.11080705860628792,
+              "cosine_with_uniform_current": 0.022439070444458486
+            },
+            {
+              "rank": 2,
+              "real": 0.1902801215395855,
+              "imag": 0.12418175656139123,
+              "ritz_residual": 2.6922394751545344e-27,
+              "cosine_with_current_tangent": 0.11080705860628792,
+              "cosine_with_uniform_current": 0.022439070444458486
+            },
+            {
+              "rank": 3,
+              "real": 0.06287780201777782,
+              "imag": -0.23952659000117288,
+              "ritz_residual": 1.1432602014786926e-23,
+              "cosine_with_current_tangent": 0.09715339743838683,
+              "cosine_with_uniform_current": 0.02385498672608612
+            },
+            {
+              "rank": 4,
+              "real": 0.06287780201777782,
+              "imag": 0.23952659000117288,
+              "ritz_residual": 1.1432602014786926e-23,
+              "cosine_with_current_tangent": 0.09715339743838683,
+              "cosine_with_uniform_current": 0.02385498672608612
+            },
+            {
+              "rank": 5,
+              "real": 0.010681204743499872,
+              "imag": -0.14923660547325976,
+              "ritz_residual": 2.5364132920881698e-18,
+              "cosine_with_current_tangent": 0.08798111758839312,
+              "cosine_with_uniform_current": 0.011338507418436325
+            },
+            {
+              "rank": 6,
+              "real": 0.010681204743499872,
+              "imag": 0.14923660547325976,
+              "ritz_residual": 2.5364132920881698e-18,
+              "cosine_with_current_tangent": 0.08798111758839312,
+              "cosine_with_uniform_current": 0.011338507418436325
+            },
+            {
+              "rank": 7,
+              "real": 0.002391729942188281,
+              "imag": -0.5878074857183965,
+              "ritz_residual": 1.486498851960101e-32,
+              "cosine_with_current_tangent": 0.05919418003928691,
+              "cosine_with_uniform_current": 0.01829222680496601
+            }
+          ]
+        }
+      }
+    }
+  }
+}

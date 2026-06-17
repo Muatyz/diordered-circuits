@@ -1,0 +1,374 @@
+{
+  "status": "diagnostic_only_no_pipeline_change",
+  "question": "Are positive Jacobian modes tangent-like or normal to the target manifold?",
+  "parameters": {
+    "activation_beta": 2.0,
+    "regularization": 1e-06,
+    "uniform_inhibition_c": 1.0,
+    "sample_bins": [
+      0,
+      25,
+      50,
+      75
+    ]
+  },
+  "cases": {
+    "eps_1e-12": {
+      "0": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.4198600147164878,
+          "eigenvalue_imag": 1.118832497261245,
+          "cosine_with_current_tangent": 0.05556663721683058,
+          "cosine_with_uniform_current": 0.008529379051938069
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.4198600147164878,
+          "eigenvalue_imag": -1.118832497261245,
+          "cosine_with_current_tangent": 0.05556663721683058,
+          "cosine_with_uniform_current": 0.008529379051938069
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.3779716404064273,
+          "eigenvalue_imag": 0.12753514319281883,
+          "cosine_with_current_tangent": 0.028641681280010527,
+          "cosine_with_uniform_current": 0.019157427291597643
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.3779716404064273,
+          "eigenvalue_imag": -0.12753514319281883,
+          "cosine_with_current_tangent": 0.028641681280010527,
+          "cosine_with_uniform_current": 0.019157427291597643
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.3016965552112812,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.030147580149232293,
+          "cosine_with_uniform_current": 0.03535373846541216
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.0211996861159325,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.18226280770111392,
+          "cosine_with_uniform_current": 0.013013271973679338
+        }
+      ],
+      "25": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.6372399340956958,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.07959828776825292,
+          "cosine_with_uniform_current": 0.027173681630153015
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.14766031533428992,
+          "eigenvalue_imag": -0.4798746838006104,
+          "cosine_with_current_tangent": 0.0955651499362469,
+          "cosine_with_uniform_current": 0.004425810434414851
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.14766031533428992,
+          "eigenvalue_imag": 0.4798746838006104,
+          "cosine_with_current_tangent": 0.0955651499362469,
+          "cosine_with_uniform_current": 0.004425810434414851
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.0009018375140490344,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.9977439051137967,
+          "cosine_with_uniform_current": 0.04052447733959296
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": -0.009156801063850799,
+          "eigenvalue_imag": 0.16327557220831507,
+          "cosine_with_current_tangent": 0.1648018905510854,
+          "cosine_with_uniform_current": 0.026653579516976455
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": -0.009156801063850799,
+          "eigenvalue_imag": -0.16327557220831507,
+          "cosine_with_current_tangent": 0.1648018905510854,
+          "cosine_with_uniform_current": 0.026653579516976455
+        }
+      ],
+      "50": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.4499962507040577,
+          "eigenvalue_imag": -0.13891234394176974,
+          "cosine_with_current_tangent": 0.06609431722659069,
+          "cosine_with_uniform_current": 0.025169357174280736
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.4499962507040577,
+          "eigenvalue_imag": 0.13891234394176974,
+          "cosine_with_current_tangent": 0.06609431722659069,
+          "cosine_with_uniform_current": 0.025169357174280736
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.30636689147296337,
+          "eigenvalue_imag": 0.5904586244693494,
+          "cosine_with_current_tangent": 0.06170087987151752,
+          "cosine_with_uniform_current": 0.024385569910783056
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.30636689147296337,
+          "eigenvalue_imag": -0.5904586244693494,
+          "cosine_with_current_tangent": 0.06170087987151752,
+          "cosine_with_uniform_current": 0.024385569910783056
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.10169735797843843,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.18848816060132853,
+          "cosine_with_uniform_current": 0.012992368138918665
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.04645445231700477,
+          "eigenvalue_imag": 0.6456834259358756,
+          "cosine_with_current_tangent": 0.09720986023007452,
+          "cosine_with_uniform_current": 0.02236813428285434
+        }
+      ],
+      "75": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.7960947228016896,
+          "eigenvalue_imag": 0.018606114658127462,
+          "cosine_with_current_tangent": 0.1042161631970983,
+          "cosine_with_uniform_current": 0.025602186524550995
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.7960947228016896,
+          "eigenvalue_imag": -0.018606114658127462,
+          "cosine_with_current_tangent": 0.1042161631970983,
+          "cosine_with_uniform_current": 0.025602186524550995
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.5610727472635292,
+          "eigenvalue_imag": -2.6407182148424853,
+          "cosine_with_current_tangent": 0.011304953100876858,
+          "cosine_with_uniform_current": 0.0010167025656438416
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.5610727472635292,
+          "eigenvalue_imag": 2.6407182148424853,
+          "cosine_with_current_tangent": 0.011304953100876858,
+          "cosine_with_uniform_current": 0.0010167025656438416
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.4398907218672518,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.011138664731930951,
+          "cosine_with_uniform_current": 0.011172575462684119
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.19827547288556313,
+          "eigenvalue_imag": -0.5006475025595836,
+          "cosine_with_current_tangent": 0.02175706212191371,
+          "cosine_with_uniform_current": 0.011590644401462935
+        }
+      ]
+    },
+    "eps_1e-6": {
+      "0": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.9771155014306245,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.04358221634713386,
+          "cosine_with_uniform_current": 0.00419686173980991
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.251652415858013,
+          "eigenvalue_imag": 0.9186589980422863,
+          "cosine_with_current_tangent": 0.060294525046299556,
+          "cosine_with_uniform_current": 0.027939622712311252
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.251652415858013,
+          "eigenvalue_imag": -0.9186589980422863,
+          "cosine_with_current_tangent": 0.060294525046299556,
+          "cosine_with_uniform_current": 0.027939622712311252
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.22432361796736444,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.09168330799532873,
+          "cosine_with_uniform_current": 0.01824688570820994
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.035406560810723,
+          "eigenvalue_imag": 0.12459020031737243,
+          "cosine_with_current_tangent": 0.04459372729493559,
+          "cosine_with_uniform_current": 0.013852139490545812
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.035406560810723,
+          "eigenvalue_imag": -0.12459020031737243,
+          "cosine_with_current_tangent": 0.04459372729493559,
+          "cosine_with_uniform_current": 0.013852139490545812
+        }
+      ],
+      "25": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.20282875436315217,
+          "eigenvalue_imag": 0.16866985744491822,
+          "cosine_with_current_tangent": 0.09023699228127019,
+          "cosine_with_uniform_current": 0.04166255604858448
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.20282875436315217,
+          "eigenvalue_imag": -0.16866985744491822,
+          "cosine_with_current_tangent": 0.09023699228127019,
+          "cosine_with_uniform_current": 0.04166255604858448
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.1876881806682716,
+          "eigenvalue_imag": -0.5463420690188321,
+          "cosine_with_current_tangent": 0.08057353910990905,
+          "cosine_with_uniform_current": 0.027273390237502897
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.1876881806682716,
+          "eigenvalue_imag": 0.5463420690188321,
+          "cosine_with_current_tangent": 0.08057353910990905,
+          "cosine_with_uniform_current": 0.027273390237502897
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.05975130820302775,
+          "eigenvalue_imag": 0.10512679421326199,
+          "cosine_with_current_tangent": 0.012945196191392465,
+          "cosine_with_uniform_current": 0.06253886174961971
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.05975130820302775,
+          "eigenvalue_imag": -0.10512679421326199,
+          "cosine_with_current_tangent": 0.012945196191392465,
+          "cosine_with_uniform_current": 0.06253886174961971
+        }
+      ],
+      "50": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.7159157259914705,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.043517314987343896,
+          "cosine_with_uniform_current": 0.03967946760145454
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.20439444969755366,
+          "eigenvalue_imag": -0.04220957510127054,
+          "cosine_with_current_tangent": 0.053033005787074,
+          "cosine_with_uniform_current": 0.025234860093214115
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.20439444969755366,
+          "eigenvalue_imag": 0.04220957510127054,
+          "cosine_with_current_tangent": 0.053033005787074,
+          "cosine_with_uniform_current": 0.025234860093214115
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.03274029771940096,
+          "eigenvalue_imag": 0.042692736507049474,
+          "cosine_with_current_tangent": 0.32430249427162194,
+          "cosine_with_uniform_current": 0.01957352785444941
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.03274029771940096,
+          "eigenvalue_imag": -0.042692736507049474,
+          "cosine_with_current_tangent": 0.32430249427162194,
+          "cosine_with_uniform_current": 0.01957352785444941
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.001229941900985613,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.9968056192498829,
+          "cosine_with_uniform_current": 0.011466446165242603
+        }
+      ],
+      "75": [
+        {
+          "rank": 0,
+          "eigenvalue_real": 0.5482722454659249,
+          "eigenvalue_imag": -0.8779523906922874,
+          "cosine_with_current_tangent": 0.04535059672742189,
+          "cosine_with_uniform_current": 0.02418357324894153
+        },
+        {
+          "rank": 1,
+          "eigenvalue_real": 0.5482722454659249,
+          "eigenvalue_imag": 0.8779523906922874,
+          "cosine_with_current_tangent": 0.04535059672742189,
+          "cosine_with_uniform_current": 0.02418357324894153
+        },
+        {
+          "rank": 2,
+          "eigenvalue_real": 0.46631669476652565,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.0018320515437881845,
+          "cosine_with_uniform_current": 0.00525667030597289
+        },
+        {
+          "rank": 3,
+          "eigenvalue_real": 0.24671780271522398,
+          "eigenvalue_imag": 0.0,
+          "cosine_with_current_tangent": 0.04908410819130897,
+          "cosine_with_uniform_current": 0.010162355239604097
+        },
+        {
+          "rank": 4,
+          "eigenvalue_real": 0.12603427234744735,
+          "eigenvalue_imag": -1.2132246843596302,
+          "cosine_with_current_tangent": 0.04616003179147878,
+          "cosine_with_uniform_current": 0.014048783406859642
+        },
+        {
+          "rank": 5,
+          "eigenvalue_real": 0.12603427234744735,
+          "eigenvalue_imag": 1.2132246843596302,
+          "cosine_with_current_tangent": 0.04616003179147878,
+          "cosine_with_uniform_current": 0.014048783406859642
+        }
+      ]
+    }
+  },
+  "interpretation_hint": "A true continuous-attractor tangent mode should have high tangent cosine and near-zero real part; large positive modes with low tangent cosine indicate normal instability."
+}
