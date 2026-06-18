@@ -80,6 +80,180 @@ def gaussian_process_place_fields_1d(
     return inputs, rates
 
 
+def wrapped_gaussian_correlation(delta_theta, sigma, tail_tolerance=1e-14):
+    """
+    Evaluate the wrapped-Gaussian covariance from paper Eq. 9.
+
+    The paper parameterizes the kernel as
+    ``sum_n exp[-sigma**2 * (delta_theta + 2*pi*n)**2 / 2]``.
+    Consequently, ``1 / sigma`` is the angular correlation length: increasing
+    ``sigma`` narrows the covariance and adds high-frequency structure to
+    Gaussian-process samples.
+    """
+    delta_theta = np.asarray(delta_theta, dtype=float)
+    sigma = float(sigma)
+    tail_tolerance = float(tail_tolerance)
+    if sigma <= 0.0:
+        raise ValueError("sigma must be positive")
+    if not 0.0 < tail_tolerance < 1.0:
+        raise ValueError("tail_tolerance must lie between zero and one")
+
+    wrapped_delta = (delta_theta + np.pi) % (2.0 * np.pi) - np.pi
+    tail_distance = np.sqrt(-2.0 * np.log(tail_tolerance)) / sigma
+    image_radius = max(1, int(np.ceil((tail_distance + np.pi) / (2.0 * np.pi))))
+    images = np.arange(-image_radius, image_radius + 1, dtype=float)
+    shifted = wrapped_delta[..., None] + 2.0 * np.pi * images
+    return np.sum(np.exp(-0.5 * sigma * sigma * shifted * shifted), axis=-1)
+
+
+def wrapped_gaussian_fourier_coefficients(frequencies, sigma):
+    """
+    Return Fourier-series coefficients of the wrapped covariance.
+
+    This implements paper Eq. 113 under the convention
+    ``Gamma(delta) = sum_n Gamma_hat[n] * exp(i*n*delta)``.
+    """
+    frequencies = np.asarray(frequencies, dtype=float)
+    sigma = float(sigma)
+    if sigma <= 0.0:
+        raise ValueError("sigma must be positive")
+    normalization = np.sqrt(2.0 * np.pi * sigma * sigma)
+    return np.exp(-0.5 * frequencies * frequencies / (sigma * sigma)) / normalization
+
+
+def sample_circular_gaussian_process(
+    n_samples,
+    n_angles,
+    sigma,
+    seed=None,
+    white_noise=None,
+):
+    """
+    Sample the circular Gaussian process using its Fourier eigenmodes.
+
+    The covariance matrix on an equally spaced angular grid is circulant, so
+    its eigenvectors are discrete Fourier modes. Filtering real white noise by
+    the square root of the covariance eigenvalues produces exact samples of
+    the discretized process without constructing or factorizing a dense
+    covariance matrix. Supplying ``white_noise`` allows several ``sigma``
+    values to be compared using identical underlying random coefficients.
+    """
+    n_samples = int(n_samples)
+    n_angles = int(n_angles)
+    if n_samples <= 0 or n_angles <= 1:
+        raise ValueError("n_samples must be positive and n_angles must exceed one")
+
+    if white_noise is None:
+        rng = np.random.default_rng(seed)
+        white_noise = rng.normal(size=(n_samples, n_angles))
+    else:
+        white_noise = np.asarray(white_noise, dtype=float)
+        if white_noise.shape != (n_samples, n_angles):
+            raise ValueError("white_noise must have shape (n_samples, n_angles)")
+        if not np.isfinite(white_noise).all():
+            raise ValueError("white_noise must be finite")
+
+    theta = np.linspace(0.0, 2.0 * np.pi, n_angles, endpoint=False)
+    covariance_row = wrapped_gaussian_correlation(theta, sigma)
+    eigenvalues = np.fft.rfft(covariance_row).real
+    roundoff_scale = max(float(np.max(np.abs(eigenvalues))), 1.0)
+    if float(np.min(eigenvalues)) < -1e-10 * roundoff_scale:
+        raise ValueError("discretized wrapped-Gaussian covariance is not positive semidefinite")
+    eigenvalues = np.maximum(eigenvalues, 0.0)
+
+    spectrum = np.fft.rfft(white_noise, axis=-1)
+    samples = np.fft.irfft(
+        spectrum * np.sqrt(eigenvalues)[None, :],
+        n=n_angles,
+        axis=-1,
+    )
+    return theta, samples
+
+
+def normalized_softplus_tuning(input_currents, beta, bias, axis=-1):
+    """
+    Apply the normalized softplus used by the fitted generative process.
+
+    This is Eq. 10 and Eq. B3 of the paper. The factor ``1 / beta`` sometimes
+    included in the softplus definition cancels under mean normalization, so
+    the implementation evaluates ``log(1 + exp(beta * (x - b)))`` directly
+    and divides each tuning curve by its angular mean.
+    """
+    input_currents = np.asarray(input_currents, dtype=float)
+    beta = float(beta)
+    bias = float(bias)
+    if beta <= 0.0:
+        raise ValueError("beta must be positive")
+    if not np.isfinite(input_currents).all():
+        raise ValueError("input_currents must be finite")
+
+    unnormalized = np.logaddexp(beta * (input_currents - bias), 0.0)
+    normalization = np.mean(unnormalized, axis=axis, keepdims=True)
+    if np.any(normalization <= 0.0) or not np.isfinite(normalization).all():
+        raise ValueError("normalized softplus received a non-positive normalization")
+    return unnormalized / normalization
+
+
+def tuning_fourier_power_coefficients(tuning_curves, n_modes, axis=-1):
+    """
+    Compute nonzero Fourier coefficients of an uncentered two-point function.
+
+    For a unit-mean tuning curve ``phi_i(theta)``, the Fourier coefficient of
+    the population correlation ``Gamma_phi(delta)`` at mode ``n`` is the
+    population mean of ``|phi_hat_i[n]|**2``. This implementation uses that
+    identity directly, avoiding construction of the full angle-by-angle
+    correlation matrix. Modes 1 through ``n_modes`` are returned; the constant
+    mode is omitted exactly as in Figure 5D-E.
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    axis = int(axis)
+    n_modes = int(n_modes)
+    if tuning_curves.ndim < 2:
+        raise ValueError("tuning_curves must contain samples and angular bins")
+    if not np.isfinite(tuning_curves).all():
+        raise ValueError("tuning_curves must be finite")
+
+    n_angles = tuning_curves.shape[axis]
+    if n_modes <= 0 or n_modes > n_angles // 2:
+        raise ValueError("n_modes must lie between 1 and the angular Nyquist mode")
+
+    spectrum = np.fft.rfft(tuning_curves, axis=axis) / n_angles
+    selected = np.take(spectrum, np.arange(1, n_modes + 1), axis=axis)
+    sample_axes = tuple(index for index in range(selected.ndim) if index != axis % selected.ndim)
+    return np.mean(np.abs(selected) ** 2, axis=sample_axes)
+
+
+def generated_tuning_fourier_coefficients(input_currents, beta, bias, n_modes):
+    """
+    Transform Gaussian-process currents and return their rate correlations.
+
+    Each current sample is passed through the paper's normalized softplus
+    (Eq. 10/B3), then modes 1 through ``n_modes`` of the generated two-point
+    firing-rate correlation are estimated by Monte Carlo averaging.
+    """
+    rates = normalized_softplus_tuning(
+        input_currents,
+        beta=beta,
+        bias=bias,
+        axis=-1,
+    )
+    return tuning_fourier_power_coefficients(rates, n_modes=n_modes, axis=-1)
+
+
+def fourier_correlation_error(target_coefficients, generated_coefficients):
+    """
+    Return the Figure 5D-E squared error across distinct Fourier modes.
+    """
+    target_coefficients = np.asarray(target_coefficients, dtype=float)
+    generated_coefficients = np.asarray(generated_coefficients, dtype=float)
+    if target_coefficients.shape != generated_coefficients.shape:
+        raise ValueError("target and generated Fourier coefficients must have equal shape")
+    if not np.isfinite(target_coefficients).all() or not np.isfinite(generated_coefficients).all():
+        raise ValueError("Fourier coefficients must be finite")
+    residual = target_coefficients - generated_coefficients
+    return float(np.sum(residual * residual))
+
+
 def linear_center_of_mass_positions(matrix, positions):
     """
     Estimate each row's center of mass on a non-periodic spatial axis.
@@ -236,6 +410,237 @@ def population_mean_and_std(aligned_matrix):
     """
     aligned_matrix = np.asarray(aligned_matrix, dtype=float)
     return np.nanmean(aligned_matrix, axis=0), np.nanstd(aligned_matrix, axis=0)
+
+
+def circular_peak_z_scores(tuning_curves):
+    """
+    计算每条环形调谐曲线所有局部极大值的曲线内 z-score。
+
+    局部峰严格定义为某个角度 bin 的值同时大于左右两个环形邻居，
+    因此第一个和最后一个 bin 也会彼此比较。z-score 使用每条曲线自身
+    沿角度的均值和总体标准差，匹配 Figure 6C 的定义；不额外引入
+    prominence、峰间距或后处理平滑。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的有限调谐曲线，
+            或形状为 ``(n_angles,)`` 的单条曲线。
+
+    Returns:
+        ``(peak_mask, peak_z_scores)``。两者形状均为
+        ``(n_curves, n_angles)``；非峰位置的 z-score 为 ``NaN``。
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    if tuning_curves.ndim == 1:
+        tuning_curves = tuning_curves[None, :]
+    if tuning_curves.ndim != 2 or tuning_curves.shape[1] < 3:
+        raise ValueError(
+            "tuning_curves must be shaped (n_curves, n_angles) with at least 3 angles"
+        )
+    if not np.isfinite(tuning_curves).all():
+        raise ValueError("tuning_curves must be finite")
+
+    means = np.mean(tuning_curves, axis=1)
+    standard_deviations = np.std(tuning_curves, axis=1)
+    peak_mask = (
+        (tuning_curves > np.roll(tuning_curves, 1, axis=1))
+        & (tuning_curves > np.roll(tuning_curves, -1, axis=1))
+    )
+    peak_z = np.full(tuning_curves.shape, np.nan, dtype=float)
+    valid_rows = standard_deviations > 0.0
+    z_scores = np.zeros_like(tuning_curves)
+    z_scores[valid_rows] = (
+        tuning_curves[valid_rows] - means[valid_rows, None]
+    ) / standard_deviations[valid_rows, None]
+    peak_z[peak_mask & valid_rows[:, None]] = z_scores[
+        peak_mask & valid_rows[:, None]
+    ]
+    return peak_mask, peak_z
+
+
+def circular_peak_counts(tuning_curves, z_thresholds):
+    """
+    按多个 z-score 阈值统计每条环形调谐曲线的峰数量。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的调谐曲线。
+        z_thresholds: 一个或多个检测阈值；只有 ``z > z_threshold`` 的
+            局部峰才会计数，使用原文规定的严格不等式。
+
+    Returns:
+        形状为 ``(n_thresholds, n_curves)`` 的整数峰数矩阵。
+    """
+    thresholds = np.atleast_1d(np.asarray(z_thresholds, dtype=float))
+    if thresholds.ndim != 1 or not np.isfinite(thresholds).all():
+        raise ValueError("z_thresholds must be a finite one-dimensional array")
+
+    _, peak_z = circular_peak_z_scores(tuning_curves)
+    return np.stack(
+        [np.sum(peak_z > threshold, axis=1) for threshold in thresholds],
+        axis=0,
+    )
+
+
+def ranked_circular_peak_heights(tuning_curves, z_threshold, n_ranks=3):
+    """
+    提取每条环形调谐曲线中 z-score 合格峰的降序峰高。
+
+    Figure 6D 使用 ``z_threshold=1``，并分别汇总每条曲线最高、第二高和
+    第三高的局部峰。若某条曲线没有足够多的合格峰，对应位置保持
+    ``NaN``，使后续密度估计只使用真正存在该 rank 峰的神经元。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的调谐曲线。
+        z_threshold: 峰自身必须严格超过的曲线内 z-score 阈值。
+        n_ranks: 每条曲线最多返回多少个最高峰。
+
+    Returns:
+        形状为 ``(n_curves, n_ranks)`` 的峰高矩阵，按行降序排列。
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    n_ranks = int(n_ranks)
+    if n_ranks <= 0:
+        raise ValueError("n_ranks must be positive")
+    z_threshold = float(z_threshold)
+    if not np.isfinite(z_threshold):
+        raise ValueError("z_threshold must be finite")
+
+    _, peak_z = circular_peak_z_scores(tuning_curves)
+    qualifying = peak_z > z_threshold
+    candidate_heights = np.where(qualifying, tuning_curves, -np.inf)
+    sorted_heights = np.sort(candidate_heights, axis=1)[:, ::-1]
+    ranked = np.full((tuning_curves.shape[0], n_ranks), np.nan, dtype=float)
+    available = min(n_ranks, sorted_heights.shape[1])
+    ranked[:, :available] = sorted_heights[:, :available]
+    ranked[~np.isfinite(ranked)] = np.nan
+    return ranked
+
+
+def reflect_circular_curves_about_com(tuning_curves, angles_rad=None):
+    """
+    将每条环形调谐曲线围绕其 circular center of mass 做镜像反射。
+
+    对离散角度网格，目标值 ``v(2 * theta_COM - theta)`` 通常落在两个
+    bin 之间，因此使用周期线性插值，而不把 COM 舍入到最近 bin。
+    这直接离散化 Figure 6E 的连续反射定义，并正确处理 0/2π 边界。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的有限曲线，
+            或形状为 ``(n_angles,)`` 的单条曲线。
+        angles_rad: 可选均匀环形角度网格；默认是 ``[0, 2π)``。
+
+    Returns:
+        与输入二维形式相同的反射曲线，以及每条曲线的 COM 角度。
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    if tuning_curves.ndim == 1:
+        tuning_curves = tuning_curves[None, :]
+    if tuning_curves.ndim != 2 or tuning_curves.shape[1] < 3:
+        raise ValueError(
+            "tuning_curves must be shaped (n_curves, n_angles) with at least 3 angles"
+        )
+    if not np.isfinite(tuning_curves).all():
+        raise ValueError("tuning_curves must be finite")
+
+    n_angles = tuning_curves.shape[1]
+    if angles_rad is None:
+        angles_rad = np.linspace(0.0, 2.0 * np.pi, n_angles, endpoint=False)
+    angles_rad = np.asarray(angles_rad, dtype=float)
+    if angles_rad.shape != (n_angles,):
+        raise ValueError("angles_rad must contain one angle per curve bin")
+    expected_step = 2.0 * np.pi / n_angles
+    wrapped_steps = np.mod(np.diff(np.append(angles_rad, angles_rad[0] + 2.0 * np.pi)), 2.0 * np.pi)
+    if not np.allclose(wrapped_steps, expected_step, rtol=1e-7, atol=1e-10):
+        raise ValueError("angles_rad must be a uniform circular grid")
+
+    com_angles = circular_center_of_mass_angles(tuning_curves, angles_rad)
+    origin = float(angles_rad[0])
+    source_angles = (
+        2.0 * com_angles[:, None] - angles_rad[None, :]
+    ) % (2.0 * np.pi)
+    source_positions = ((source_angles - origin) % (2.0 * np.pi)) / expected_step
+    lower = np.floor(source_positions).astype(np.int64) % n_angles
+    fraction = source_positions - np.floor(source_positions)
+    upper = (lower + 1) % n_angles
+    row_indices = np.arange(tuning_curves.shape[0])[:, None]
+    reflected = (
+        (1.0 - fraction) * tuning_curves[row_indices, lower]
+        + fraction * tuning_curves[row_indices, upper]
+    )
+    return reflected, com_angles
+
+
+def circular_flip_correlations(tuning_curves, angles_rad=None):
+    """
+    计算调谐曲线与其 COM 镜像之间的逐曲线 Pearson 相关。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的调谐曲线。
+        angles_rad: 可选均匀环形角度网格。
+
+    Returns:
+        形状为 ``(n_curves,)`` 的 ``rho_flip``。任一方零方差时返回 NaN。
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    if tuning_curves.ndim == 1:
+        tuning_curves = tuning_curves[None, :]
+    reflected, _ = reflect_circular_curves_about_com(
+        tuning_curves,
+        angles_rad=angles_rad,
+    )
+    centered = tuning_curves - np.mean(tuning_curves, axis=1, keepdims=True)
+    reflected_centered = reflected - np.mean(
+        reflected,
+        axis=1,
+        keepdims=True,
+    )
+    numerator = np.sum(centered * reflected_centered, axis=1)
+    denominator = np.sqrt(
+        np.sum(centered * centered, axis=1)
+        * np.sum(reflected_centered * reflected_centered, axis=1)
+    )
+    correlations = np.full(tuning_curves.shape[0], np.nan, dtype=float)
+    valid = denominator > 0.0
+    correlations[valid] = numerator[valid] / denominator[valid]
+    return np.clip(correlations, -1.0, 1.0)
+
+
+def head_direction_information_content(tuning_curves):
+    """
+    计算每条调谐曲线的头朝向信息量（bits/spike）。
+
+    对均匀角度先验，离散 Skaggs information content 为
+    ``mean_theta[(v / mean(v)) * log2(v / mean(v))]``。零放电率 bin
+    按数学极限 ``0 * log2(0) = 0`` 处理，不引入 epsilon。该量对整条
+    曲线乘以正数保持不变，因此适用于原始 firing rate 或 unit-mean
+    normalized tuning curves。
+
+    Args:
+        tuning_curves: 形状为 ``(n_curves, n_angles)`` 的非负有限曲线，
+            或形状为 ``(n_angles,)`` 的单条曲线。
+
+    Returns:
+        形状为 ``(n_curves,)`` 的信息量。均值不为正的曲线返回 NaN。
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    if tuning_curves.ndim == 1:
+        tuning_curves = tuning_curves[None, :]
+    if tuning_curves.ndim != 2 or tuning_curves.shape[1] == 0:
+        raise ValueError("tuning_curves must be shaped (n_curves, n_angles)")
+    if not np.isfinite(tuning_curves).all():
+        raise ValueError("tuning_curves must be finite")
+    if np.any(tuning_curves < 0.0):
+        raise ValueError("tuning_curves must be non-negative")
+
+    means = np.mean(tuning_curves, axis=1)
+    information = np.full(tuning_curves.shape[0], np.nan, dtype=float)
+    valid_rows = means > 0.0
+    ratios = np.zeros_like(tuning_curves)
+    ratios[valid_rows] = tuning_curves[valid_rows] / means[valid_rows, None]
+    terms = np.zeros_like(ratios)
+    positive = ratios > 0.0
+    terms[positive] = ratios[positive] * np.log2(ratios[positive])
+    information[valid_rows] = np.mean(terms[valid_rows], axis=1)
+    return information
 
 
 def _as_jsonable_number(value):
@@ -556,6 +961,96 @@ def circular_center_of_mass_angles(matrix, angles_rad):
     return np.angle(z) % (2 * np.pi)
 
 
+def empirical_two_point_correlation(tuning_curves):
+    """
+    Compute the uncentered empirical two-point function from Eq. 4.
+
+    Rows of `tuning_curves` are neurons and columns are angular bins. The
+    returned matrix is `tuning_curves.T @ tuning_curves / n_neurons`; no
+    subtraction of either neuron-wise or angle-wise means is performed.
+    """
+    tuning_curves = np.asarray(tuning_curves, dtype=float)
+    if tuning_curves.ndim != 2 or tuning_curves.shape[0] == 0:
+        raise ValueError("tuning_curves must contain at least one neuron")
+    if not np.isfinite(tuning_curves).all():
+        raise ValueError("tuning_curves must be finite")
+
+    return np.einsum(
+        "ia,ib->ab",
+        tuning_curves,
+        tuning_curves,
+        optimize=False,
+    ) / tuning_curves.shape[0]
+
+
+def relative_circulant_error(matrix):
+    """
+    Measure a square matrix's relative distance from its circulant projection.
+
+    Periodic diagonals are averaged with `circulant_from_diagonal_means`, and
+    the Frobenius norm of the residual is divided by the matrix norm. A value
+    of zero indicates exact circular translation symmetry.
+    """
+    matrix = np.asarray(matrix, dtype=float)
+    circulant, _ = circulant_from_diagonal_means(matrix)
+    denominator = max(float(np.linalg.norm(matrix)), 1e-12)
+    return float(np.linalg.norm(matrix - circulant) / denominator)
+
+
+def kuiper_uniformity_test_asymptotic(angles_rad, max_terms=100):
+    """
+    Apply the one-sample Kuiper test for circular uniformity.
+
+    Angles are wrapped onto `[0, 2*pi)`. The statistic is `V = D+ + D-`.
+    The p-value uses the standard finite-sample-corrected asymptotic Kuiper
+    series, which is appropriate for the session sizes in Figure 4A.
+    """
+    angles_rad = np.asarray(angles_rad, dtype=float)
+    angles_rad = angles_rad[np.isfinite(angles_rad)]
+    if angles_rad.size < 2:
+        raise ValueError("at least two finite angles are required")
+
+    uniform = np.sort(np.mod(angles_rad, 2.0 * np.pi) / (2.0 * np.pi))
+    n = uniform.size
+    ranks = np.arange(1, n + 1, dtype=float)
+    d_plus = float(np.max(ranks / n - uniform))
+    d_minus = float(np.max(uniform - (ranks - 1.0) / n))
+    statistic = d_plus + d_minus
+
+    root_n = np.sqrt(float(n))
+    scaled = (root_n + 0.155 + 0.24 / root_n) * statistic
+    terms = np.arange(1, int(max_terms) + 1, dtype=float)
+    squared = terms * terms
+    p_value = 2.0 * np.sum(
+        (4.0 * squared * scaled * scaled - 1.0)
+        * np.exp(-2.0 * squared * scaled * scaled)
+    )
+    return statistic, float(np.clip(p_value, 0.0, 1.0))
+
+
+def benjamini_hochberg(p_values):
+    """
+    Return Benjamini-Hochberg adjusted p-values in the original order.
+
+    The monotonic correction is applied from largest to smallest rank, and
+    adjusted values are clipped to the probability interval.
+    """
+    p_values = np.asarray(p_values, dtype=float)
+    if p_values.ndim != 1 or not np.isfinite(p_values).all():
+        raise ValueError("p_values must be a finite one-dimensional array")
+    if np.any((p_values < 0.0) | (p_values > 1.0)):
+        raise ValueError("p_values must lie between zero and one")
+
+    n = p_values.size
+    order = np.argsort(p_values)
+    ranked = p_values[order]
+    adjusted_ranked = ranked * n / np.arange(1, n + 1, dtype=float)
+    adjusted_ranked = np.minimum.accumulate(adjusted_ranked[::-1])[::-1]
+    adjusted = np.empty_like(adjusted_ranked)
+    adjusted[order] = np.clip(adjusted_ranked, 0.0, 1.0)
+    return adjusted
+
+
 def optimized_recurrent_weights(phi, regularization=1e-6, activation_beta=2.0, dtype=np.float32):
     """
     Construct minimum-norm recurrent weights from target tuning curves.
@@ -632,6 +1127,207 @@ def optimized_recurrent_factors(
     b = phi / n_neurons
     diagonal = np.sum(a * b, axis=1)
     return a.astype(dtype), b.astype(dtype), diagonal.astype(dtype)
+
+
+def circular_fourier_derivative(values, period=2.0 * np.pi, axis=-1):
+    """
+    Differentiate periodic samples using their trigonometric interpolant.
+
+    The head-direction target manifold is defined on a circle. A Fourier
+    derivative therefore treats the first and last angular bins as neighbors
+    and avoids the artificial boundary introduced by an ordinary gradient.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    if values.shape[axis] < 2:
+        raise ValueError("the periodic axis must contain at least two samples")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("values contain NaN or infinite entries")
+    if float(period) <= 0.0:
+        raise ValueError("period must be positive")
+
+    n_samples = values.shape[axis]
+    spacing = float(period) / n_samples
+    frequencies = 2.0 * np.pi * np.fft.fftfreq(n_samples, d=spacing)
+    reshape = [1] * values.ndim
+    reshape[axis] = n_samples
+    spectrum = np.fft.fft(values, axis=axis)
+    derivative = np.fft.ifft(
+        spectrum * (1j * frequencies.reshape(reshape)),
+        axis=axis,
+    )
+    return derivative.real.astype(np.float64)
+
+
+def optimized_recurrent_velocity_factors(
+    phi,
+    tau_s=0.05,
+    regularization=1e-6,
+    activation_beta=2.0,
+    enforce_zero_diagonal=True,
+    dtype=np.float64,
+):
+    """
+    Build the static and angular-velocity factors from paper Eq. 5.
+
+    The modulated connectivity is represented as
+    `J(omega) = J_static + omega * J_velocity`. The velocity target is
+    `tau * d x_star / d theta`, so the network flow on the target manifold is
+    `d x_star / dt = omega * d x_star / d theta`. Both terms use the same
+    regularized inverse tuning kernel and the same `J_ii = 0` constraint.
+    """
+    phi = np.asarray(phi, dtype=np.float64)
+    if phi.ndim != 2:
+        raise ValueError("phi must be shaped (n_neurons, n_angles)")
+    if float(tau_s) <= 0.0:
+        raise ValueError("tau_s must be positive")
+
+    n_neurons, n_angles = phi.shape
+    x_star = softplus_inverse(phi, beta=activation_beta)
+    velocity_target = float(tau_s) * circular_fourier_derivative(
+        x_star,
+        period=2.0 * np.pi,
+        axis=1,
+    )
+    kernel = np.einsum("ia,ib->ab", phi, phi, optimize=False) / n_neurons
+    kernel += (float(regularization) * n_angles / n_neurons) * np.eye(n_angles)
+    kernel_inv = invert_spd_cholesky(kernel)
+    inv_phi = np.einsum("ab,ib->ai", kernel_inv, phi, optimize=False)
+
+    def factors_for_target(target):
+        """
+        Solve the shared constrained ridge problem for one target current.
+        """
+        factor_a = np.einsum("ia,ab->ib", target, kernel_inv, optimize=False)
+        if enforce_zero_diagonal:
+            numerator = np.sum(target * inv_phi.T, axis=1)
+            leverage = np.sum(phi * inv_phi.T, axis=1) / n_neurons
+            denom = np.maximum(1.0 - leverage, 1e-12)
+            factor_a += (numerator / (n_neurons * denom))[:, None] * inv_phi.T
+        factor_b = phi / n_neurons
+        diagonal = np.sum(factor_a * factor_b, axis=1)
+        return factor_a.astype(dtype), diagonal.astype(dtype)
+
+    static_a, static_diagonal = factors_for_target(x_star)
+    velocity_a, velocity_diagonal = factors_for_target(velocity_target)
+    factor_b = (phi / n_neurons).astype(dtype)
+    return static_a, velocity_a, factor_b, static_diagonal, velocity_diagonal
+
+
+def overlap_order_parameter(target_rate, population_activity):
+    """
+    Compute m(theta, t) = N^-1 sum_i phi_i*(theta) phi_i(t).
+
+    `target_rate` is shaped `(n_neurons, n_angles)`. Activity can be one state
+    `(n_neurons,)` or a time series `(n_times, n_neurons)`. The returned array
+    is always shaped `(n_angles, n_times)`.
+    """
+    target_rate = np.asarray(target_rate, dtype=np.float64)
+    activity = np.asarray(population_activity, dtype=np.float64)
+    if target_rate.ndim != 2:
+        raise ValueError("target_rate must be shaped (n_neurons, n_angles)")
+    if activity.ndim == 1:
+        activity = activity[None, :]
+    if activity.ndim != 2 or activity.shape[1] != target_rate.shape[0]:
+        raise ValueError("population_activity must contain one value per neuron")
+    return np.einsum(
+        "ia,ti->at",
+        target_rate,
+        activity,
+        optimize=False,
+    ) / target_rate.shape[0]
+
+
+def simulate_velocity_modulated_rate_network(
+    static_a,
+    velocity_a,
+    factor_b,
+    static_diagonal,
+    velocity_diagonal,
+    initial_states,
+    angular_velocity,
+    tau_s=0.05,
+    dt_s=0.001,
+    inhibition_c=1.0,
+    activation_beta=2.0,
+    record_every_s=0.1,
+    progress_label=None,
+    progress_interval_wall_s=10.0,
+):
+    """
+    Integrate data-derived dynamics with the Eq. 5 velocity-modulated weights.
+
+    `angular_velocity` is sampled once per Euler step and may be shaped
+    `(n_steps,)` for one trajectory or `(n_steps, n_trials)` for a batch. The
+    function records input-current states at time zero and every requested
+    interval, including the final state.
+    """
+    static_a = np.asarray(static_a, dtype=np.float64)
+    velocity_a = np.asarray(velocity_a, dtype=np.float64)
+    factor_b = np.asarray(factor_b, dtype=np.float64)
+    static_diagonal = np.asarray(static_diagonal, dtype=np.float64)
+    velocity_diagonal = np.asarray(velocity_diagonal, dtype=np.float64)
+    x = np.asarray(initial_states, dtype=np.float64).copy()
+    if x.ndim == 1:
+        x = x[None, :]
+    if x.ndim != 2:
+        raise ValueError("initial_states must be shaped (n_trials, n_neurons)")
+    if static_a.shape != velocity_a.shape or static_a.shape != factor_b.shape:
+        raise ValueError("all low-rank factors must have matching shapes")
+    if x.shape[1] != static_a.shape[0]:
+        raise ValueError("initial_states and factors have different neuron counts")
+    if static_diagonal.shape != (x.shape[1],) or velocity_diagonal.shape != (x.shape[1],):
+        raise ValueError("diagonal factors must contain one value per neuron")
+    if float(tau_s) <= 0.0 or float(dt_s) <= 0.0:
+        raise ValueError("tau_s and dt_s must be positive")
+
+    omega = np.asarray(angular_velocity, dtype=np.float64)
+    if omega.ndim == 1:
+        omega = omega[:, None]
+    if omega.ndim != 2:
+        raise ValueError("angular_velocity must be one- or two-dimensional")
+    if omega.shape[1] == 1 and x.shape[0] > 1:
+        omega = np.repeat(omega, x.shape[0], axis=1)
+    if omega.shape[1] != x.shape[0]:
+        raise ValueError("angular_velocity must have one column per trial")
+
+    n_steps = omega.shape[0]
+    record_every = max(1, int(np.round(float(record_every_s) / float(dt_s))))
+    drive_scale = float(dt_s) / float(tau_s)
+    start_wall = time.perf_counter()
+    next_progress_wall = start_wall + float(progress_interval_wall_s)
+    times = [0.0]
+    trajectory = [x.copy()]
+
+    for step in range(n_steps):
+        rates = softplus(x, beta=activation_beta)
+        latent = rates @ factor_b
+        static_drive = latent @ static_a.T - rates * static_diagonal
+        velocity_drive = latent @ velocity_a.T - rates * velocity_diagonal
+        recurrent = static_drive + omega[step, :, None] * velocity_drive
+        mean_error = np.mean(rates, axis=1, keepdims=True) - 1.0
+        x += drive_scale * (-x + recurrent - float(inhibition_c) * mean_error)
+        if not np.all(np.isfinite(x)):
+            raise FloatingPointError(
+                f"velocity-modulated dynamics became non-finite at step {step + 1}"
+            )
+
+        completed = step + 1
+        if completed % record_every == 0 or completed == n_steps:
+            times.append(completed * float(dt_s))
+            trajectory.append(x.copy())
+
+        if progress_label is not None:
+            now = time.perf_counter()
+            if now >= next_progress_wall or completed == n_steps:
+                print(
+                    f"[{progress_label}] step {completed}/{n_steps}, "
+                    f"t={completed * float(dt_s):.2f}s, "
+                    f"elapsed={now - start_wall:.1f}s",
+                    flush=True,
+                )
+                next_progress_wall = now + float(progress_interval_wall_s)
+
+    return np.asarray(times), np.asarray(trajectory, dtype=np.float64)
 
 
 def materialize_lowrank_weights(a, b, diagonal=None, dtype=np.float32, chunk_size=128):
@@ -793,6 +1489,103 @@ def nearest_manifold_distance(states, manifold, return_l2=False):
     if return_l2:
         return normalized, nearest, nearest_l2
     return normalized, nearest
+
+
+def nearest_circular_manifold_distance(states, manifold, return_l2=False):
+    """
+    Compute distance to the nearest point on a closed piecewise-linear manifold.
+
+    `manifold[k]` and `manifold[(k + 1) % n_angles]` define one segment of the
+    circular target manifold. Minimizing over every segment allows the nearest
+    coordinate to lie between sampled angular bins, so tangential drift along
+    the ring is not counted as off-manifold distance.
+
+    The returned coordinate is a fractional manifold index: `k + alpha`, where
+    `alpha` lies in `[0, 1]` along segment `k`. Distances use the Figure 3F
+    normalization, full-state L2 divided by `sqrt(n_neurons)`.
+    """
+    states = np.asarray(states, dtype=float)
+    manifold = np.asarray(manifold, dtype=float)
+    if states.ndim != 2 or manifold.ndim != 2:
+        raise ValueError("states and manifold must both be 2D")
+    if states.shape[1] != manifold.shape[1]:
+        raise ValueError("states and manifold must have the same feature count")
+    if len(manifold) < 2:
+        raise ValueError("a circular manifold requires at least two sampled points")
+
+    nearest_coordinate = np.full(len(states), np.nan, dtype=float)
+    nearest_l2 = np.full(len(states), np.nan, dtype=float)
+    finite_states = np.all(np.isfinite(states), axis=1)
+    finite_segments = np.all(np.isfinite(manifold), axis=1) & np.all(
+        np.isfinite(np.roll(manifold, -1, axis=0)),
+        axis=1,
+    )
+    segment_indices = np.flatnonzero(finite_segments)
+    if len(segment_indices) == 0:
+        if return_l2:
+            return nearest_l2, nearest_coordinate, nearest_l2
+        return nearest_l2, nearest_coordinate
+
+    starts = manifold[segment_indices]
+    vectors = np.roll(manifold, -1, axis=0)[segment_indices] - starts
+    start_norm = np.sum(starts * starts, axis=1)
+    vector_norm = np.sum(vectors * vectors, axis=1)
+    good_rows = np.flatnonzero(finite_states)
+
+    state_chunk_size = 256
+    segment_chunk_size = 256
+    for state_start in range(0, len(good_rows), state_chunk_size):
+        row_idx = good_rows[state_start : state_start + state_chunk_size]
+        chunk = states[row_idx]
+        state_norm = np.sum(chunk * chunk, axis=1, keepdims=True)
+        best_squared = np.full(len(row_idx), np.inf, dtype=float)
+        best_segment = np.full(len(row_idx), -1, dtype=int)
+        best_alpha = np.zeros(len(row_idx), dtype=float)
+
+        for segment_start in range(0, len(segment_indices), segment_chunk_size):
+            segment_stop = min(segment_start + segment_chunk_size, len(segment_indices))
+            starts_part = starts[segment_start:segment_stop]
+            vectors_part = vectors[segment_start:segment_stop]
+            vector_norm_part = vector_norm[segment_start:segment_stop]
+
+            state_dot_start = np.einsum("ij,kj->ik", chunk, starts_part, optimize=False)
+            state_dot_vector = np.einsum("ij,kj->ik", chunk, vectors_part, optimize=False)
+            start_dot_vector = np.sum(starts_part * vectors_part, axis=1)[None, :]
+            projection_numerator = state_dot_vector - start_dot_vector
+            alpha = np.divide(
+                projection_numerator,
+                vector_norm_part[None, :],
+                out=np.zeros_like(projection_numerator),
+                where=vector_norm_part[None, :] > 0,
+            )
+            alpha = np.clip(alpha, 0.0, 1.0)
+
+            squared = (
+                state_norm
+                + start_norm[None, segment_start:segment_stop]
+                - 2.0 * state_dot_start
+                - 2.0 * alpha * projection_numerator
+                + alpha * alpha * vector_norm_part[None, :]
+            )
+            squared = np.maximum(squared, 0.0)
+            local_segment = np.argmin(squared, axis=1)
+            local_squared = squared[np.arange(len(row_idx)), local_segment]
+            improved = local_squared < best_squared
+            if np.any(improved):
+                best_squared[improved] = local_squared[improved]
+                best_segment[improved] = segment_start + local_segment[improved]
+                best_alpha[improved] = alpha[np.arange(len(row_idx)), local_segment][improved]
+
+        valid_best = best_segment >= 0
+        nearest_l2[row_idx[valid_best]] = np.sqrt(best_squared[valid_best])
+        nearest_coordinate[row_idx[valid_best]] = (
+            segment_indices[best_segment[valid_best]] + best_alpha[valid_best]
+        ) % len(manifold)
+
+    normalized = nearest_l2 / np.sqrt(states.shape[1])
+    if return_l2:
+        return normalized, nearest_coordinate, nearest_l2
+    return normalized, nearest_coordinate
 
 
 def simulate_rate_network(
@@ -994,6 +1787,23 @@ def lowrank_recurrent_drive(a, b, diagonal=None):
         if diagonal is not None:
             recurrent = recurrent - rates * diagonal
         return recurrent
+
+    return drive
+
+
+def dense_recurrent_drive(weights):
+    """
+    Create a batched recurrent-drive function for a dense weight matrix.
+
+    Network states are stored row-wise as `(n_trials, n_neurons)`, whereas
+    `weights[i, j]` maps presynaptic neuron `j` to postsynaptic neuron `i`.
+    The returned function therefore computes `rates @ weights.T`.
+    """
+    weights_t = np.asarray(weights, dtype=np.float32).T.copy()
+
+    def drive(rates):
+        rates = np.asarray(rates, dtype=np.float32)
+        return rates @ weights_t
 
     return drive
 

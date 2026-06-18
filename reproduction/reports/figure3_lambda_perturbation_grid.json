@@ -1,0 +1,3840 @@
+{
+  "status": "diagnostic_only_no_default_parameter_change",
+  "target_source": "D:\\codefiles\\python\\diordered-circuits\\data\\processed\\figure3_abcd_weight_matrices.npz",
+  "distance_definition": "nearest point on closed piecewise-linear target-current manifold",
+  "distance_normalization": "l2_div_sqrt_n_neurons",
+  "activation_beta": 2.0,
+  "uniform_inhibition_c": 1.0,
+  "tau_s": 0.05,
+  "dt_s": 0.001,
+  "regularizations": [
+    1e-06,
+    3e-06,
+    1e-05,
+    3e-05,
+    4e-05,
+    5e-05,
+    7e-05,
+    0.0001,
+    0.0003,
+    0.001
+  ],
+  "noise_stds": [
+    0.05,
+    0.1,
+    0.2,
+    0.5,
+    1.0
+  ],
+  "n_initial_per_case": 8,
+  "seed": 20260618,
+  "cases": [
+    {
+      "regularization": 1e-06,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.857,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1001456205824.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.01496303806752766,
+          "max": 0.018685271247301325,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.015060472055808625,
+          "max": 0.022971916221735243,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.018702594404565724,
+          "max": 0.05466527438907088,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.057205583768885016,
+          "max": 0.5570937759283785,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.3717812354533421,
+          "max": 77.25615756984679,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.857,
+          "median": 13342405.321142696,
+          "max": 36746685844.91581,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.01496303806752766,
+      "minimum_distance_time_s": 0.1,
+      "distance_1s_median": 0.057205583768885016,
+      "final_distance_median": 13342405.321142696,
+      "final_distance_max": 36746685844.91581,
+      "final_angular_drift_median_deg": 45.008620096673496,
+      "final_angular_drift_max_deg": 172.06777719614954,
+      "elapsed_wall_s": 2.1172860999940895
+    },
+    {
+      "regularization": 1e-06,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.753,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1009649057792.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02990492775184659,
+          "max": 0.03753172387278006,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.029964112727299833,
+          "max": 0.046443634947276255,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03715179738765019,
+          "max": 0.11150844435537607,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.10490604595869124,
+          "max": 1.0529335261443473,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.8292617851330542,
+          "max": 154.17407898845173,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.753,
+          "median": 69007884.66180149,
+          "max": 37047308895.09686,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.02990492775184659,
+      "minimum_distance_time_s": 0.1,
+      "distance_1s_median": 0.10490604595869124,
+      "final_distance_median": 69007884.66180149,
+      "final_distance_max": 37047308895.09686,
+      "final_angular_drift_median_deg": 45.01724020903444,
+      "final_angular_drift_max_deg": 172.05555444377333,
+      "elapsed_wall_s": 2.05603679997148
+    },
+    {
+      "regularization": 1e-06,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.7030000000000003,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1008399876096.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.059611067171589385,
+          "max": 0.07603436506612694,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.05914805328578355,
+          "max": 0.0984405535128958,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.0728957011489384,
+          "max": 0.2351985916205209,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.21620009001407575,
+          "max": 1.8603616800083764,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 2.5134553843737057,
+          "max": 420.6598986813527,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.7030000000000003,
+          "median": 119170373.82860702,
+          "max": 37001471661.76875,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.05914805328578355,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.21620009001407575,
+      "final_distance_median": 119170373.82860702,
+      "final_distance_max": 37001471661.76875,
+      "final_angular_drift_median_deg": 45.03448040006686,
+      "final_angular_drift_max_deg": 172.03110891850534,
+      "elapsed_wall_s": 2.0268728000228293
+    },
+    {
+      "regularization": 1e-06,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.511,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1010573901824.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.14753832026902097,
+          "max": 0.19949755707374098,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.14374226427789094,
+          "max": 0.2904950520604686,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.1661041492105269,
+          "max": 0.7278317617513009,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.35697401696197945,
+          "max": 5.408725561201098,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 558.7225218293557,
+          "max": 2234.57397810974,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.511,
+          "median": 9443328810.307991,
+          "max": 37081243467.429,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.14374226427789094,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.35697401696197945,
+      "final_distance_median": 9443328810.307991,
+      "final_distance_max": 37081243467.429,
+      "final_angular_drift_median_deg": 66.68256062125388,
+      "final_angular_drift_max_deg": 171.9577723197812,
+      "elapsed_wall_s": 1.9285636999993585
+    },
+    {
+      "regularization": 1e-06,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.015,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1003690590208.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.29322208488567014,
+          "max": 0.4110361288459067,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.28830902857028784,
+          "max": 0.6339257570836013,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.3363305704436479,
+          "max": 1.274532778611472,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 3.975634264826122,
+          "max": 12.841876309594182,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 6187.70992378524,
+          "max": 508293.0479535908,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.015,
+          "median": 444714114.3629172,
+          "max": 36828673571.15874,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.28830902857028784,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 3.975634264826122,
+      "final_distance_median": 444714114.3629172,
+      "final_distance_max": 36828673571.15874,
+      "final_angular_drift_median_deg": 66.76512120669915,
+      "final_angular_drift_max_deg": 171.83554459931565,
+      "elapsed_wall_s": 1.686501500022132
+    },
+    {
+      "regularization": 3e-06,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 4.3,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1002684350464.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.014466398683275837,
+          "max": 0.017906601269364733,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.013783500796418057,
+          "max": 0.0205960837911543,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.01630208015563124,
+          "max": 0.035327213330604276,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.0395419617957151,
+          "max": 0.25600097929884913,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.1956398802984184,
+          "max": 35.088620717069404,
+          "finite_count": 8
+        },
+        {
+          "time_s": 4.3,
+          "median": 2521184.0899035796,
+          "max": 36637256129.82569,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.013783500796418057,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.0395419617957151,
+      "final_distance_median": 2521184.0899035796,
+      "final_distance_max": 36637256129.82569,
+      "final_angular_drift_median_deg": 23.401385591048395,
+      "final_angular_drift_max_deg": 141.11886371584515,
+      "elapsed_wall_s": 2.3804780999780633
+    },
+    {
+      "regularization": 3e-06,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 4.101,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1003055022080.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.029002646326091876,
+          "max": 0.035805025673843555,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.02745397476943584,
+          "max": 0.04123641220847261,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03148173445920402,
+          "max": 0.07332118865843298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.07292598875231185,
+          "max": 0.5759393025901427,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.29761021557682843,
+          "max": 76.66800522986637,
+          "finite_count": 8
+        },
+        {
+          "time_s": 4.101,
+          "median": 7793998.532238775,
+          "max": 36650800455.79169,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.02745397476943584,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.07292598875231185,
+      "final_distance_median": 7793998.532238775,
+      "final_distance_max": 36650800455.79169,
+      "final_angular_drift_median_deg": 23.402771128129434,
+      "final_angular_drift_max_deg": 141.1177274509777,
+      "elapsed_wall_s": 2.2363708000048064
+    },
+    {
+      "regularization": 3e-06,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.964,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1007977693184.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.057933731381911574,
+          "max": 0.07228773017167756,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.0544339970252559,
+          "max": 0.08604151723220585,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.06158065948584258,
+          "max": 0.15512616592104783,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.1349069429266746,
+          "max": 1.2421332579118922,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.5267964044285911,
+          "max": 170.5027581964634,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.964,
+          "median": 12582923.989027243,
+          "max": 36830670405.0014,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.0544339970252559,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.1349069429266746,
+      "final_distance_median": 12582923.989027243,
+      "final_distance_max": 36830670405.0014,
+      "final_angular_drift_median_deg": 45.03448040006686,
+      "final_angular_drift_max_deg": 172.03110891850534,
+      "elapsed_wall_s": 2.2229818999767303
+    },
+    {
+      "regularization": 3e-06,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.73,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000831320064.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.14379635345224193,
+          "max": 0.18854675553219225,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.13250648843893442,
+          "max": 0.25359401728495184,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.14582598417526357,
+          "max": 0.569001336989372,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.2624305352219394,
+          "max": 3.8888148391568653,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 13.581827228958065,
+          "max": 925.9589774669394,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.73,
+          "median": 393574763.2784755,
+          "max": 36569548504.15348,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.13250648843893442,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.2624305352219394,
+      "final_distance_median": 393574763.2784755,
+      "final_distance_max": 36569548504.15348,
+      "final_angular_drift_median_deg": 66.68256062125388,
+      "final_angular_drift_max_deg": 171.9577723197812,
+      "elapsed_wall_s": 2.0484898000140674
+    },
+    {
+      "regularization": 3e-06,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 3.201,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1006089994240.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2868520066900633,
+          "max": 0.38939901797440357,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.26257618289711915,
+          "max": 0.5518451865890373,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.29234852078562495,
+          "max": 1.244670975273659,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.8891331625085406,
+          "max": 10.43745843215227,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 3114.800243013453,
+          "max": 177926.46421114192,
+          "finite_count": 8
+        },
+        {
+          "time_s": 3.201,
+          "median": 631508448.9559178,
+          "max": 36761695343.44977,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.26257618289711915,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.8891331625085406,
+      "final_distance_median": 631508448.9559178,
+      "final_distance_max": 36761695343.44977,
+      "final_angular_drift_median_deg": 66.76512120669915,
+      "final_angular_drift_max_deg": 171.83554459931565,
+      "elapsed_wall_s": 1.7725513000041246
+    },
+    {
+      "regularization": 1e-05,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 5.922,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1003613519872.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.013227704197732672,
+          "max": 0.01642532093334431,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.011409445893537977,
+          "max": 0.01674675562298304,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.012022131243582791,
+          "max": 0.01689980178312205,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.014285243187562451,
+          "max": 0.04565847563834172,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.06007578525411682,
+          "max": 0.23435384230768608,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.44784151168699043,
+          "max": 23677898.28198107,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.922,
+          "median": 88.31700294039757,
+          "max": 36077769818.163795,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.011409445893537977,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.014285243187562451,
+      "final_distance_median": 88.31700294039757,
+      "final_distance_max": 36077769818.163795,
+      "final_angular_drift_median_deg": 4.036896692824925,
+      "final_angular_drift_max_deg": 82.07881753547963,
+      "elapsed_wall_s": 3.2864578000153415
+    },
+    {
+      "regularization": 1e-05,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 5.981,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1006629355520.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02667382056381514,
+          "max": 0.032399481160876806,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.02252616929473491,
+          "max": 0.03249066205421045,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.02364506392405425,
+          "max": 0.031193503190686173,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.03132294941998077,
+          "max": 0.08374211546603483,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.08329473563496545,
+          "max": 0.32550640980560586,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 3.4614079015543657,
+          "max": 14858273.797568098,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.981,
+          "median": 8235.391946503605,
+          "max": 36186182473.85922,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.02252616929473491,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.03132294941998077,
+      "final_distance_median": 8235.391946503605,
+      "final_distance_max": 36186182473.85922,
+      "final_angular_drift_median_deg": 4.087310320470692,
+      "final_angular_drift_max_deg": 82.0776351145195,
+      "elapsed_wall_s": 3.4483946999534965
+    },
+    {
+      "regularization": 1e-05,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 5.279,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1005310705664.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.05348901408740587,
+          "max": 0.0648295851780626,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.044640181252045746,
+          "max": 0.06547501420942682,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.04584837679909759,
+          "max": 0.06390207527849892,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.058534063198228334,
+          "max": 0.16778207906956288,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.1348047323159176,
+          "max": 3.5903053798741085,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 73.46164346797596,
+          "max": 3933864736.465454,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.279,
+          "median": 694.8939013647329,
+          "max": 36138786221.02815,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.044640181252045746,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.058534063198228334,
+      "final_distance_median": 694.8939013647329,
+      "final_distance_max": 36138786221.02815,
+      "final_angular_drift_median_deg": 4.186518918318195,
+      "final_angular_drift_max_deg": 82.07527032409874,
+      "elapsed_wall_s": 3.0867535000434145
+    },
+    {
+      "regularization": 1e-05,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 4.618,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1003148410880.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.13319119757174097,
+          "max": 0.1663873776286208,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.1107340844946974,
+          "max": 0.1847320378719381,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.11242248061458515,
+          "max": 0.2748851580499924,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.14266420557012985,
+          "max": 0.9366554928122192,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.37777395362477373,
+          "max": 81.41381008838523,
+          "finite_count": 8
+        },
+        {
+          "time_s": 4.618,
+          "median": 3485.679330647982,
+          "max": 36061055516.9319,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.1107340844946974,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.14266420557012985,
+      "final_distance_median": 3485.679330647982,
+      "final_distance_max": 36061055516.9319,
+      "final_angular_drift_median_deg": 23.41385572227382,
+      "final_angular_drift_max_deg": 171.9577723197812,
+      "elapsed_wall_s": 2.696319000038784
+    },
+    {
+      "regularization": 1e-05,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 4.096,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1006522466304.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2691149511247759,
+          "max": 0.34366441107273804,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.22913938020327568,
+          "max": 0.40493603290902097,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.23105972045630618,
+          "max": 0.8994613556202599,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.2714275302101663,
+          "max": 4.060256775501499,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.7874360675586021,
+          "max": 2113.1454210063075,
+          "finite_count": 8
+        },
+        {
+          "time_s": 4.096,
+          "median": 8966172.97342055,
+          "max": 36182340512.770134,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.22913938020327568,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.2714275302101663,
+      "final_distance_median": 8966172.97342055,
+      "final_distance_max": 36182340512.770134,
+      "final_angular_drift_median_deg": 23.427711433402614,
+      "final_angular_drift_max_deg": 171.83554459931565,
+      "elapsed_wall_s": 2.2667263000039384
+    },
+    {
+      "regularization": 3e-05,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 16.591,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1001262481408.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.012017107413567063,
+          "max": 0.014991837878215944,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.010173592855387992,
+          "max": 0.01411377371041669,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.010092470233317337,
+          "max": 0.012898745399412565,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.011168746733713614,
+          "max": 0.02088352954532,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.011666477777100951,
+          "max": 0.04373606595568396,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.013173298927270009,
+          "max": 0.20432407443446463,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.015565871315821492,
+          "max": 1088.4773521365082,
+          "finite_count": 8
+        },
+        {
+          "time_s": 16.591,
+          "median": 0.06441733458327945,
+          "max": 38890027453.73372,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.010092470233317337,
+      "minimum_distance_time_s": 0.5,
+      "distance_1s_median": 0.011168746733713614,
+      "final_distance_median": 0.06441733458327945,
+      "final_distance_max": 38890027453.73372,
+      "final_angular_drift_median_deg": 0.4883011292210603,
+      "final_angular_drift_max_deg": 38.8795456625751,
+      "elapsed_wall_s": 9.357443999964744
+    },
+    {
+      "regularization": 3e-05,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 13.711,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000960884736.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02420727159420669,
+          "max": 0.028801882061861052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.019471397870139913,
+          "max": 0.025608634274569716,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.017352156193870434,
+          "max": 0.022041339043000346,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.017182540850681306,
+          "max": 0.035099768426714036,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.014608121507204107,
+          "max": 0.07288268018375622,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.017331938452604296,
+          "max": 0.6258583695124553,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.013046409500417133,
+          "max": 2792335.6150011644,
+          "finite_count": 8
+        },
+        {
+          "time_s": 13.711,
+          "median": 0.019874527656132148,
+          "max": 38878286420.28673,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.013046409500417133,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.017182540850681306,
+      "final_distance_median": 0.019874527656132148,
+      "final_distance_max": 38878286420.28673,
+      "final_angular_drift_median_deg": 0.38882457203085297,
+      "final_angular_drift_max_deg": 38.879091284963636,
+      "elapsed_wall_s": 8.458904500002973
+    },
+    {
+      "regularization": 3e-05,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 12.386000000000001,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1001701048320.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.04858269834641091,
+          "max": 0.05688368913206996,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.03850461883720785,
+          "max": 0.0495713212285806,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03282345818458642,
+          "max": 0.04223312071009129,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.03183424780064907,
+          "max": 0.06656287443176735,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.023660227374455882,
+          "max": 0.15395491775660267,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.02290169157963299,
+          "max": 72.55015032874624,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.014376800672414732,
+          "max": 84033230.10310525,
+          "finite_count": 8
+        },
+        {
+          "time_s": 12.386000000000001,
+          "median": 0.014148392987323117,
+          "max": 38907061742.89043,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.014148392987323117,
+      "minimum_distance_time_s": 12.386000000000001,
+      "distance_1s_median": 0.03183424780064907,
+      "final_distance_median": 0.014148392987323117,
+      "final_distance_max": 38907061742.89043,
+      "final_angular_drift_median_deg": 0.43239403957050715,
+      "final_angular_drift_max_deg": 38.878182626347424,
+      "elapsed_wall_s": 6.7406609999598
+    },
+    {
+      "regularization": 3e-05,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 10.613,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1002058088448.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.12208917703659992,
+          "max": 0.14332688869045448,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.09735763687056628,
+          "max": 0.1277604174572076,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.08019792909799234,
+          "max": 0.11338925793736451,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.06767766649161089,
+          "max": 0.21496966413487592,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.06182185250750999,
+          "max": 2.310878617133654,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.031974966546657865,
+          "max": 18353.36829603859,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.01666208206316145,
+          "max": 8043231928.543848,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.613,
+          "median": 0.016733746872861603,
+          "max": 38920927946.67208,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.01666208206316145,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.06767766649161089,
+      "final_distance_median": 0.016733746872861603,
+      "final_distance_max": 38920927946.67208,
+      "final_angular_drift_median_deg": 0.9369944374134473,
+      "final_angular_drift_max_deg": 38.87545654990346,
+      "elapsed_wall_s": 5.772100500005763
+    },
+    {
+      "regularization": 3e-05,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 9.916,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1001989537792.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2442564811584927,
+          "max": 0.2936251729640014,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.20004126678316497,
+          "max": 0.27632784013049977,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.16660694564438144,
+          "max": 0.33303583548518617,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.15172295124393004,
+          "max": 1.0676908022782647,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.14908798211796745,
+          "max": 10.150875839300557,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.22464433593023847,
+          "max": 120992.4147299351,
+          "finite_count": 8
+        },
+        {
+          "time_s": 9.916,
+          "median": 0.1750103264944819,
+          "max": 38918266525.04698,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.14908798211796745,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.15172295124393004,
+      "final_distance_median": 0.1750103264944819,
+      "final_distance_max": 38918266525.04698,
+      "final_angular_drift_median_deg": 2.438548895337319,
+      "final_angular_drift_max_deg": 171.83554459931565,
+      "elapsed_wall_s": 5.403313099988736
+    },
+    {
+      "regularization": 4e-05,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 696471060480.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.011836370421194588,
+          "max": 0.014678329629224288,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.009859534213141268,
+          "max": 0.013701121870204785,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.00987644793037902,
+          "max": 0.012658252267964265,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.010302899713475679,
+          "max": 0.017342812248549,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.011043972014056285,
+          "max": 0.03075736208717313,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011254912416410233,
+          "max": 0.05283066929203953,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.015125615495865306,
+          "max": 0.6314309868112354,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.025507340059282114,
+          "max": 95403.23538030937,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.05354887592670255,
+          "max": 12372760078.240461,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.009859534213141268,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.010302899713475679,
+      "final_distance_median": 0.05354887592670255,
+      "final_distance_max": 12372760078.240461,
+      "final_angular_drift_median_deg": 1.0518164306427555,
+      "final_angular_drift_max_deg": 51.13769453077189,
+      "elapsed_wall_s": 16.137563700031023
+    },
+    {
+      "regularization": 4e-05,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 28.705000000000002,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000017559552.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.023564947163799747,
+          "max": 0.027942494723904594,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.018709280019665146,
+          "max": 0.024279907877302373,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.016748134982013815,
+          "max": 0.020395076497643574,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.015343043570251343,
+          "max": 0.028681991704700628,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.013810906036873669,
+          "max": 0.04953461854688408,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011162448476493472,
+          "max": 0.07650975752989565,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.01340639178841813,
+          "max": 5.648904993642715,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.026347813627694124,
+          "max": 4274299.274647347,
+          "finite_count": 8
+        },
+        {
+          "time_s": 28.705000000000002,
+          "median": 0.07960870613856223,
+          "max": 59706309031.29138,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.011162448476493472,
+      "minimum_distance_time_s": 5.0,
+      "distance_1s_median": 0.015343043570251343,
+      "final_distance_median": 0.07960870613856223,
+      "final_distance_max": 59706309031.29138,
+      "final_angular_drift_median_deg": 1.0447021215584074,
+      "final_angular_drift_max_deg": 51.155389133105245,
+      "elapsed_wall_s": 15.404402199957985
+    },
+    {
+      "regularization": 4e-05,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 28.322,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000666300416.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.047293409848043026,
+          "max": 0.054994088798440595,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.037054196051307595,
+          "max": 0.04652515783820627,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03161127170157686,
+          "max": 0.038277901087969086,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.027210981255975895,
+          "max": 0.05353422683180774,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.02217319926935319,
+          "max": 0.09450766435550502,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011729152194708018,
+          "max": 0.15975616731952522,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.010749794318473093,
+          "max": 7.833735888242392,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.020941257492327614,
+          "max": 5691096.488152994,
+          "finite_count": 8
+        },
+        {
+          "time_s": 28.322,
+          "median": 0.04185038901939037,
+          "max": 59493439515.18697,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.010749794318473093,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.027210981255975895,
+      "final_distance_median": 0.04185038901939037,
+      "final_distance_max": 59493439515.18697,
+      "final_angular_drift_median_deg": 0.5763343755455361,
+      "final_angular_drift_max_deg": 38.878182626347424,
+      "elapsed_wall_s": 15.182474300032482
+    },
+    {
+      "regularization": 4e-05,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 20.496,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000981987328.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.119250456520268,
+          "max": 0.13811129645028158,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.09414823143062057,
+          "max": 0.11793878455109653,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.07535989201366142,
+          "max": 0.09959746587847451,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.06419921222142717,
+          "max": 0.15155396263889528,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.057206128226124295,
+          "max": 0.5806073909520096,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.02803331344898711,
+          "max": 82.57631361404745,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011213849383207183,
+          "max": 111338.13077611937,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.01124162122953836,
+          "max": 20614012240.981457,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.496,
+          "median": 0.011711271918755616,
+          "max": 53242908069.437744,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.011213849383207183,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.06419921222142717,
+      "final_distance_median": 0.011711271918755616,
+      "final_distance_max": 53242908069.437744,
+      "final_angular_drift_median_deg": 0.5000347918593558,
+      "final_angular_drift_max_deg": 38.87545654990346,
+      "elapsed_wall_s": 10.987481500022113
+    },
+    {
+      "regularization": 4e-05,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 19.437,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000030535680.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.23824445101901248,
+          "max": 0.2822705335239372,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.19318717742992886,
+          "max": 0.2522205349039588,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.1539519793882162,
+          "max": 0.25112399954354686,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.13684394381365164,
+          "max": 0.596481607587552,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.11271556114948962,
+          "max": 3.5113497571347496,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.07902190958639954,
+          "max": 579.8547140287441,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.043312005201560186,
+          "max": 583822.6981876758,
+          "finite_count": 8
+        },
+        {
+          "time_s": 19.437,
+          "median": 0.0227735441310381,
+          "max": 53198537927.2391,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.0227735441310381,
+      "minimum_distance_time_s": 19.437,
+      "distance_1s_median": 0.13684394381365164,
+      "final_distance_median": 0.0227735441310381,
+      "final_distance_max": 53198537927.2391,
+      "final_angular_drift_median_deg": 1.808009585986283,
+      "final_angular_drift_max_deg": 171.83554459931565,
+      "elapsed_wall_s": 10.578350000025239
+    },
+    {
+      "regularization": 5e-05,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 6554.82568359375,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.011734891967625213,
+          "max": 0.014460900952405943,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.009666783921646875,
+          "max": 0.013453357770553431,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.009728687409711582,
+          "max": 0.012618598469848594,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.009727870718572736,
+          "max": 0.015097444992025739,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.010205958318330289,
+          "max": 0.023073991543656625,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011420172645232669,
+          "max": 0.029438288398293544,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011450613249103077,
+          "max": 0.025522411813045827,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.01095758023791838,
+          "max": 0.08478555574001827,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012937366256830209,
+          "max": 444.7265202830595,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.009666783921646875,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.009727870718572736,
+      "final_distance_median": 0.012937366256830209,
+      "final_distance_max": 444.7265202830595,
+      "final_angular_drift_median_deg": 0.546643216311429,
+      "final_angular_drift_max_deg": 159.11954566257512,
+      "elapsed_wall_s": 16.133841199974995
+    },
+    {
+      "regularization": 5e-05,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 344606.96875,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02309640659622146,
+          "max": 0.027320550508633697,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.018124272761464114,
+          "max": 0.023378003030570423,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.016287987053828147,
+          "max": 0.01954294448929475,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.013933140726020667,
+          "max": 0.024632094375521107,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.012134900686229981,
+          "max": 0.03625393974417411,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.010803716381117115,
+          "max": 0.03950026230995397,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.010994864142868151,
+          "max": 0.027817773857772954,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.01106760519464918,
+          "max": 0.41885237728277114,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012777048768962723,
+          "max": 23209.386498945554,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.010803716381117115,
+      "minimum_distance_time_s": 5.0,
+      "distance_1s_median": 0.013933140726020667,
+      "final_distance_median": 0.012777048768962723,
+      "final_distance_max": 23209.386498945554,
+      "final_angular_drift_median_deg": 0.5446225262394889,
+      "final_angular_drift_max_deg": 159.11909128496362,
+      "elapsed_wall_s": 16.98731629998656
+    },
+    {
+      "regularization": 5e-05,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 1077488.25,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.046348435439356774,
+          "max": 0.05363492104558245,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.035588262763238405,
+          "max": 0.044464279382375446,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03067081593081903,
+          "max": 0.035974840386410724,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.02457931344977777,
+          "max": 0.04555116040469586,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.020670499039026957,
+          "max": 0.06620337668837349,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011720500358818706,
+          "max": 0.06654080611175225,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.010796883283405759,
+          "max": 0.04429656676836276,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.011432841665588313,
+          "max": 1.154002513095429,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012416518811047585,
+          "max": 72571.7699715564,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.010796883283405759,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.02457931344977777,
+      "final_distance_median": 0.012416518811047585,
+      "final_distance_max": 72571.7699715564,
+      "final_angular_drift_median_deg": 0.5684813528694634,
+      "final_angular_drift_max_deg": 159.11818262634742,
+      "elapsed_wall_s": 16.12175260001095
+    },
+    {
+      "regularization": 5e-05,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 26.246000000000002,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000932507648.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.11693107364615432,
+          "max": 0.13444722260253827,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.09059276995697939,
+          "max": 0.11169948586313455,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.07321103803192594,
+          "max": 0.09175617004029359,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.05953410171861817,
+          "max": 0.12100794119726527,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.04872655312150902,
+          "max": 0.22868132096651766,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.022690108077037512,
+          "max": 6.336033170589849,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011113022591922142,
+          "max": 3320.455799057001,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012134066159676573,
+          "max": 104608444.05396126,
+          "finite_count": 8
+        },
+        {
+          "time_s": 26.246000000000002,
+          "median": 0.010881667790316955,
+          "max": 67414062439.08498,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.010881667790316955,
+      "minimum_distance_time_s": 26.246000000000002,
+      "distance_1s_median": 0.05953410171861817,
+      "final_distance_median": 0.010881667790316955,
+      "final_distance_max": 67414062439.08498,
+      "final_angular_drift_median_deg": 0.6373581067408411,
+      "final_angular_drift_max_deg": 159.11545654990346,
+      "elapsed_wall_s": 13.968106599990278
+    },
+    {
+      "regularization": 5e-05,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 24.015,
+      "stopped_early": true,
+      "finite_trajectory": true,
+      "max_abs_state": 1000480899072.0,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.23386531911803823,
+          "max": 0.2743730300716505,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.18589147541472392,
+          "max": 0.23682075933200963,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.14574639498305847,
+          "max": 0.212543974775996,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.12486517161682256,
+          "max": 0.3907370355084199,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.09925551521090442,
+          "max": 2.218136765359748,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.0501611999227695,
+          "max": 166.0504260982398,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.020597719439321815,
+          "max": 33506.77024016194,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.011919575460675791,
+          "max": 1053850964.3524967,
+          "finite_count": 8
+        },
+        {
+          "time_s": 24.015,
+          "median": 0.012865228974548143,
+          "max": 67383648476.30663,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.011919575460675791,
+      "minimum_distance_time_s": 20.0,
+      "distance_1s_median": 0.12486517161682256,
+      "final_distance_median": 0.012865228974548143,
+      "final_distance_max": 67383648476.30663,
+      "final_angular_drift_median_deg": 1.6995719163611727,
+      "final_angular_drift_max_deg": 159.11091309297046,
+      "elapsed_wall_s": 12.835008900030516
+    },
+    {
+      "regularization": 7e-05,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.191365242004395,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.011628796374032017,
+          "max": 0.014178755231798646,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.009688908285223903,
+          "max": 0.013189910675851057,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.009516215098753921,
+          "max": 0.012781585929734217,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.009559531155788307,
+          "max": 0.013293185129326576,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.010047025522923633,
+          "max": 0.015499096804595283,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.012311274160799114,
+          "max": 0.01562402993604992,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.01165615426460731,
+          "max": 0.02564965926773627,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.011621737247950625,
+          "max": 0.049130928496984964,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.011694008419942349,
+          "max": 0.0730600751358268,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.009516215098753921,
+      "minimum_distance_time_s": 0.5,
+      "distance_1s_median": 0.009559531155788307,
+      "final_distance_median": 0.011694008419942349,
+      "final_distance_max": 0.0730600751358268,
+      "final_angular_drift_median_deg": 0.3651720781328418,
+      "final_angular_drift_max_deg": 2.6331136833424535,
+      "elapsed_wall_s": 16.09533589996863
+    },
+    {
+      "regularization": 7e-05,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.193038940429688,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02255432701579299,
+          "max": 0.02646499897465452,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.01736330022325911,
+          "max": 0.022205276424543632,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.015618178662408909,
+          "max": 0.018563374049752886,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.012701218612872218,
+          "max": 0.01976273445008389,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.011256572661365786,
+          "max": 0.0230936602201423,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.01138828318494877,
+          "max": 0.019437548646316267,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011723334929881257,
+          "max": 0.023202984933422342,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.011641886933109791,
+          "max": 0.04572992057410105,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.011692334443475016,
+          "max": 0.07117756126308818,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.011256572661365786,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.012701218612872218,
+      "final_distance_median": 0.011692334443475016,
+      "final_distance_max": 0.07117756126308818,
+      "final_angular_drift_median_deg": 0.3814710856385864,
+      "final_angular_drift_max_deg": 2.3687491417905795,
+      "elapsed_wall_s": 16.10610670002643
+    },
+    {
+      "regularization": 7e-05,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.19567584991455,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.04503845033057373,
+          "max": 0.051782839189691086,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.0339099638713667,
+          "max": 0.04178744727838006,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.02921215193062903,
+          "max": 0.033124397739251715,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.02158842135232053,
+          "max": 0.03609957651027602,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.015527441583650482,
+          "max": 0.04024774694846353,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.011509260573773297,
+          "max": 0.02849258098018209,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011986687748112772,
+          "max": 0.01899391574344788,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.011697604473568466,
+          "max": 0.03932463916023674,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.011708238909158678,
+          "max": 0.06525002992870993,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.011509260573773297,
+      "minimum_distance_time_s": 5.0,
+      "distance_1s_median": 0.02158842135232053,
+      "final_distance_median": 0.011708238909158678,
+      "final_distance_max": 0.06525002992870993,
+      "final_angular_drift_median_deg": 0.41829422582398934,
+      "final_angular_drift_max_deg": 1.8432946516653537,
+      "elapsed_wall_s": 16.07722500001546
+    },
+    {
+      "regularization": 7e-05,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.522808074951172,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.11372085042502358,
+          "max": 0.12958871943695174,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.08584178461258589,
+          "max": 0.10411782945997067,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.06987924926272367,
+          "max": 0.08343893059630723,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.05212471951208364,
+          "max": 0.0907338267424952,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.037808402400576945,
+          "max": 0.10466057986801429,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.014897655220523796,
+          "max": 0.06834072229087171,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.011505849250138814,
+          "max": 0.021722987109100086,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012032459186155108,
+          "max": 0.026106517734211382,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.011865412680182423,
+          "max": 0.04548439021985866,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.011505849250138814,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.05212471951208364,
+      "final_distance_median": 0.011865412680182423,
+      "final_distance_max": 0.04548439021985866,
+      "final_angular_drift_median_deg": 0.6077415920123566,
+      "final_angular_drift_max_deg": 0.9332605305533684,
+      "elapsed_wall_s": 16.094007200037595
+    },
+    {
+      "regularization": 7e-05,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 39490.0546875,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2287670975490048,
+          "max": 0.26407043924069845,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.17631787780560831,
+          "max": 0.2184262897662078,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.13614682239895143,
+          "max": 0.1807296684104039,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.1096633529106154,
+          "max": 0.22741007390156198,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.077049117973174,
+          "max": 0.39104200203786676,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.0217439619199178,
+          "max": 4.049918171480856,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.012009886035751115,
+          "max": 39.57552349091082,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.01200102267958936,
+          "max": 516.182479272023,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.011702049424286896,
+          "max": 3374.9250001549517,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.011702049424286896,
+      "minimum_distance_time_s": 30.0,
+      "distance_1s_median": 0.1096633529106154,
+      "final_distance_median": 0.011702049424286896,
+      "final_distance_max": 3374.9250001549517,
+      "final_angular_drift_median_deg": 0.5395386830056674,
+      "final_angular_drift_max_deg": 111.53549022616525,
+      "elapsed_wall_s": 16.115563199971803
+    },
+    {
+      "regularization": 0.0001,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.22124195098877,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.01154983411107828,
+          "max": 0.01394086694755623,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.009754410473987498,
+          "max": 0.013049618769843457,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.00947034779293617,
+          "max": 0.01324902570591679,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.010074456304069015,
+          "max": 0.01436233423543473,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.01141484716264829,
+          "max": 0.01523463749986413,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.012956857615932111,
+          "max": 0.019059363110413396,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.012730538930409851,
+          "max": 0.02391070873886104,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012696502503992572,
+          "max": 0.033039417819540895,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012700188332624313,
+          "max": 0.04040573493816081,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.00947034779293617,
+      "minimum_distance_time_s": 0.5,
+      "distance_1s_median": 0.010074456304069015,
+      "final_distance_median": 0.012700188332624313,
+      "final_distance_max": 0.04040573493816081,
+      "final_angular_drift_median_deg": 0.35342758466777446,
+      "final_angular_drift_max_deg": 1.6740985295781956,
+      "elapsed_wall_s": 16.100445799995214
+    },
+    {
+      "regularization": 0.0001,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.223320960998535,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.022187809120740226,
+          "max": 0.025664921145063236,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.01682846345034209,
+          "max": 0.021166130519082844,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.014962411794452181,
+          "max": 0.017887467044036192,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.012501125105529061,
+          "max": 0.01704728790590992,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.011700390463551882,
+          "max": 0.016487508177885683,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.01354729823159543,
+          "max": 0.016554880686414558,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.012742681004441212,
+          "max": 0.02470115068015296,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012645718073743987,
+          "max": 0.0317630308661217,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012683720940676827,
+          "max": 0.03973314823113061,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.011700390463551882,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.012501125105529061,
+      "final_distance_median": 0.012683720940676827,
+      "final_distance_max": 0.03973314823113061,
+      "final_angular_drift_median_deg": 0.3719139752154417,
+      "final_angular_drift_max_deg": 1.541806452162868,
+      "elapsed_wall_s": 16.146407099964563
+    },
+    {
+      "regularization": 0.0001,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.226855278015137,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.044077320786446564,
+          "max": 0.05007513811320226,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.032387020404437986,
+          "max": 0.03938711813021068,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.027604781154191328,
+          "max": 0.03148828667556783,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.019803432352127427,
+          "max": 0.02845946341713709,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.014411904312472919,
+          "max": 0.025432310517958495,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.012465374137889312,
+          "max": 0.017714321895933884,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.012974552632943108,
+          "max": 0.026458417790343334,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012623622460566876,
+          "max": 0.029214115807602664,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.012703789513673859,
+          "max": 0.03740699111518708,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.012465374137889312,
+      "minimum_distance_time_s": 5.0,
+      "distance_1s_median": 0.019803432352127427,
+      "final_distance_median": 0.012703789513673859,
+      "final_distance_max": 0.03740699111518708,
+      "final_angular_drift_median_deg": 0.409175300249759,
+      "final_angular_drift_max_deg": 1.271025877438666,
+      "elapsed_wall_s": 16.16083189996425
+    },
+    {
+      "regularization": 0.0001,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.522808074951172,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.11132246776415793,
+          "max": 0.1252700528474519,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.08140926790851197,
+          "max": 0.09779847220617524,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.066045815213593,
+          "max": 0.08074837431181642,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.04578396731767884,
+          "max": 0.06953011160581385,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.03277925394136925,
+          "max": 0.05925714382867112,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.01391605626270141,
+          "max": 0.03203434195191684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.013900001731802367,
+          "max": 0.03228412647045379,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.012964820686088339,
+          "max": 0.023905201526606315,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.013058045004551945,
+          "max": 0.030725957213649197,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.012964820686088339,
+      "minimum_distance_time_s": 20.0,
+      "distance_1s_median": 0.04578396731767884,
+      "final_distance_median": 0.013058045004551945,
+      "final_distance_max": 0.030725957213649197,
+      "final_angular_drift_median_deg": 0.5358798780102938,
+      "final_angular_drift_max_deg": 1.050651784305669,
+      "elapsed_wall_s": 16.22470710001653
+    },
+    {
+      "regularization": 0.0001,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 12.381677627563477,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2252449499391156,
+          "max": 0.25514704480522693,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.16755401380937185,
+          "max": 0.20384244037804022,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.12845621613682495,
+          "max": 0.17431921777286039,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.0960469864171804,
+          "max": 0.14694065689196786,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.06184613593320104,
+          "max": 0.13086975409834162,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.018889165717487638,
+          "max": 0.08025579528714234,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.01373640957665714,
+          "max": 0.046355790399996766,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.013994480328034017,
+          "max": 0.018842989801560836,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.013953459758437972,
+          "max": 0.022471226831967037,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.01373640957665714,
+      "minimum_distance_time_s": 10.0,
+      "distance_1s_median": 0.0960469864171804,
+      "final_distance_median": 0.013953459758437972,
+      "final_distance_max": 0.022471226831967037,
+      "final_angular_drift_median_deg": 0.5012849574258949,
+      "final_angular_drift_max_deg": 2.104611247424077,
+      "elapsed_wall_s": 16.183198800019454
+    },
+    {
+      "regularization": 0.0003,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.361899375915527,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.01134409865146041,
+          "max": 0.013635870081611745,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.010142609496258849,
+          "max": 0.01376873480403028,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.01155139460135592,
+          "max": 0.017023976224467975,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.013415818604358948,
+          "max": 0.01996918312263845,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.017458924839831233,
+          "max": 0.021906918781374563,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.02073265967213072,
+          "max": 0.030691642799187947,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.020977271057624522,
+          "max": 0.03323762300243772,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.020915068518748164,
+          "max": 0.03145790513858434,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.020511722721015348,
+          "max": 0.031045551199299953,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.010142609496258849,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.013415818604358948,
+      "final_distance_median": 0.020511722721015348,
+      "final_distance_max": 0.031045551199299953,
+      "final_angular_drift_median_deg": 0.3569263113932035,
+      "final_angular_drift_max_deg": 1.630958374871234,
+      "elapsed_wall_s": 16.167843500035815
+    },
+    {
+      "regularization": 0.0003,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.363460540771484,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.02108993103601525,
+          "max": 0.023684829148079366,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.01578141890075678,
+          "max": 0.01903291534529352,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.01412470068795476,
+          "max": 0.0186516131150082,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.013374327061613563,
+          "max": 0.02040758908139567,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.016766802243235436,
+          "max": 0.021751156760598495,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.02072627749189914,
+          "max": 0.030071691239565452,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.020977924744478925,
+          "max": 0.03337147256397267,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.020725720628490176,
+          "max": 0.03148462608343969,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.020357565046710865,
+          "max": 0.031067269147266766,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.013374327061613563,
+      "minimum_distance_time_s": 1.0,
+      "distance_1s_median": 0.013374327061613563,
+      "final_distance_median": 0.020357565046710865,
+      "final_distance_max": 0.031067269147266766,
+      "final_angular_drift_median_deg": 0.3899896772282512,
+      "final_angular_drift_max_deg": 1.6263573653902257,
+      "elapsed_wall_s": 16.10908379999455
+    },
+    {
+      "regularization": 0.0003,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.366350173950195,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.04165966712270398,
+          "max": 0.045832911494788776,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.028859031249861365,
+          "max": 0.03381433197902585,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.022054818425229706,
+          "max": 0.027588120423380207,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.017098232144878697,
+          "max": 0.022556152208122075,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.015668942649246155,
+          "max": 0.021827513030554312,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.020765591823147904,
+          "max": 0.02887509782147289,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.020929086957023883,
+          "max": 0.03366183755745618,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.02061545537860176,
+          "max": 0.031541284330345865,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.020226841257456038,
+          "max": 0.031113762346790898,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.015668942649246155,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.017098232144878697,
+      "final_distance_median": 0.020226841257456038,
+      "final_distance_max": 0.031113762346790898,
+      "final_angular_drift_median_deg": 0.37830948044440904,
+      "final_angular_drift_max_deg": 1.6164378430055069,
+      "elapsed_wall_s": 16.158006399986334
+    },
+    {
+      "regularization": 0.0003,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.522808074951172,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.10563663634286315,
+          "max": 0.11524334049365617,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.07021108428799838,
+          "max": 0.08605457494169817,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.05026896475384287,
+          "max": 0.07166086225435118,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.03386469316738916,
+          "max": 0.051718549595695926,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.02230687891851747,
+          "max": 0.02892751081994196,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.02065967546592086,
+          "max": 0.025730375636279192,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.020976781868714392,
+          "max": 0.034408201650216845,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.02097071872814425,
+          "max": 0.03173939027283521,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.020829815733167587,
+          "max": 0.03127998045051956,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.02065967546592086,
+      "minimum_distance_time_s": 5.0,
+      "distance_1s_median": 0.03386469316738916,
+      "final_distance_median": 0.020829815733167587,
+      "final_distance_max": 0.03127998045051956,
+      "final_angular_drift_median_deg": 0.3523164328953428,
+      "final_angular_drift_max_deg": 1.5816841190493176,
+      "elapsed_wall_s": 16.123197400011122
+    },
+    {
+      "regularization": 0.0003,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 12.381677627563477,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.2131718271206332,
+          "max": 0.23561390429050877,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.14633667343320444,
+          "max": 0.18003981313108924,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.09926595921925149,
+          "max": 0.15673267370137586,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.06422820976143516,
+          "max": 0.11834720928868803,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.036047001611140946,
+          "max": 0.07346616735502523,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.021691441935783005,
+          "max": 0.025363031750809856,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.02135136293930921,
+          "max": 0.03596458143288478,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.02099322948118886,
+          "max": 0.032030946468648736,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.0214790303830823,
+          "max": 0.03165797375293228,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.02099322948118886,
+      "minimum_distance_time_s": 20.0,
+      "distance_1s_median": 0.06422820976143516,
+      "final_distance_median": 0.0214790303830823,
+      "final_distance_max": 0.03165797375293228,
+      "final_angular_drift_median_deg": 0.7180499450028686,
+      "final_angular_drift_max_deg": 1.5036642859817664,
+      "elapsed_wall_s": 16.19558810000308
+    },
+    {
+      "regularization": 0.001,
+      "noise_std": 0.05,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.54794979095459,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.05077859553606524,
+          "max": 0.05228878853224721,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.011954607130474793,
+          "max": 0.014902534417768223,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.012339541250087283,
+          "max": 0.018297455336811073,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.01695459349152327,
+          "max": 0.02569713264012051,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.02221843104457623,
+          "max": 0.030436473184062295,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.028845370874584414,
+          "max": 0.034921355834929065,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.032582660914307914,
+          "max": 0.03896610102198571,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.03251497132629845,
+          "max": 0.03948408931401969,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.032808620317135495,
+          "max": 0.039293848783297974,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.03347581887006876,
+          "max": 0.03922579179428997,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.05077859553606524,
+      "initial_distance_max": 0.05228878853224721,
+      "minimum_distance_median": 0.011954607130474793,
+      "minimum_distance_time_s": 0.1,
+      "distance_1s_median": 0.02221843104457623,
+      "final_distance_median": 0.03347581887006876,
+      "final_distance_max": 0.03922579179428997,
+      "final_angular_drift_median_deg": 0.5471462780192464,
+      "final_angular_drift_max_deg": 2.6796364641257404,
+      "elapsed_wall_s": 16.218577900028322
+    },
+    {
+      "regularization": 0.001,
+      "noise_std": 0.1,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.54899787902832,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.10155718755394207,
+          "max": 0.10457757870379052,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.020143473298107645,
+          "max": 0.022428686424437058,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.015214657698408768,
+          "max": 0.02044142524044606,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.01655176637491368,
+          "max": 0.025924344050571778,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.021649305825307302,
+          "max": 0.03010576412207327,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.028708806397867936,
+          "max": 0.03449539879677932,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.032584101280863774,
+          "max": 0.038872950173580764,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.032515093629796835,
+          "max": 0.039470311447061875,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.03281031419341131,
+          "max": 0.03928814010035074,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.033477250282864336,
+          "max": 0.039227194790495364,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.10155718755394207,
+      "initial_distance_max": 0.10457757870379052,
+      "minimum_distance_median": 0.015214657698408768,
+      "minimum_distance_time_s": 0.2,
+      "distance_1s_median": 0.021649305825307302,
+      "final_distance_median": 0.033477250282864336,
+      "final_distance_max": 0.039227194790495364,
+      "final_angular_drift_median_deg": 0.5436297390718533,
+      "final_angular_drift_max_deg": 2.7185164252099225,
+      "elapsed_wall_s": 16.260708299989346
+    },
+    {
+      "regularization": 0.001,
+      "noise_std": 0.2,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.55107593536377,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.20311437556584155,
+          "max": 0.20915515869503298,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.038318045248239195,
+          "max": 0.04166551124528283,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.024530454930870638,
+          "max": 0.028995749848627902,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.020112784768199568,
+          "max": 0.02874868775435895,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.020881940084231596,
+          "max": 0.03116357891574371,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.02854224171432063,
+          "max": 0.03367548598872178,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.03263462631309608,
+          "max": 0.03869135810063398,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.03251151056939701,
+          "max": 0.03943969357055702,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.03281489305678473,
+          "max": 0.03927530217637433,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.03348111834009,
+          "max": 0.039231918932563455,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.20311437556584155,
+      "initial_distance_max": 0.20915515869503298,
+      "minimum_distance_median": 0.020112784768199568,
+      "minimum_distance_time_s": 0.5,
+      "distance_1s_median": 0.020881940084231596,
+      "final_distance_median": 0.03348111834009,
+      "final_distance_max": 0.039231918932563455,
+      "final_angular_drift_median_deg": 0.5660850177072065,
+      "final_angular_drift_max_deg": 2.79204057509218,
+      "elapsed_wall_s": 16.28035420004744
+    },
+    {
+      "regularization": 0.001,
+      "noise_std": 0.5,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 11.557230949401855,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 0.5077859437700569,
+          "max": 0.5228878933144684,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.0958119349936047,
+          "max": 0.1043973982111529,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.059723635017241344,
+          "max": 0.07380853004308914,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.03749295696590166,
+          "max": 0.053167095486615974,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.027606654255119937,
+          "max": 0.04276186632644635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.027593865921724275,
+          "max": 0.03717907816192072,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.032295713982748456,
+          "max": 0.038191271761486914,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.03252018353727474,
+          "max": 0.03932947122106658,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.03305691162785547,
+          "max": 0.03923513028712324,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.03357750045333581,
+          "max": 0.039276026332589094,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 0.5077859437700569,
+      "initial_distance_max": 0.5228878933144684,
+      "minimum_distance_median": 0.027593865921724275,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.027606654255119937,
+      "final_distance_median": 0.03357750045333581,
+      "final_distance_max": 0.039276026332589094,
+      "final_angular_drift_median_deg": 0.6727546142159992,
+      "final_angular_drift_max_deg": 3.0064720971842758,
+      "elapsed_wall_s": 16.2532601999701
+    },
+    {
+      "regularization": 0.001,
+      "noise_std": 1.0,
+      "n_initial": 8,
+      "planned_duration_s": 30.0,
+      "actual_duration_s": 30.0,
+      "stopped_early": false,
+      "finite_trajectory": true,
+      "max_abs_state": 12.381677627563477,
+      "distance_times": [
+        {
+          "time_s": 0.0,
+          "median": 1.015571882967835,
+          "max": 1.0457757874192635,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.1,
+          "median": 0.1951697342015558,
+          "max": 0.21517275463512875,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.2,
+          "median": 0.12427797883304381,
+          "max": 0.15693670807596158,
+          "finite_count": 8
+        },
+        {
+          "time_s": 0.5,
+          "median": 0.07782637372018421,
+          "max": 0.12035386953092521,
+          "finite_count": 8
+        },
+        {
+          "time_s": 1.0,
+          "median": 0.04528596538090392,
+          "max": 0.07772634274286447,
+          "finite_count": 8
+        },
+        {
+          "time_s": 2.0,
+          "median": 0.029683562194259876,
+          "max": 0.04802186722562918,
+          "finite_count": 8
+        },
+        {
+          "time_s": 5.0,
+          "median": 0.032973555861653306,
+          "max": 0.037619149581679695,
+          "finite_count": 8
+        },
+        {
+          "time_s": 10.0,
+          "median": 0.03280439154463098,
+          "max": 0.03916665553700125,
+          "finite_count": 8
+        },
+        {
+          "time_s": 20.0,
+          "median": 0.033434978433121876,
+          "max": 0.039279467279235716,
+          "finite_count": 8
+        },
+        {
+          "time_s": 30.0,
+          "median": 0.03440415986942408,
+          "max": 0.03923816473570965,
+          "finite_count": 8
+        }
+      ],
+      "initial_distance_median": 1.015571882967835,
+      "initial_distance_max": 1.0457757874192635,
+      "minimum_distance_median": 0.029683562194259876,
+      "minimum_distance_time_s": 2.0,
+      "distance_1s_median": 0.04528596538090392,
+      "final_distance_median": 0.03440415986942408,
+      "final_distance_max": 0.03923816473570965,
+      "final_angular_drift_median_deg": 0.8382899933230066,
+      "final_angular_drift_max_deg": 3.229680077234828,
+      "elapsed_wall_s": 16.292050199990626
+    }
+  ],
+  "elapsed_wall_s": 1.298781700024847
+}

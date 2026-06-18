@@ -18,8 +18,11 @@ from utils import (
 )
 
 
-PROCESSED = Path("data/processed")
-FIGURES = Path("reports/figures")
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPRODUCTION_ROOT = SCRIPT_DIR.parent
+WORKSPACE_ROOT = REPRODUCTION_ROOT.parent
+PROCESSED = WORKSPACE_ROOT / "data/processed"
+FIGURES = REPRODUCTION_ROOT / "reports/figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
 
 
@@ -229,9 +232,6 @@ def plot_figure2_cdef():
     plot_aligned_unit_panel(axes[0, 1], subject_rows)
     plot_subject_mean_panel(axes[1, 0], subject_rows)
     plot_subject_std_panel(axes[1, 1], subject_rows)
-
-    for ax in axes.ravel():
-        ax.spines[["top", "right"]].set_visible(False)
 
     out = FIGURES / "figure2_cdef_reproduction.png"
     fig.subplots_adjust(left=0.08, right=0.98, bottom=0.08, top=0.93, wspace=0.28, hspace=0.36)

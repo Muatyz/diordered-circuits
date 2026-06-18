@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "paper_equations": {
+    "covariance": "Gamma_x(delta) = sum_n exp[-sigma^2 (delta + 2 pi n)^2 / 2]",
+    "fourier_coefficients": "Gamma_hat_x[n] = exp[-n^2 / (2 sigma^2)] / sqrt(2 pi sigma^2)",
+    "normalized_softplus": "phi(theta) = log(1 + exp(beta (x(theta) - b))) / angular_mean"
+  },
+  "panels_abc": {
+    "sigma_values": [2.25, 1.6, 1.25, 1.05, 0.8],
+    "n_angles": 512,
+    "n_samples_per_sigma": 4,
+    "seed": 20260618,
+    "sample_display_scale": 0.045,
+    "nonlinearity_beta_values": [0.75, 1.5, 3.0],
+    "nonlinearity_bias_values": [0.0, 1.5, 2.75],
+    "nonlinearity_display_scale": 0.07
+  },
+  "panels_de": {
+    "n_fourier_modes": 30,
+    "n_monte_carlo_samples": 8192,
+    "seed": 20260618,
+    "sigma_values": [
+      1.0,
+      1.04,
+      1.08,
+      1.12,
+      1.16,
+      1.2,
+      1.24,
+      1.28,
+      1.32,
+      1.36,
+      1.4,
+      1.44,
+      1.48,
+      1.52,
+      1.56,
+      1.6,
+      1.64,
+      1.68,
+      1.72,
+      1.76,
+      1.8,
+      1.84,
+      1.88,
+      1.92,
+      1.96,
+      2.0
+    ],
+    "beta_min": 0.5,
+    "beta_max": 10.0,
+    "beta_points": 39,
+    "bias_min": 0.0,
+    "bias_max": 5.0,
+    "bias_points": 41,
+    "optimizer_start": [2.76, 1.73],
+    "paper_fit": {
+      "sigma": 1.42,
+      "beta": 2.76,
+      "bias": 1.73
+    }
+  },
+  "panel_f": {
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260619
+  },
+  "panel_g": {
+    "n_samples": 16,
+    "n_angles": 512,
+    "seed": 20260620,
+    "y_max": 10.0
+  }
+}

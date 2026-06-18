@@ -9,8 +9,11 @@ import numpy as np
 import pandas as pd
 
 
-PROCESSED = Path("data/processed")
-FIGURES = Path("reports/figures")
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPRODUCTION_ROOT = SCRIPT_DIR.parent
+WORKSPACE_ROOT = REPRODUCTION_ROOT.parent
+PROCESSED = WORKSPACE_ROOT / "data/processed"
+FIGURES = REPRODUCTION_ROOT / "reports/figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
 
 
@@ -60,8 +63,6 @@ def plot_single_unit(row, data):
     ax.set_xlabel("Head direction (deg)")
     ax.set_ylabel("Firing rate (Hz)")
     ax.set_title(f"{row['subject_id']} unit {unit_ids[unit_i]}")
-    ax.spines[["top", "right"]].set_visible(False)
-
     out = FIGURES / f"{row['subject_id']}_single_unit_tuning.png"
     fig.savefig(out, dpi=200)
     plt.close(fig)

@@ -5,6 +5,14 @@ description: 参照文献 Symmetries and Continuous Attractors in Disordered Neu
 
 该子项目文件被放置于 /reproduction 目录下. 
 
+# Proposal
+
+1. 复现 Clark disordered ring attractor 的实验平台和动力学 (/reproduction)
+
+2. 系统测试 classical local learning rules 是否能从 sensory-clamped heterogeneous activity(感知输入引起的异质性神经活动) 自组织出 quasi-continuous attractor (/learning)
+
+3. 使用 meta-learning 在 local rule basis 上搜索最小 plasticity motif, 并解释其与经典 Hebbian/Oja/BCM 等 plasticity 的关系(todo)
+
 # Background
 
 - 使用者被假定具有一定的计算神经科学基础, 但是对于代码实现不熟练, 经常需要借助 AI agent 来完成代码的实现
@@ -24,10 +32,7 @@ description: 参照文献 Symmetries and Continuous Attractors in Disordered Neu
 
 - /data/raw/dandi_000939
 
-    是参考文献使用过的数据集, 将其作为复现的 Baseline. 后续有两个方向: 
-    
-    1. 将该文献的 symmetry/generative-process 框架迁移到新的数据集;
-    2. 将 Clark 等未在 000939 中重点分析的 sleep/opto 等部分提出新问题
+    是参考文献使用过的数据集, 将其作为复现的 Baseline. 
 
 # Guide
 

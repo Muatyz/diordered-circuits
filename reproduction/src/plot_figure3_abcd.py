@@ -1,11 +1,15 @@
 import json
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PIL import Image, ImageDraw
 
-from render_utils import diverging_rgb, draw_centered_text, load_font, matrix_heatmap
+from reproduction_config import load_figure3_config
 from utils import (
     circular_center_of_mass_angles,
     circulant_from_diagonal_means,
@@ -67,8 +71,11 @@ PROCESSED = existing_data_dir("processed")
 FIGURES = REPRODUCTION_ROOT / "reports/figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
 WEIGHT_FORMULA_VERSION = "paper_a2_discrete_kernel_b2_per_neuron_cv_v15_phi_safe"
-PAPER_REGULARIZATION = 1e-6
-STABLE_REGULARIZATION = 1e-4
+FIGURE3_CONFIG = load_figure3_config()
+NETWORK_CONFIG = FIGURE3_CONFIG["network"]
+ABCD_CONFIG = FIGURE3_CONFIG["panels_abcd"]
+PAPER_REGULARIZATION = float(NETWORK_CONFIG["paper_regularization_reference"])
+STABLE_REGULARIZATION = float(NETWORK_CONFIG["regularization"])
 
 
 def compact_preprocess_info(info):
@@ -125,11 +132,11 @@ def load_population_tuning(index_path=PROCESSED / "hd_tuning_index.csv"):
 
 def build_figure3_matrices(
     regularization=STABLE_REGULARIZATION,
-    activation_beta=2.0,
-    alpha_floor=1e-4,
-    do_double_normalize=True,
-    circulant_gain=1.275,
-    seed=20260126,
+    activation_beta=float(NETWORK_CONFIG["activation_beta"]),
+    alpha_floor=float(NETWORK_CONFIG["alpha_floor"]),
+    do_double_normalize=bool(NETWORK_CONFIG["do_double_normalize"]),
+    circulant_gain=float(NETWORK_CONFIG["circulant_gain"]),
+    seed=int(ABCD_CONFIG["seed"]),
     out_path=PROCESSED / "figure3_abcd_weight_matrices.npz",
 ):
     """
@@ -216,6 +223,7 @@ def build_figure3_matrices(
         phi_star_preprocess_info=json.dumps(compact_preprocess_info(preprocess_info), indent=2),
         figure3_weight_diagnostics=json.dumps(diagnostics, indent=2),
         circulant_gain=circulant_gain,
+        figure3_config_schema_version=int(FIGURE3_CONFIG["schema_version"]),
         weight_formula_version=WEIGHT_FORMULA_VERSION,
         seed=seed,
     )
@@ -436,10 +444,10 @@ def run_alpha_floor_scan(
 def figure3_matrix_cache_matches(
     matrix_path,
     regularization=STABLE_REGULARIZATION,
-    activation_beta=2.0,
-    alpha_floor=1e-4,
-    do_double_normalize=True,
-    circulant_gain=1.275,
+    activation_beta=float(NETWORK_CONFIG["activation_beta"]),
+    alpha_floor=float(NETWORK_CONFIG["alpha_floor"]),
+    do_double_normalize=bool(NETWORK_CONFIG["do_double_normalize"]),
+    circulant_gain=float(NETWORK_CONFIG["circulant_gain"]),
 ):
     """
     Check whether a cached Figure 3A-D matrix file matches current settings.
@@ -473,20 +481,6 @@ def symmetric_color_limits(matrix, percentile=95.0):
     return -vmax, vmax
 
 
-def draw_colorbar(canvas, draw, rect, vmax, font):
-    """
-    Draw a small vertical diverging colorbar.
-    """
-    x0, y0, x1, y1 = map(int, rect)
-    values = np.linspace(vmax, -vmax, max(2, y1 - y0))[:, None]
-    bar = Image.fromarray(diverging_rgb(values, -vmax, vmax), mode="RGB").resize((x1 - x0, y1 - y0))
-    canvas.paste(bar, (x0, y0))
-    draw.rectangle((x0, y0, x1, y1), outline=(60, 60, 60), width=1)
-    draw.text((x1 + 5, y0 - 8), f"{vmax:.2g}", font=font, fill=(45, 45, 45))
-    draw.text((x1 + 5, (y0 + y1) / 2 - 8), "0", font=font, fill=(45, 45, 45))
-    draw.text((x1 + 5, y1 - 10), f"{-vmax:.2g}", font=font, fill=(45, 45, 45))
-
-
 def plot_figure3_abcd(matrix_path=PROCESSED / "figure3_abcd_weight_matrices.npz"):
     """
     Generate the Figure 3A-D weight-matrix reproduction.
@@ -512,45 +506,31 @@ def plot_figure3_abcd(matrix_path=PROCESSED / "figure3_abcd_weight_matrices.npz"
         "D  circulant plus shuffled residuals",
     ]
 
-    panel_w = 660
-    panel_h = 650
-    heat_size = 520
-    canvas = Image.new("RGB", (panel_w * 2, panel_h * 2), "white")
-    draw = ImageDraw.Draw(canvas)
-    title_font = load_font(22, bold=True)
-    label_font = load_font(16)
-    tick_font = load_font(13)
-
-    for idx, (matrix, title) in enumerate(zip(matrices, titles)):
-        col = idx % 2
-        row = idx // 2
-        x = col * panel_w
-        y = row * panel_h
-        heat, vmax = matrix_heatmap(matrix, size=heat_size, percentile=95.0)
-        draw.text((x + 34, y + 22), title, font=title_font, fill=(20, 20, 20))
-        heat_x = x + 44
-        heat_y = y + 72
-        canvas.paste(heat, (heat_x, heat_y))
-        draw.rectangle((heat_x, heat_y, heat_x + heat_size, heat_y + heat_size), outline=(30, 30, 30), width=1)
-        draw.text((heat_x + 155, heat_y + heat_size + 18), "Presynaptic neuron", font=label_font, fill=(45, 45, 45))
-        draw.text((heat_x - 6, heat_y - 24), "Postsynaptic neuron", font=label_font, fill=(45, 45, 45))
-        draw_colorbar(
-            canvas,
-            draw,
-            (heat_x + heat_size + 22, heat_y, heat_x + heat_size + 42, heat_y + heat_size),
-            vmax,
-            tick_font,
+    fig, axes = plt.subplots(2, 2, figsize=(10, 9), constrained_layout=True)
+    for ax, matrix, title in zip(axes.ravel(), matrices, titles):
+        vmin, vmax = symmetric_color_limits(matrix, percentile=95.0)
+        image = ax.imshow(
+            matrix,
+            cmap="RdBu_r",
+            vmin=vmin,
+            vmax=vmax,
+            origin="upper",
+            aspect="equal",
+            interpolation="nearest",
         )
+        ax.set_title(title)
+        ax.set_xlabel("Presynaptic neuron")
+        ax.set_ylabel("Postsynaptic neuron")
+        fig.colorbar(image, ax=ax, label="Synaptic weight")
 
-    draw_centered_text(
-        draw,
-        (canvas.width / 2, canvas.height - 20),
-        f"N = {matrices[0].shape[0]}, lambda = {float(data['regularization']):g}, beta = {float(data['activation_beta']):g}",
-        label_font,
-        fill=(45, 45, 45),
+    fig.suptitle(
+        f"N = {matrices[0].shape[0]}, "
+        f"lambda = {float(data['regularization']):g}, "
+        f"beta = {float(data['activation_beta']):g}"
     )
     out = FIGURES / "figure3_abcd_reproduction.png"
-    canvas.save(out)
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
     return out, matrix_path
 
 

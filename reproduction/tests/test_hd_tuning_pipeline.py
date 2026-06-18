@@ -16,12 +16,25 @@ from compute_hd_tuning import (  # noqa: E402
     occupancy_seconds,
     spike_counts_by_hd,
 )
+from reproduction_config import load_figure3_config  # noqa: E402
 from utils import (  # noqa: E402
+    benjamini_hochberg,
+    circular_fourier_derivative,
+    circulant_recurrent_drive,
     current_space_jacobian,
+    dense_recurrent_drive,
+    empirical_two_point_correlation,
     fixed_point_residual_from_weights,
+    kuiper_uniformity_test_asymptotic,
     materialize_lowrank_weights,
+    nearest_circular_manifold_distance,
+    nearest_manifold_distance,
+    overlap_order_parameter,
     optimized_recurrent_factors,
+    optimized_recurrent_velocity_factors,
     prepare_phi_star_for_inverse,
+    relative_circulant_error,
+    simulate_velocity_modulated_rate_network,
     softplus,
     softplus_derivative_from_phi,
     softplus_inverse,
@@ -29,6 +42,19 @@ from utils import (  # noqa: E402
 
 
 class HeadDirectionTuningTests(unittest.TestCase):
+    def test_figure3_shared_config_has_consistent_network_parameters(self):
+        """
+        Figure 3A-L must share one explicit network parameter source.
+        """
+        config = load_figure3_config()
+        network = config["network"]
+        self.assertEqual(network["regularization"], 1e-4)
+        self.assertEqual(network["inhibition_c"], 1.0)
+        self.assertEqual(network["tau_s"], 0.05)
+        self.assertEqual(network["dt_s"], 0.001)
+        self.assertEqual(config["panels_jkl"]["velocity_bin_s"], 1.0)
+        self.assertEqual(config["panels_jkl"]["neural_spike_bin_s"], 0.1)
+
     def test_bin_head_direction_wraps_to_valid_bins(self):
         """
         Head-direction binning should wrap negative and 2pi angles onto the ring.
@@ -153,6 +179,169 @@ class HeadDirectionTuningTests(unittest.TestCase):
         x_star = softplus_inverse(rates, beta=2.0)
         from_x = (softplus(x_star + 1e-6, beta=2.0) - softplus(x_star - 1e-6, beta=2.0)) / 2e-6
         np.testing.assert_allclose(softplus_derivative_from_phi(rates, beta=2.0), from_x, rtol=1e-6, atol=1e-8)
+
+    def test_circular_manifold_distance_allows_between_bin_drift(self):
+        """
+        Motion between angular samples must remain on the interpolated manifold.
+        """
+        manifold = np.array(
+            [
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [-1.0, 0.0],
+                [0.0, -1.0],
+            ]
+        )
+        state = np.array([[0.75, 0.25]])
+
+        sampled_distance, _ = nearest_manifold_distance(state, manifold)
+        continuous_distance, coordinate = nearest_circular_manifold_distance(state, manifold)
+
+        self.assertGreater(float(sampled_distance[0]), 0.0)
+        self.assertAlmostEqual(float(continuous_distance[0]), 0.0, places=12)
+        self.assertAlmostEqual(float(coordinate[0]), 0.25, places=12)
+
+    def test_circular_manifold_distance_wraps_last_segment(self):
+        """
+        The final and first angular samples must form a valid closing segment.
+        """
+        manifold = np.array(
+            [
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [-1.0, 0.0],
+                [0.0, -1.0],
+            ]
+        )
+        state = np.array([[0.5, -0.5]])
+        distance, coordinate = nearest_circular_manifold_distance(state, manifold)
+
+        self.assertAlmostEqual(float(distance[0]), 0.0, places=12)
+        self.assertAlmostEqual(float(coordinate[0]), 3.5, places=12)
+
+    def test_dense_and_circulant_drives_match_explicit_matrix(self):
+        """
+        Optimized drive helpers must preserve the Jij orientation convention.
+        """
+        first_column = np.array([1.0, 2.0, 3.0, 4.0])
+        weights = np.column_stack([np.roll(first_column, shift) for shift in range(4)])
+        rates = np.array([[0.5, 1.0, 1.5, 2.0], [2.0, 0.0, 1.0, 0.5]])
+        expected = rates @ weights.T
+
+        np.testing.assert_allclose(dense_recurrent_drive(weights)(rates), expected, atol=1e-6)
+        np.testing.assert_allclose(circulant_recurrent_drive(first_column)(rates), expected, atol=1e-12)
+
+    def test_circular_fourier_derivative_is_periodic_and_exact_for_modes(self):
+        """
+        Fourier differentiation should recover low circular harmonics.
+        """
+        theta = np.linspace(0.0, 2.0 * np.pi, 32, endpoint=False)
+        values = np.vstack([np.sin(theta), np.cos(2.0 * theta)])
+        expected = np.vstack([np.cos(theta), -2.0 * np.sin(2.0 * theta)])
+        np.testing.assert_allclose(
+            circular_fourier_derivative(values, axis=1),
+            expected,
+            atol=1e-11,
+        )
+
+    def test_overlap_order_parameter_matches_definition(self):
+        """
+        The reusable overlap helper must implement Eq. 6 without centering.
+        """
+        target = np.array([[1.0, 2.0], [3.0, 4.0]])
+        activity = np.array([[2.0, 1.0], [0.5, 1.5]])
+        expected = target.T @ activity.T / 2.0
+        np.testing.assert_allclose(overlap_order_parameter(target, activity), expected)
+
+    def test_figure4_two_point_function_is_uncentered(self):
+        """
+        Figure 4C must implement Eq. 4 without subtracting a mean curve.
+        """
+        tuning = np.array([[1.0, 2.0], [3.0, 4.0]])
+        expected = tuning.T @ tuning / 2.0
+        np.testing.assert_allclose(empirical_two_point_correlation(tuning), expected)
+
+    def test_relative_circulant_error_detects_translation_symmetry(self):
+        """
+        A circulant matrix should have zero projection error.
+        """
+        first_column = np.array([1.0, 0.5, -0.2, 0.5])
+        circulant = np.column_stack(
+            [np.roll(first_column, shift) for shift in range(len(first_column))]
+        )
+        self.assertLess(relative_circulant_error(circulant), 1e-12)
+
+        perturbed = circulant.copy()
+        perturbed[0, 1] += 0.7
+        self.assertGreater(relative_circulant_error(perturbed), 0.01)
+
+    def test_kuiper_and_bh_helpers_return_valid_probabilities(self):
+        """
+        Figure 4A uniformity diagnostics should be finite and correctly ordered.
+        """
+        uniform_angles = np.linspace(0.0, 2.0 * np.pi, 40, endpoint=False)
+        statistic, p_value = kuiper_uniformity_test_asymptotic(uniform_angles)
+        self.assertGreater(statistic, 0.0)
+        self.assertGreater(p_value, 0.5)
+
+        adjusted = benjamini_hochberg(np.array([0.01, 0.04, 0.5]))
+        np.testing.assert_allclose(adjusted, np.array([0.03, 0.06, 0.5]))
+
+    def test_velocity_factors_generate_target_tangent_flow(self):
+        """
+        Eq. 5 factors should map target rates to tau times the manifold tangent.
+        """
+        rng = np.random.default_rng(20260618)
+        phi = 0.2 + rng.gamma(shape=2.0, scale=0.5, size=(12, 8))
+        static_a, velocity_a, factor_b, static_d, velocity_d = (
+            optimized_recurrent_velocity_factors(
+                phi,
+                tau_s=0.05,
+                regularization=0.0,
+                enforce_zero_diagonal=True,
+            )
+        )
+        static_weights = materialize_lowrank_weights(
+            static_a,
+            factor_b,
+            diagonal=static_d,
+            dtype=np.float64,
+        )
+        velocity_weights = materialize_lowrank_weights(
+            velocity_a,
+            factor_b,
+            diagonal=velocity_d,
+            dtype=np.float64,
+        )
+        x_star = softplus_inverse(phi, beta=2.0)
+        tangent_target = 0.05 * circular_fourier_derivative(x_star, axis=1)
+        np.testing.assert_allclose(static_d, np.sum(static_a * factor_b, axis=1))
+        np.testing.assert_allclose(velocity_d, np.sum(velocity_a * factor_b, axis=1))
+        np.testing.assert_allclose(static_weights @ phi, x_star, atol=1e-7)
+        np.testing.assert_allclose(velocity_weights @ phi, tangent_target, atol=1e-7)
+
+    def test_zero_velocity_modulated_simulation_preserves_exact_target(self):
+        """
+        An exactly fitted target state should remain fixed when omega is zero.
+        """
+        rng = np.random.default_rng(20260619)
+        phi = 0.2 + rng.gamma(shape=2.0, scale=0.5, size=(10, 6))
+        factors = optimized_recurrent_velocity_factors(
+            phi,
+            regularization=0.0,
+            enforce_zero_diagonal=True,
+        )
+        x0 = softplus_inverse(phi[:, 0], beta=2.0)
+        times, trajectory = simulate_velocity_modulated_rate_network(
+            *factors,
+            initial_states=x0,
+            angular_velocity=np.zeros(10),
+            dt_s=0.001,
+            record_every_s=0.01,
+            inhibition_c=0.0,
+        )
+        self.assertAlmostEqual(float(times[-1]), 0.01)
+        np.testing.assert_allclose(trajectory[-1, 0], x0, atol=1e-7)
 
     def test_poisson_cv_selects_smoothing_width_per_unit(self):
         """

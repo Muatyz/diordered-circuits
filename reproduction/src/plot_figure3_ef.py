@@ -3,9 +3,15 @@ import argparse
 import time
 from pathlib import Path
 
-import numpy as np
-from PIL import Image, ImageDraw
+import matplotlib
 
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import Normalize
+
+from reproduction_config import load_figure3_config
 from plot_figure3_abcd import (
     PROCESSED,
     REPRODUCTION_ROOT,
@@ -14,19 +20,10 @@ from plot_figure3_abcd import (
     build_figure3_matrices,
     figure3_matrix_cache_matches,
 )
-from render_utils import (
-    draw_axes_box,
-    draw_centered_text,
-    draw_polyline,
-    fit_points_to_rect,
-    hsv_colors,
-    load_font,
-    project_3d_to_2d,
-)
 from utils import (
     circular_resample,
     lowrank_recurrent_drive,
-    nearest_manifold_distance,
+    nearest_circular_manifold_distance,
     optimized_recurrent_factors,
     pca_basis,
     project_onto_basis,
@@ -39,6 +36,9 @@ from utils import (
 DEFAULT_MATRIX_PATH = PROCESSED / "figure3_abcd_weight_matrices.npz"
 FIGURES = REPRODUCTION_ROOT / "reports/figures"
 FIGURES.mkdir(parents=True, exist_ok=True)
+FIGURE3_CONFIG = load_figure3_config()
+NETWORK_CONFIG = FIGURE3_CONFIG["network"]
+EF_CONFIG = FIGURE3_CONFIG["panels_ef"]
 
 
 def elapsed_text(seconds):
@@ -51,7 +51,11 @@ def elapsed_text(seconds):
     return f"{int(minutes)}m {remainder:.1f}s"
 
 
-def load_sorted_target_manifold(matrix_path, activation_beta=2.0, alpha_floor=1e-4):
+def load_sorted_target_manifold(
+    matrix_path,
+    activation_beta=float(NETWORK_CONFIG["activation_beta"]),
+    alpha_floor=float(NETWORK_CONFIG["alpha_floor"]),
+):
     """
     Load Figure 3A-D matrices and return the COM-ordered target manifold.
 
@@ -88,7 +92,12 @@ def load_sorted_target_manifold(matrix_path, activation_beta=2.0, alpha_floor=1e
     return target_current, target_rate, angles_rad, regularization, activation_beta, alpha_floor
 
 
-def make_initial_states(target_current, angle_idx, noise_std=0.05, seed=20260531):
+def make_initial_states(
+    target_current,
+    angle_idx,
+    noise_std=float(EF_CONFIG["noise_std"]),
+    seed=int(EF_CONFIG["seed"]),
+):
     """
     Create initial conditions near selected points on the target manifold.
 
@@ -136,19 +145,19 @@ def normalized_flow_residual(recurrent_drive, states, inhibition_c=1.0, activati
 def compute_figure3_ef_dynamics(
     matrix_path=DEFAULT_MATRIX_PATH,
     out_path=PROCESSED / "figure3_ef_dynamics.npz",
-    n_initial=24,
-    duration_s=30.0,
-    tau_s=0.05,
-    dt_s=0.001,
-    record_every_s=0.1,
-    simulation_manifold_bins=500,
-    noise_std=0.05,
-    inhibition_c=1.0,
-    activation_beta=2.0,
-    alpha_floor=1e-4,
+    n_initial=int(EF_CONFIG["n_initial"]),
+    duration_s=float(EF_CONFIG["duration_s"]),
+    tau_s=float(NETWORK_CONFIG["tau_s"]),
+    dt_s=float(NETWORK_CONFIG["dt_s"]),
+    record_every_s=float(EF_CONFIG["record_every_s"]),
+    simulation_manifold_bins=int(EF_CONFIG["simulation_manifold_bins"]),
+    noise_std=float(EF_CONFIG["noise_std"]),
+    inhibition_c=float(NETWORK_CONFIG["inhibition_c"]),
+    activation_beta=float(NETWORK_CONFIG["activation_beta"]),
+    alpha_floor=float(NETWORK_CONFIG["alpha_floor"]),
     current_clip=None,
-    state_stop_abs=1e12,
-    seed=20260531,
+    state_stop_abs=float(EF_CONFIG["state_stop_abs"]),
+    seed=int(EF_CONFIG["seed"]),
     force=False,
 ):
     """
@@ -174,7 +183,7 @@ def compute_figure3_ef_dynamics(
             and str(cached.get("current_clip", "none")) == ("none" if current_clip is None else str(float(current_clip)))
             and str(cached.get("state_stop_abs", "none")) == ("none" if state_stop_abs is None else str(float(state_stop_abs)))
             and str(cached.get("distance_space", "")) == "input_current_full_state"
-            and str(cached.get("distance_target", "")) == "target_manifold"
+            and str(cached.get("distance_target", "")) == "closed_piecewise_linear_target_manifold"
             and str(cached.get("distance_normalization", "")) == "l2_div_sqrt_n_neurons"
             and str(cached.get("weight_formula_version", "")) == WEIGHT_FORMULA_VERSION
             and "stopped_early" in cached.files
@@ -281,13 +290,16 @@ def compute_figure3_ef_dynamics(
 
     print("Computing nearest-manifold distances in one batch...", flush=True)
     distance_start = time.perf_counter()
-    flat_distance, flat_nearest_idx, flat_l2_distance = nearest_manifold_distance(
+    flat_distance, flat_nearest_coordinate, flat_l2_distance = nearest_circular_manifold_distance(
         trajectory.reshape(-1, trajectory.shape[-1]),
         target_current_dense,
         return_l2=True,
     )
     distance[:] = flat_distance.reshape(trajectory.shape[:2])
-    nearest_idx[:] = flat_nearest_idx.reshape(trajectory.shape[:2])
+    nearest_coordinate = flat_nearest_coordinate.reshape(trajectory.shape[:2])
+    nearest_idx.fill(-1)
+    finite_nearest = np.isfinite(nearest_coordinate)
+    nearest_idx[finite_nearest] = np.floor(nearest_coordinate[finite_nearest]).astype(np.int64)
     l2_distance[:] = flat_l2_distance.reshape(trajectory.shape[:2])
 
     print(f"Computed manifold distances in {elapsed_text(time.perf_counter() - distance_start)}.", flush=True)
@@ -310,6 +322,7 @@ def compute_figure3_ef_dynamics(
         optimized_distance_to_manifold=distance,
         optimized_l2_distance_to_manifold=l2_distance,
         optimized_nearest_angle_idx=nearest_idx,
+        optimized_nearest_manifold_coordinate=nearest_coordinate.astype(np.float32),
         target_flow_residual=target_flow_residual.astype(np.float32),
         dynamics_finite=finite_trajectory,
         max_abs_trajectory=max_abs_trajectory,
@@ -317,7 +330,7 @@ def compute_figure3_ef_dynamics(
         stop_reason=stop_reason,
         actual_duration_s=actual_duration_s,
         distance_space="input_current_full_state",
-        distance_target="target_manifold",
+        distance_target="closed_piecewise_linear_target_manifold",
         distance_normalization="l2_div_sqrt_n_neurons",
         weight_formula_version=WEIGHT_FORMULA_VERSION,
         initial_condition_source="target_manifold_points_plus_iid_gaussian_current_noise",
@@ -334,13 +347,14 @@ def compute_figure3_ef_dynamics(
         state_stop_abs="none" if state_stop_abs is None else float(state_stop_abs),
         planned_duration_s=duration_s,
         regularization=regularization,
+        figure3_config_schema_version=int(FIGURE3_CONFIG["schema_version"]),
         seed=seed,
     )
     print(f"Saved dynamics: {out_path} ({elapsed_text(time.perf_counter() - start)})", flush=True)
     return out_path
 
 
-def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
+def _plot_figure3_ef_legacy(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
     """
     Plot Figure 3E-F from the cached or newly computed dynamics.
     """
@@ -359,6 +373,7 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
     title_font = load_font(24, bold=True)
     label_font = load_font(16)
     small_font = load_font(13)
+    tick_font = load_font(10)
 
     left_rect = (70, 88, 665, 575)
     right_rect = (790, 95, 1345, 555)
@@ -401,8 +416,18 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
         dtype=float,
     )
     all_pc = np.vstack([manifold_pc, initial_pc, data["optimized_pc"].reshape(-1, 3), box_corners, axis_points])
-    projected_all, projected_depth = project_3d_to_2d(all_pc)
-    projected_fit, _ = project_3d_to_2d(np.vstack([fit_source, box_corners]))
+    view_elevation_deg = -20.0
+    view_azimuth_deg = 145.0
+    projected_all, projected_depth = project_3d_to_2d(
+        all_pc,
+        elev_deg=view_elevation_deg,
+        azim_deg=view_azimuth_deg,
+    )
+    projected_fit, _ = project_3d_to_2d(
+        np.vstack([fit_source, box_corners]),
+        elev_deg=view_elevation_deg,
+        azim_deg=view_azimuth_deg,
+    )
     mapped_all = fit_points_to_rect(
         projected_all,
         (0, 0, left_size[0] - 1, left_size[1] - 1),
@@ -451,7 +476,7 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
 
     def draw_3d_frame(panel_draw):
         """
-        Draw a wireframe PC1-PC2-PC3 box behind the target manifold.
+        Draw a gridded PC1-PC2-PC3 box behind the target manifold.
         """
         edges = [
             (0, 1),
@@ -468,6 +493,30 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
             (3, 7),
         ]
         median_depth = float(np.median(box_depth))
+
+        def interpolate(a, b, fraction):
+            """
+            Interpolate between two already projected box corners.
+            """
+            return box_2d[a] + float(fraction) * (box_2d[b] - box_2d[a])
+
+        grid_fractions = np.linspace(0.0, 1.0, 5)
+        for fraction in grid_fractions[1:-1]:
+            grid_segments = [
+                # z=min plane
+                (interpolate(0, 1, fraction), interpolate(2, 3, fraction)),
+                (interpolate(0, 2, fraction), interpolate(1, 3, fraction)),
+                # y=min plane
+                (interpolate(0, 1, fraction), interpolate(4, 5, fraction)),
+                (interpolate(0, 4, fraction), interpolate(1, 5, fraction)),
+                # x=min plane
+                (interpolate(0, 2, fraction), interpolate(4, 6, fraction)),
+                (interpolate(0, 4, fraction), interpolate(2, 6, fraction)),
+            ]
+            for start, stop in grid_segments:
+                if np.all(np.isfinite([start, stop])):
+                    panel_draw.line((*start, *stop), fill=(226, 226, 226), width=1)
+
         for a, b in edges:
             if np.all(np.isfinite(box_2d[[a, b]])):
                 color = (218, 218, 218) if 0.5 * (box_depth[a] + box_depth[b]) < median_depth else (176, 176, 176)
@@ -484,26 +533,56 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
                     label_xy = endpoint + 12.0 * direction / norm
                     panel_draw.text((label_xy[0] - 10, label_xy[1] - 8), label, font=small_font, fill=(45, 45, 45))
 
+        axis_specs = [
+            (0, 1, pc_min[0], pc_max[0]),
+            (0, 2, pc_min[1], pc_max[1]),
+            (0, 4, pc_min[2], pc_max[2]),
+        ]
+        for start_idx, stop_idx, value_min, value_max in axis_specs:
+            axis_start = box_2d[start_idx]
+            axis_stop = box_2d[stop_idx]
+            direction = axis_stop - axis_start
+            norm = max(float(np.sqrt(np.sum(direction * direction))), 1e-12)
+            perpendicular = np.array([-direction[1], direction[0]]) / norm
+            for fraction in grid_fractions[1:-1]:
+                point = axis_start + fraction * direction
+                tick_start = point - 3.0 * perpendicular
+                tick_stop = point + 3.0 * perpendicular
+                panel_draw.line((*tick_start, *tick_stop), fill=(85, 85, 85), width=1)
+                value = value_min + fraction * (value_max - value_min)
+                text_xy = point + 9.0 * perpendicular
+                tick_text = f"{value:.0f}"
+                box = panel_draw.textbbox((0, 0), tick_text, font=tick_font)
+                panel_draw.text(
+                    (
+                        text_xy[0] - 0.5 * (box[2] - box[0]),
+                        text_xy[1] - 0.5 * (box[3] - box[1]),
+                    ),
+                    tick_text,
+                    font=tick_font,
+                    fill=(85, 85, 85),
+                )
+
     draw.text((left_rect[0], 30), "E  optimized dynamics in target-current PC1-PC2-PC3 space", font=title_font, fill=(20, 20, 20))
     left_draw.rectangle((0, 0, left_size[0] - 1, left_size[1] - 1), outline=(60, 60, 60), width=1)
     draw_3d_frame(left_draw)
-    draw_polyline(left_draw, manifold_2d, fill=(35, 35, 35), width=2)
+    draw_polyline(left_draw, manifold_2d, fill=(145, 145, 145), width=1)
     for point in manifold_2d[:: max(1, len(manifold_2d) // 100)]:
         if np.all(np.isfinite(point)):
             x, y = point
-            left_draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=(70, 70, 70))
+            left_draw.ellipse((x - 1, y - 1, x + 1, y + 1), fill=(105, 105, 105))
 
     for trial in range(len(angle_idx)):
-        draw_polyline(left_draw, keep_near_panel(trajectory_2d[:, trial], left_size), fill=colors[trial], width=2)
+        draw_polyline(left_draw, keep_near_panel(trajectory_2d[:, trial], left_size), fill=colors[trial], width=4)
         point = initial_2d[trial]
         if np.all(np.isfinite(point)):
             x, y = point
-            left_draw.line((x - 5, y - 5, x + 5, y + 5), fill=(0, 0, 0), width=2)
-            left_draw.line((x - 5, y + 5, x + 5, y - 5), fill=(0, 0, 0), width=2)
+            left_draw.line((x - 3, y - 3, x + 3, y + 3), fill=(0, 0, 0), width=1)
+            left_draw.line((x - 3, y + 3, x + 3, y - 3), fill=(0, 0, 0), width=1)
         point = trajectory_2d[-1, trial]
         if np.all(np.isfinite(point)):
             x, y = point
-            left_draw.ellipse((x - 4, y - 4, x + 4, y + 4), fill=(0, 0, 0))
+            left_draw.ellipse((x - 3, y - 3, x + 3, y + 3), fill=(0, 0, 0))
 
     canvas.paste(left_panel, (left_rect[0], left_rect[1]))
     draw.text((left_rect[0], left_rect[3] + 14), "x: initial states    dot: final finite states", font=small_font, fill=(50, 50, 50))
@@ -533,12 +612,15 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
     distance = data["optimized_distance_to_manifold"].astype(float)
     finite_dist = distance[np.isfinite(distance) & (distance > 0)]
     if finite_dist.size:
-        y_min = min(1e-3, float(np.nanpercentile(finite_dist, 1)))
-        y_max = max(1e-1, float(np.nanpercentile(finite_dist, 99)))
+        initial_finite = distance[0][np.isfinite(distance[0]) & (distance[0] > 0)]
+        y_min = float(np.nanpercentile(finite_dist, 1)) / 1.5
+        y_max = float(np.nanpercentile(finite_dist, 99)) * 1.35
+        if initial_finite.size:
+            y_max = max(y_max, float(np.max(initial_finite)) * 1.15)
     else:
-        y_min, y_max = 1e-4, 1.0
-    y_min = max(y_min / 1.5, 1e-8)
-    y_max = max(y_max * 1.5, y_min * 10)
+        y_min, y_max = 1e-3, 1.0
+    y_min = max(y_min, 1e-8)
+    y_max = max(y_max, y_min * 10)
     log_min = np.log10(y_min)
     log_max = np.log10(y_max)
     x0, y0, x1, y1 = (0, 0, right_size[0] - 1, right_size[1] - 1)
@@ -552,8 +634,6 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
     exponent_max = int(np.ceil(log_max))
     exponent_step = max(1, int(np.ceil((exponent_max - exponent_min + 1) / 9)))
     exponents = list(range(exponent_min, exponent_max + 1, exponent_step))
-    if -3 not in exponents and exponent_min <= -3 <= exponent_max:
-        exponents.append(-3)
     for exponent in sorted(set(exponents)):
         y_value = 10.0 ** exponent
         if y_min <= y_value <= y_max:
@@ -565,12 +645,6 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
         right_draw.line((xx, y1, xx, y1 + 5), fill=(50, 50, 50), width=1)
         tick_text = f"{t:.2f}".rstrip("0").rstrip(".")
         draw_centered_text(draw, (right_rect[0] + xx, right_rect[1] + y1 + 18), tick_text, small_font, fill=(70, 70, 70))
-
-    if y_min <= 1e-3 <= y_max:
-        p0 = map_xy(times[0], 1e-3)
-        p1 = map_xy(times[-1], 1e-3)
-        right_draw.line((*p0, *p1), fill=(60, 60, 60), width=1)
-        right_draw.text((x1 - 52, p0[1] - 18), "1e-3", font=small_font, fill=(60, 60, 60))
 
     for trial, color in enumerate(colors):
         y = distance[:, trial]
@@ -602,6 +676,84 @@ def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
 
     out = FIGURES / "figure3_ef_reproduction.png"
     canvas.save(out)
+    return out, dynamics_path
+
+
+def plot_figure3_ef(dynamics_path=PROCESSED / "figure3_ef_dynamics.npz"):
+    """
+    Plot Figure 3E-F with standard Matplotlib axes and default typography.
+    """
+    if not dynamics_path.exists():
+        dynamics_path = compute_figure3_ef_dynamics(out_path=dynamics_path)
+
+    data = np.load(dynamics_path)
+    angles = data["bin_centers_rad"].astype(float)
+    angle_idx = data["angle_idx"]
+    phases = np.mod(angles[angle_idx], 2.0 * np.pi)
+    colors = plt.cm.hsv(phases / (2.0 * np.pi))
+    initial_pc = project_onto_basis(data["initial_states"], data["pca_mean"], data["pca_basis"])
+    manifold_pc = data["manifold_pc"].astype(float)
+    trajectory_pc = data["optimized_pc"].astype(float)
+
+    fig = plt.figure(figsize=(11, 4.8), constrained_layout=True)
+    ax_e = fig.add_subplot(1, 2, 1, projection="3d")
+    ax_f = fig.add_subplot(1, 2, 2)
+
+    ax_e.plot(
+        manifold_pc[:, 0],
+        manifold_pc[:, 1],
+        manifold_pc[:, 2],
+        color="0.55",
+        linewidth=1.0,
+    )
+    for trial, color in enumerate(colors):
+        trajectory = trajectory_pc[:, trial]
+        finite = np.all(np.isfinite(trajectory), axis=1)
+        if np.any(finite):
+            ax_e.plot(
+                trajectory[finite, 0],
+                trajectory[finite, 1],
+                trajectory[finite, 2],
+                color=color,
+                linewidth=1.0,
+            )
+        if np.all(np.isfinite(initial_pc[trial])):
+            ax_e.scatter(*initial_pc[trial], marker="x", color="black", s=22)
+        final_finite = np.flatnonzero(finite)
+        if len(final_finite):
+            ax_e.scatter(*trajectory[final_finite[-1]], marker="o", color="black", s=14)
+    ax_e.set_xlabel("PC1")
+    ax_e.set_ylabel("PC2")
+    ax_e.set_zlabel("PC3")
+    ax_e.set_title("E  Optimized dynamics in target-current PC space")
+
+    times = data["times"].astype(float)
+    distance = data["optimized_distance_to_manifold"].astype(float)
+    for trial, color in enumerate(colors):
+        valid = np.isfinite(distance[:, trial]) & (distance[:, trial] > 0.0)
+        ax_f.semilogy(times[valid], distance[valid, trial], color=color, linewidth=1.0)
+    ax_f.set_xlabel("Time (s)")
+    ax_f.set_ylabel(r"Distance / $\sqrt{N}$")
+    ax_f.set_title("F  Distance to nearest target manifold point")
+
+    scalar_mappable = plt.cm.ScalarMappable(
+        norm=Normalize(0.0, 2.0 * np.pi),
+        cmap="hsv",
+    )
+    colorbar = fig.colorbar(
+        scalar_mappable,
+        ax=[ax_e, ax_f],
+        orientation="horizontal",
+        fraction=0.05,
+        pad=0.08,
+    )
+    colorbar.set_ticks([0.0, np.pi, 2.0 * np.pi])
+    colorbar.set_ticklabels(["0", "π", "2π"])
+    colorbar.set_label("Angular location of initial condition")
+
+    out = FIGURES / "figure3_ef_reproduction.png"
+    fig.savefig(out, dpi=200)
+    plt.close(fig)
     return out, dynamics_path
 
 
