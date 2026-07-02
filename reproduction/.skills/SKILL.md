@@ -20,11 +20,11 @@ description: 参照文献 Symmetries and Continuous Attractors in Disordered Neu
 
 # Reference
 
-- /references/Symmetries and Continuous Attractors in Disordered Neural Circuits.pdf
+- /references/clark2025_symmetries/paper.pdf
 
     是参考的主要文献, 需要学习其提出的 Gaussian generative process 框架并且理解其插图是如何绘制得到的
 
-- /references/Universal statistics of hippocampal place fields across species and dimensionalities.pdf
+- /references/mainali2025_placefields/paper.pdf
 
     是一篇相关的文献, 通过类似的 Gaussian generative process 提出了 place cell 的异质性神经场是如何产生的
 

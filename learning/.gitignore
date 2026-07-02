@@ -1,0 +1,9 @@
+runs/*
+!runs/.gitkeep
+!runs/vafidis_toy/
+!runs/vafidis_toy/.gitkeep
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+

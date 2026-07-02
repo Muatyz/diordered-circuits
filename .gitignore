@@ -10,6 +10,12 @@
 /.skills
 /.todo
 
+# 文献全文提取缓存（可由 scripts/lit_extract.py 从 PDF 重建）
+/references/*/paper.txt
+/references/*/extraction.json
+
 # 系统文件
 /.vscode
 /.dist
+__pycache__/
+*.pyc

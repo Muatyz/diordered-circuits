@@ -11,6 +11,7 @@ python -m ipykernel install --user --name random --display-name "Python (random)
 依赖用途：
 
 - 数值计算与数据处理：`numpy`、`pandas`、`scipy`
+- 论文文本缓存：`pymupdf`（缺失时 `scripts/lit_extract.py` 会回退到系统 `pdftotext`）
 - NWB/HDF5 数据读取：`pynwb`、`h5py`
 - Parquet 文件读写：`pyarrow`
 - 绘图与进度显示：`matplotlib`、`tqdm`

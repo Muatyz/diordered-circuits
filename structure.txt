@@ -1,0 +1,42 @@
+diordered-circuits/
+├── .skill/
+│   └── SKILL.md                  # 项目级 literature-code 工作流
+├── data/
+│   ├── raw/                      # 原始数据，只读
+│   ├── interim/                  # 从原始数据抽取的中间层
+│   └── processed/                # 可直接用于分析/绘图/训练的数据
+├── references/
+│   ├── README.md                 # 文献摄取与检索说明
+│   ├── index.md                  # 人类/Codex 任务导航
+│   ├── index.yml                 # 机器可读索引
+│   └── <paper_id>/
+│       ├── paper.pdf
+│       ├── paper.txt             # 可重建、Git 忽略的全文搜索缓存
+│       ├── extraction.json       # 缓存 SHA-256 与提取元数据
+│       ├── card.md               # 论文精华
+│       ├── equation_map.md       # 公式到代码接口
+│       ├── figure_map.md         # 图到脚本/数据/输出
+│       ├── code_map.md           # 概念到代码
+│       └── open_questions.md
+├── scripts/
+│   └── lit_extract.py            # PDF 全文缓存提取器
+├── reproduction/
+│   ├── .skills/SKILL.md
+│   ├── .todo/TODO.md
+│   ├── config/
+│   ├── src/
+│   │   └── diagnostics/
+│   ├── tests/
+│   └── reports/
+├── learning/
+│   ├── .SKILL.md
+│   └── .todo/TODO.md
+└── reports/
+    ├── figures/
+    └── meetings/                 # 后续导师会议记录
+
+当前 paper_id:
+- clark2025_symmetries
+- mainali2025_placefields
+- bell2024_plasticity_rules
+- oreilly2026_neocortex_learning

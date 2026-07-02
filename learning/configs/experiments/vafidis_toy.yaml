@@ -1,0 +1,73 @@
+experiment_name: vafidis_toy
+
+model:
+  n_theta: 60
+  n_hr: 60
+  tau_s: 0.065
+  tau_hd_to_hr: 0.04
+  tau_l_hd: 0.01
+  p_distal_to_proximal: 0.6666666667
+  b_hd: 0.6
+  b_hr: 1.5
+  w_hd_to_hr_strength: 2.0
+  activation:
+    name: sigmoid
+    gain: 2.5
+    bias: 1.0
+  init:
+    w_hd_to_hd_mode: zeros
+    w_hr_to_hd_mode: zeros
+    w_hd_to_hd_scale: 0.03
+    w_hr_to_hd_scale: 0.02
+    local_sigma: 0.45
+    random_jitter: 0.001
+
+simulation:
+  seed: 11
+  dt: 0.01
+  recurrent_warmup_duration: 80.0
+  freeze_hd_to_hd_after_warmup: false
+  train_duration: 6000.0
+  bump_test_duration: 4.0
+  darkness_test_duration: 6.0
+  cue_duration: 0.35
+  save_interval_steps: 40
+  theta0: 0.0
+  progress: true
+
+learning_rule:
+  eta_hd_to_hd: 3.0
+  eta_hr_to_hd: 20.0
+  hd_to_hd_learning_velocity_threshold: 4.0
+  tau_delta: 0.10
+  w_hd_to_hd_min: -1.5
+  w_hd_to_hd_max: 2.0
+  w_hr_to_hd_min: -1.5
+  w_hr_to_hd_max: 1.5
+  hd_to_hd_symmetry_mode: symmetric
+  hd_to_hd_balance_mode: zero_sum
+  hr_to_hd_balance_mode: antisymmetric_wings
+
+visual:
+  amplitude: 4.0
+  kappa: 11.11111111111111
+  baseline: 5.0
+  normalize_peak: true
+  light_excitation: 4.0
+  proximal_scale: 0.3333333333
+
+velocity:
+  process: ou
+  mean: 0.0
+  std: 3.9269908169872414
+  tau: 0.50
+  clip: 12.566370614359172
+  k_vel: 0.15915494309189535
+
+tests:
+  darkness_angular_velocity: 8.726646259971648
+  gain_velocities: [-8.726646259971648, -4.363323129985824, 4.363323129985824, 8.726646259971648]
+
+paths:
+  runs_root: runs/vafidis_toy
+  reports_root: reports

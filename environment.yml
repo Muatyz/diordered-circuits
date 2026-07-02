@@ -12,6 +12,7 @@ dependencies:
   - numpy
   - pandas
   - pyarrow
+  - pymupdf
   - pynwb
   - scipy
   - tqdm

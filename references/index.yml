@@ -1,0 +1,30 @@
+schema_version: 1
+papers:
+  clark2025_symmetries:
+    title: Symmetries and Continuous Attractors in Disordered Neural Circuits
+    year: 2025
+    kind: core
+    status: reproduced
+    path: references/clark2025_symmetries
+    tasks: [reproduction, diagnostics, learning]
+  mainali2025_placefields:
+    title: Universal statistics of hippocampal place fields across species and dimensionalities
+    year: 2025
+    kind: extension
+    status: partially_implemented
+    path: references/mainali2025_placefields
+    tasks: [literature, reproduction]
+  bell2024_plasticity_rules:
+    title: Discovering plasticity rules that organize and maintain neural circuits
+    year: 2024
+    kind: learning_rule
+    status: digested
+    path: references/bell2024_plasticity_rules
+    tasks: [learning, meta-learning]
+  oreilly2026_neocortex_learning:
+    title: This is how the Neocortex Learns
+    year: 2026
+    kind: learning_theory
+    status: digested
+    path: references/oreilly2026_neocortex_learning
+    tasks: [learning, literature]
