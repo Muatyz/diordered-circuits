@@ -106,13 +106,13 @@ def balance_w_hr_to_hd_common_mode(
     """
     if balance_mode == "none":
         return w_hr_to_hd
-    if balance_mode != "antisymmetric_wings":
-        raise ValueError(f"Unknown hr_to_hd balance mode: {balance_mode}")
     if w_hr_to_hd.shape[1] % 2 != 0:
         raise ValueError("w_hr_to_hd must contain concatenated left/right HR wings")
     n_hr_per_wing = w_hr_to_hd.shape[1] // 2
     w_lhr_to_hd = w_hr_to_hd[:, :n_hr_per_wing]
     w_rhr_to_hd = w_hr_to_hd[:, n_hr_per_wing:]
+    if balance_mode != "antisymmetric_wings":
+        raise ValueError(f"Unknown hr_to_hd balance mode: {balance_mode}")
     differential_lhr_to_hd = 0.5 * (w_lhr_to_hd - w_rhr_to_hd)
     differential_rhr_to_hd = -differential_lhr_to_hd
     return np.concatenate([differential_lhr_to_hd, differential_rhr_to_hd], axis=1)

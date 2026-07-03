@@ -51,6 +51,16 @@ def test_peak_decode_returns_center_of_highest_plateau() -> None:
     assert np.isclose(decoded_angle, -np.pi / 4.0)
 
 
+def test_peak_decode_groups_near_saturated_peak_top() -> None:
+    theta_hd_pref = make_vafidis_paired_theta_hd_pref(12)
+    r_hd = np.zeros(12)
+    r_hd[4:6] = 0.997
+    r_hd[6:8] = 1.0
+    r_hd[8:10] = 0.996
+    decoded_angle = peak_decode(theta_hd_pref, r_hd)
+    assert np.isclose(decoded_angle, 0.0)
+
+
 def test_collapse_activity_by_theta_averages_partner_cells() -> None:
     theta_hd_pref = make_vafidis_paired_theta_hd_pref(8)
     r_hd = np.arange(8, dtype=float)

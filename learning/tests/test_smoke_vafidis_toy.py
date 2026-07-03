@@ -19,6 +19,8 @@ def make_short_config() -> ExperimentConfig:
     config.simulation.bump_test_duration = 0.03
     config.simulation.darkness_test_duration = 0.03
     config.simulation.cue_duration = 0.02
+    config.simulation.pi_cue_duration = 0.04
+    config.simulation.recue_duration = 0.02
     config.simulation.save_interval_steps = 1
     config.simulation.progress = False
     config.tests.gain_velocities = [-0.5, 0.5]
@@ -54,6 +56,7 @@ def test_short_experiment_writes_required_outputs(tmp_path) -> None:
     assert (run_dir / "params.json").exists()
     assert (run_dir / "trained_weights.npz").exists()
     assert (run_dir / "training_history.npz").exists()
+    assert (run_dir / "ou_darkness_history.npz").exists()
     assert (run_dir / "test_metrics.json").exists()
     training_history = load_npz(run_dir / "training_history.npz")
     test_metrics = load_json(run_dir / "test_metrics.json")
@@ -62,7 +65,24 @@ def test_short_experiment_writes_required_outputs(tmp_path) -> None:
     assert "theta_hd_decoded_peak" in training_history
     assert "contrast_r_lhr" in training_history
     assert "contrast_r_rhr" in training_history
+    darkness_history = load_npz(run_dir / "darkness_history.npz")
+    ou_darkness_history = load_npz(run_dir / "ou_darkness_history.npz")
+    bump_history = load_npz(run_dir / "bump_history.npz")
+    assert "phase_id" in darkness_history
+    assert "visual_teacher" in darkness_history
+    assert "phase_id" in ou_darkness_history
+    assert np.count_nonzero(bump_history["phase_id"] == 0.0) == 3
+    assert np.count_nonzero(darkness_history["phase_id"] == 0.0) == 5
+    assert np.count_nonzero(darkness_history["phase_id"] == 1.0) == 3
+    assert np.count_nonzero(darkness_history["phase_id"] == 2.0) == 2
     assert "darkness_final_pva_strength" in test_metrics
     assert "darkness_final_bump_contrast" in test_metrics
+    assert "darkness_mean_saturated_hd_bins" in test_metrics
+    assert "bump_final_saturated_hd_bins" in test_metrics
+    assert "darkness_mean_near_peak_hd_bins" in test_metrics
+    assert "bump_final_near_peak_hd_bins" in test_metrics
+    assert "darkness_recue_final_abs_pi_error" in test_metrics
+    assert "ou_darkness_rms_pi_error" in test_metrics
+    assert "ou_darkness_recue_final_abs_pi_error" in test_metrics
     assert "bump_intrinsic_drift_velocity_deg_s" in test_metrics
     assert "darkness_peak_decoded_velocity" in test_metrics

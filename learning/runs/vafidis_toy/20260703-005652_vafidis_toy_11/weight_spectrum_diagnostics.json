@@ -1,0 +1,22 @@
+{
+  "hd_to_hd": {
+    "constant_mode_eigenvalue_real": -11.821287525297388,
+    "first_nonconstant_pair_gap_norm": 0.008063074781855247,
+    "imag_abs_max": 0.262357292296595,
+    "max_nonconstant_pair_gap_norm": 0.022188806109351752,
+    "median_nonconstant_pair_gap_norm": 0.0007282611876212226,
+    "nonconstant_pair_count": 29.0,
+    "nonconstant_pair_fraction_le_2pct": 0.9310344827586207,
+    "spectral_radius": 14.05951721565061
+  },
+  "hr_to_hd": {
+    "constant_mode_eigenvalue_real": -8.016233228353338,
+    "first_nonconstant_pair_gap_norm": 0.0,
+    "imag_abs_max": 4.045065487880554,
+    "max_nonconstant_pair_gap_norm": 0.3224050178565186,
+    "median_nonconstant_pair_gap_norm": 2.1845654418196806e-05,
+    "nonconstant_pair_count": 29.0,
+    "nonconstant_pair_fraction_le_2pct": 0.9655172413793104,
+    "spectral_radius": 32.95673613512413
+  }
+}

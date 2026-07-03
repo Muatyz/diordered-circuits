@@ -154,6 +154,8 @@ def plot_activity_tuning_slices(
         plt.close(fig)
         return
 
+    source_start_time = float(time[0])
+    source_end_time = float(time[-1])
     slice_indices = _select_slice_indices(time, slice_times)
     color_values = plt.cm.viridis(np.linspace(0.0, 1.0, max(slice_indices.size, 1)))
     for color_index, slice_index in enumerate(slice_indices):
@@ -179,7 +181,7 @@ def plot_activity_tuning_slices(
         else:
             label = f"t={time[slice_index]:.2f} s, PVA=nan"
         axis.plot(theta_plot, r_hd_plot, color=color_values[color_index], linewidth=1.4, label=label)
-    axis.set_title(title)
+    axis.set_title(f"{title}\nsource heatmap t={source_start_time:.2f}-{source_end_time:.2f} s")
     axis.set_xlabel("HD preferred direction theta_HD [rad]")
     axis.set_ylabel("normalized HD firing rate [a.u.]")
     axis.set_xlim(-np.pi, np.pi)

@@ -361,3 +361,126 @@ at the 500 deg/s test velocity.  This points to HR-to-HD protocol/calibration
 rather than zero-velocity drift: the zero-velocity tangent drive is dominated by
 the learned recurrent component, but the fitted dark drift speed is essentially
 zero during bump maintenance.
+
+## 2026-07-02 Darkness Semantics and Remaining PI Error
+
+The dark HD heatmap that appears to rotate many times in 6 s is not a
+zero-input drift test.  It is the darkness PI condition: visual input is off,
+but a 500 deg/s vestibular input is injected into HR cells, following
+`utilities.py::vel_gain` and `fly_rec.py::simulate(day=False)`.  The zero-input
+drift test is the bump-maintenance protocol after the cue, where
+`angular_velocity = 0`.
+
+The current zero-input drift is small:
+
+```text
+bump_intrinsic_drift_velocity = 3.84e-6 rad/s
+bump_intrinsic_drift_velocity_deg_s = 2.20e-4 deg/s
+```
+
+The visually large PI error in the 500 deg/s darkness test comes from
+under-gain:
+
+```text
+commanded velocity = 8.7266 rad/s
+decoded velocity   = 7.7228 rad/s
+bias               = -1.0038 rad/s
+```
+
+Over 6 s this accumulated speed error wraps around the circular error axis,
+which is why the radian PI-error plot shows a sawtooth.  This is a real
+remaining model limitation of the current toy HR-to-HD pathway, not a plotting
+artifact.
+
+A small parameter audit found a tradeoff:
+
+- `kappa = 11.1111`, matching the release-code visual width, gives a cleaner
+  bump and low zero-input drift but under-gains high-speed PI.
+- Broader visual teachers such as `kappa = 5` improve high-speed gain but bring
+  back a wider saturated plateau, so they are not a clean paper-based fix.
+- Raising `b_hd` toward the release-code inhibition scale (`inh = -1`) did not
+  remove the high-speed under-gain.
+
+Therefore the next principled fix should be a protocol-level one, such as
+Vafidis-style gain adaptation, longer training, or smaller `dt`, rather than a
+post-hoc decoder or supervised rescaling.
+
+## 2026-07-02 Remaining Flat-Top and Eigenvalue Diagnostics
+
+The remaining "flat-top mountain" shape in some tuning slices is now a real
+activity-saturation issue rather than the earlier plotting artifact.  The
+paired-HD duplicate-angle artifact has been fixed by collapsing cells with the
+same preferred direction before plotting.  However, the latest run still
+saturates several central bump cells after learning:
+
+```text
+mean fraction r_HD >= 0.99 over training history = 0.127
+widest training slice with r_HD >= 0.99          = 16 cells
+late representative slices with r_HD >= 0.99     = 6 cells
+```
+
+This remaining plateau is caused by the normalized toy sigmoid and learned
+local recurrent drive pushing the bump center close to the activation ceiling.
+It is therefore not Clark-style heterogeneous tuning.  It also should not be
+fixed by reshaping plotted curves or by post-hoc decoder calibration; the
+paper-compatible route is to retune the reduced toy dynamics or training
+protocol so that the bump remains localized without saturating the central
+cells.
+
+The new spectral diagnostic gives a more encouraging view of the recurrent
+operator itself.  In `codex_gain11_semantic_figures`, `W_HD->HD` is symmetric
+and its nonconstant eigenvalues are mostly paired:
+
+```text
+constant-mode eigenvalue real part        = -8.90e-17
+spectral radius                           = 8.1809
+first nonconstant pair gap / scale        = 0.00386
+median nonconstant pair gap / scale       = 0.00149
+pair fraction within 2% normalized gap    = 0.862
+```
+
+So the current failure is not that the recurrent weight matrix lacks the usual
+ring-attractor spectral signature.  The main remaining problems are the
+saturated activity nonlinearity and the high-speed HR-to-HD under-gain.
+
+## 2026-07-03 Peak Decode and PI Protocol Clarification
+
+The latest user-facing failure of peak decode is best interpreted as a
+flat-top activity problem, not as evidence that the peak readout formula alone
+is wrong.  In the current paired-HD geometry, several adjacent angular bins can
+sit near the sigmoid ceiling.  A peak decoder then has to choose the center of
+an extended plateau, whereas PVA/COM, the paper's primary readout, is still
+partly stabilized by the full activity profile.
+
+The code now records saturated-bin counts (`*_saturated_hd_bins`) after
+collapsing odd/even HD partners.  These counts should be checked before using
+peak-vs-PVA disagreements as a performance conclusion.
+
+PI tests now use a visual-dark-visual protocol with separate `pi_cue_duration`.
+For the default short diagnostic this gives 4 s visual, 6 s darkness, and 2 s
+visual re-cue, matching the 20:30:10 proportions of the released Figure 2A /
+Appendix 1 example.  All PI and bump tests keep weights frozen; visual input in
+the first and last segments corrects/anchors activity but does not continue
+learning.
+
+## 2026-07-03 Activation / Single-Peak Audit
+
+Parameter probes support the user's concern that decode quality must be fixed
+before interpreting PI, but they did not support a one-parameter activation
+fix:
+
+- Lower sigmoid gain made the activity less saturated but degraded bump drift
+  and velocity gain.
+- Higher sigmoid bias could make the dark peak nearly single-bin, but only by
+  suppressing the velocity-driven travelling bump.
+- Narrower visual tuning made peaks unique, but violated the current
+  release-code `sigma = 0.15` alignment and damaged PI gain.
+- Lowering weight upper bounds made short-probe peaks sharper, but it worsened
+  constant-velocity darkness PI and reduced gain.
+
+The safer immediate change is to record `*_near_peak_hd_bins` and make the peak
+decoder group the same saturated peak top with a 0.5% tolerance.  This improves
+the diagnostic readout without pretending that the underlying tuning curve has
+become truly single-peaked.  A true fix should focus next on rescaling local
+learning rates and voltage/current magnitudes so long training does not push
+the bump center to the sigmoid ceiling.

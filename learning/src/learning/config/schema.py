@@ -64,6 +64,8 @@ class SimulationConfig:
     bump_test_duration: float = 4.0
     darkness_test_duration: float = 6.0
     cue_duration: float = 0.35
+    pi_cue_duration: float | None = None
+    recue_duration: float = 1.0
     save_interval_steps: int = 40
     theta0: float = 0.0
     progress: bool = True
@@ -110,8 +112,15 @@ class TestsConfig:
     gain_velocities: list[float] = field(
         default_factory=lambda: [
             -VAFIDIS_TEST_VELOCITY_RAD,
-            -0.5 * VAFIDIS_TEST_VELOCITY_RAD,
-            0.5 * VAFIDIS_TEST_VELOCITY_RAD,
+            -0.8 * VAFIDIS_TEST_VELOCITY_RAD,
+            -0.6 * VAFIDIS_TEST_VELOCITY_RAD,
+            -0.4 * VAFIDIS_TEST_VELOCITY_RAD,
+            -0.2 * VAFIDIS_TEST_VELOCITY_RAD,
+            0.0,
+            0.2 * VAFIDIS_TEST_VELOCITY_RAD,
+            0.4 * VAFIDIS_TEST_VELOCITY_RAD,
+            0.6 * VAFIDIS_TEST_VELOCITY_RAD,
+            0.8 * VAFIDIS_TEST_VELOCITY_RAD,
             VAFIDIS_TEST_VELOCITY_RAD,
         ]
     )

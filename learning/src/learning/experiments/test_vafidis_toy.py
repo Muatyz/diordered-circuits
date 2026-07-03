@@ -36,12 +36,19 @@ def load_trained_state_from_run(*, run_dir: Path):
 
 def run_tests_for_existing_run(*, run_dir: Path, make_figures: bool) -> None:
     config, trained_state = load_trained_state_from_run(run_dir=run_dir)
-    bump_history, darkness_history, velocity_gain_history, test_metrics = run_all_tests(
+    (
+        bump_history,
+        darkness_history,
+        ou_darkness_history,
+        velocity_gain_history,
+        test_metrics,
+    ) = run_all_tests(
         config=config,
         trained_state=trained_state,
     )
     save_npz(run_dir / "bump_history.npz", **bump_history)
     save_npz(run_dir / "darkness_history.npz", **darkness_history)
+    save_npz(run_dir / "ou_darkness_history.npz", **ou_darkness_history)
     save_npz(run_dir / "velocity_gain_history.npz", **velocity_gain_history)
     save_json(run_dir / "test_metrics.json", test_metrics)
     if make_figures:
@@ -59,7 +66,13 @@ def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
         experiment_name=f"{config.experiment_name}_untrained_test",
         seed=config.simulation.seed,
     )
-    bump_history, darkness_history, velocity_gain_history, test_metrics = run_all_tests(
+    (
+        bump_history,
+        darkness_history,
+        ou_darkness_history,
+        velocity_gain_history,
+        test_metrics,
+    ) = run_all_tests(
         config=config,
         trained_state=trained_state,
     )
@@ -71,6 +84,7 @@ def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
         training_history={"time": [], "theta_true": [], "theta_hd_decoded": [], "angular_velocity": []},
         bump_history=bump_history,
         darkness_history=darkness_history,
+        ou_darkness_history=ou_darkness_history,
         velocity_gain_history=velocity_gain_history,
         test_metrics=test_metrics,
     )

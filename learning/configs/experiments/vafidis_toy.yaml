@@ -27,10 +27,12 @@ simulation:
   dt: 0.01
   recurrent_warmup_duration: 80.0
   freeze_hd_to_hd_after_warmup: false
-  train_duration: 6000.0
+  train_duration: 5000.0
   bump_test_duration: 4.0
   darkness_test_duration: 6.0
   cue_duration: 0.35
+  pi_cue_duration: 4.0
+  recue_duration: 2.0
   save_interval_steps: 40
   theta0: 0.0
   progress: true
@@ -44,9 +46,9 @@ learning_rule:
   w_hd_to_hd_max: 2.0
   w_hr_to_hd_min: -1.5
   w_hr_to_hd_max: 1.5
-  hd_to_hd_symmetry_mode: symmetric
-  hd_to_hd_balance_mode: zero_sum
-  hr_to_hd_balance_mode: antisymmetric_wings
+  hd_to_hd_symmetry_mode: none
+  hd_to_hd_balance_mode: none
+  hr_to_hd_balance_mode: none
 
 visual:
   amplitude: 4.0
@@ -66,7 +68,18 @@ velocity:
 
 tests:
   darkness_angular_velocity: 8.726646259971648
-  gain_velocities: [-8.726646259971648, -4.363323129985824, 4.363323129985824, 8.726646259971648]
+  gain_velocities:
+    - -8.726646259971648
+    - -6.981317007977318
+    - -5.235987755982989
+    - -3.490658503988659
+    - -1.7453292519943295
+    - 0.0
+    - 1.7453292519943295
+    - 3.490658503988659
+    - 5.235987755982989
+    - 6.981317007977318
+    - 8.726646259971648
 
 paths:
   runs_root: runs/vafidis_toy

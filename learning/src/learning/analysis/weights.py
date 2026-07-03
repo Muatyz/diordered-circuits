@@ -51,6 +51,78 @@ def local_symmetry_score(w_hd_to_hd: np.ndarray) -> float:
     return float(1.0 - l2_norm(antisymmetric_part) / denominator)
 
 
+def compute_weight_eigenvalues(weight_matrix: np.ndarray) -> np.ndarray:
+    """Return eigenvalues for a square weight matrix."""
+    weight_matrix = np.asarray(weight_matrix, dtype=float)
+    if weight_matrix.ndim != 2 or weight_matrix.shape[0] != weight_matrix.shape[1]:
+        raise ValueError("Eigenvalue diagnostics require a square matrix")
+    return np.linalg.eigvals(weight_matrix)
+
+
+def _constant_mode_rayleigh_value(weight_matrix: np.ndarray) -> complex:
+    constant_vector = np.ones(weight_matrix.shape[0], dtype=float)
+    return complex(constant_vector @ weight_matrix @ constant_vector / (constant_vector @ constant_vector))
+
+
+def summarize_eigenvalue_pair_degeneracy(
+    *,
+    weight_matrix: np.ndarray,
+    pair_tolerance_fraction: float = 0.02,
+) -> dict[str, float]:
+    """Summarize approximate nonconstant-mode double degeneracy.
+
+    A circularly symmetric ring operator has one constant mode and paired
+    sine/cosine eigenmodes for each nonzero Fourier frequency.  This diagnostic
+    removes the eigenvalue closest to the constant-mode Rayleigh quotient and
+    then measures gaps between adjacent sorted real eigenvalues.
+    """
+    weight_matrix = np.asarray(weight_matrix, dtype=float)
+    eigenvalues = compute_weight_eigenvalues(weight_matrix)
+    real_eigenvalues = np.real(eigenvalues)
+    sorted_real = np.sort(real_eigenvalues)[::-1]
+    if sorted_real.size == 0:
+        return {
+            "constant_mode_eigenvalue_real": float("nan"),
+            "spectral_radius": float("nan"),
+            "imag_abs_max": float("nan"),
+            "nonconstant_pair_count": 0.0,
+            "first_nonconstant_pair_gap_norm": float("nan"),
+            "median_nonconstant_pair_gap_norm": float("nan"),
+            "max_nonconstant_pair_gap_norm": float("nan"),
+            "nonconstant_pair_fraction_le_2pct": float("nan"),
+        }
+
+    constant_mode_value = _constant_mode_rayleigh_value(weight_matrix)
+    constant_index = int(np.argmin(np.abs(sorted_real - float(np.real(constant_mode_value)))))
+    nonconstant_real = np.delete(sorted_real, constant_index)
+    pair_count = nonconstant_real.size // 2
+    spectral_radius = float(np.max(np.abs(eigenvalues))) if eigenvalues.size else float("nan")
+    value_scale = max(float(np.ptp(sorted_real)), spectral_radius, 1e-12)
+    if pair_count == 0:
+        first_gap = float("nan")
+        median_gap = float("nan")
+        max_gap = float("nan")
+        pair_fraction = float("nan")
+    else:
+        paired_values = nonconstant_real[: 2 * pair_count].reshape(pair_count, 2)
+        normalized_pair_gaps = np.abs(paired_values[:, 0] - paired_values[:, 1]) / value_scale
+        first_gap = float(normalized_pair_gaps[0])
+        median_gap = float(np.median(normalized_pair_gaps))
+        max_gap = float(np.max(normalized_pair_gaps))
+        pair_fraction = float(np.mean(normalized_pair_gaps <= pair_tolerance_fraction))
+
+    return {
+        "constant_mode_eigenvalue_real": float(np.real(constant_mode_value)),
+        "spectral_radius": spectral_radius,
+        "imag_abs_max": float(np.max(np.abs(np.imag(eigenvalues)))) if eigenvalues.size else float("nan"),
+        "nonconstant_pair_count": float(pair_count),
+        "first_nonconstant_pair_gap_norm": first_gap,
+        "median_nonconstant_pair_gap_norm": median_gap,
+        "max_nonconstant_pair_gap_norm": max_gap,
+        "nonconstant_pair_fraction_le_2pct": pair_fraction,
+    }
+
+
 def summarize_weight_structure(w_hd_to_hd: np.ndarray, w_hr_to_hd: np.ndarray) -> dict[str, float]:
     n_theta = w_hd_to_hd.shape[0]
     theta_hd_pref = make_vafidis_paired_theta_hd_pref(n_theta)

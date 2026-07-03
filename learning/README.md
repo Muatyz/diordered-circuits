@@ -102,10 +102,24 @@ trained_weights.npz
 training_history.npz
 bump_history.npz
 darkness_history.npz
+ou_darkness_history.npz
 velocity_gain_history.npz
 test_metrics.json
 figures/
 ```
+
+Figure naming note:
+
+- `bump_maintenance_*` uses a short visual cue followed by darkness with
+  `angular_velocity = 0`.
+- `darkness_*` uses a constant-velocity visual -> dark -> visual protocol.
+  The default timing follows the Figure 2A / Appendix 1 example proportions:
+  `pi_cue_duration = 4 s`, `darkness_test_duration = 6 s`, and
+  `recue_duration = 2 s`.
+- `ou_darkness_*` uses the same visual -> dark -> visual protocol with an OU
+  angular-velocity trajectory.
+- Constant-velocity and OU heading figures plot unwrapped heading in units of
+  `pi rad`; PI-error figures remain wrapped to `[-pi, pi]`.
 
 Useful metrics in `test_metrics.json` include:
 
@@ -114,8 +128,15 @@ Useful metrics in `test_metrics.json` include:
 - `bump_intrinsic_drift_velocity_deg_s`
 - `bump_final_pva_strength`
 - `darkness_final_abs_pi_error`
+- `darkness_recue_final_abs_pi_error`
+- `ou_darkness_rms_pi_error`
+- `ou_darkness_recue_final_abs_pi_error`
 - `darkness_decoded_velocity`
 - `darkness_peak_decoded_velocity`
+- `darkness_mean_saturated_hd_bins`
+- `bump_final_saturated_hd_bins`
+- `darkness_mean_near_peak_hd_bins`
+- `bump_final_near_peak_hd_bins`
 - `velocity_gain`
 - `velocity_gain_peak`
 - `hd_to_hd_local_symmetry_score`

@@ -79,7 +79,7 @@ def peak_decode(
     theta_hd_pref: np.ndarray,
     r_hd: np.ndarray,
     *,
-    relative_tolerance: float = 1e-3,
+    relative_tolerance: float = 5e-3,
     absolute_tolerance: float = 1e-9,
 ) -> float:
     """Decode HD activity from the strongest angular peak.

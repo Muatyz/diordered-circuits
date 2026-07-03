@@ -25,7 +25,7 @@ from learning.analysis.metrics import (
     summarize_velocity_gain,
 )
 from learning.analysis.weights import summarize_weight_structure
-from learning.common.angles import pva_vector_strength
+from learning.common.angles import collapse_activity_by_theta, pva_vector_strength
 from learning.common.arrays import l2_norm
 from learning.common.random import make_rng
 from learning.config.load_config import find_project_root, load_experiment_config, save_yaml
@@ -83,6 +83,8 @@ def _new_history(include_activity: bool) -> dict[str, list[np.ndarray | float]]:
         "theta_hd_decoded": [],
         "theta_hd_decoded_peak": [],
         "angular_velocity": [],
+        "visual_teacher": [],
+        "phase_id": [],
         "mean_e_hd": [],
         "pva_strength_hd": [],
         "bump_contrast_hd": [],
@@ -103,12 +105,16 @@ def record_state(
     history: dict[str, list[np.ndarray | float]],
     state: VafidisToyState,
     include_activity: bool,
+    visual_teacher: bool | None = None,
+    phase_id: int | None = None,
 ) -> None:
     history["time"].append(float(state.time))
     history["theta_true"].append(float(state.theta_true))
     history["theta_hd_decoded"].append(float(state.theta_hd_decoded))
     history["theta_hd_decoded_peak"].append(float(state.theta_hd_decoded_peak))
     history["angular_velocity"].append(float(state.angular_velocity))
+    history["visual_teacher"].append(float("nan") if visual_teacher is None else float(visual_teacher))
+    history["phase_id"].append(float("nan") if phase_id is None else float(phase_id))
     history["mean_e_hd"].append(float(np.mean(state.e_hd)))
     history["pva_strength_hd"].append(
         pva_vector_strength(state.theta_hd_pref, state.r_hd)
@@ -186,13 +192,35 @@ def initialize_protocol_state(
     return state
 
 
-def run_cued_dark_protocol(
+VISUAL_CUE_PHASE_ID = 0
+DARKNESS_PHASE_ID = 1
+VISUAL_RECUE_PHASE_ID = 2
+HD_SATURATION_RATE_THRESHOLD = 0.99
+HD_NEAR_PEAK_RELATIVE_TOLERANCE = 5e-3
+
+
+def get_pi_cue_duration(config: ExperimentConfig) -> float:
+    """Return the visual cue duration used for PI tests.
+
+    The short ``cue_duration`` is useful for bump maintenance probes.  Vafidis
+    Figure 2A / Appendix 1 examples instead show a visual-dark-visual PI trial
+    with a longer initial visual segment, so PI tests can override it without
+    changing the bump-maintenance protocol.
+    """
+    if config.simulation.pi_cue_duration is None:
+        return float(config.simulation.cue_duration)
+    return float(config.simulation.pi_cue_duration)
+
+
+def run_visual_dark_visual_protocol(
     *,
     config: ExperimentConfig,
     trained_state: VafidisToyState,
     theta_true: float,
     darkness_duration: float,
-    darkness_angular_velocity: float,
+    angular_velocity_step: Callable[[float], float],
+    cue_duration: float | None = None,
+    recue_duration: float | None = None,
 ) -> dict[str, np.ndarray]:
     params = VafidisToyParams.from_config(config)
     state = initialize_protocol_state(
@@ -200,21 +228,206 @@ def run_cued_dark_protocol(
         trained_state=trained_state,
         theta_true=theta_true,
     )
-    total_steps = int(round((config.simulation.cue_duration + darkness_duration) / params.dt))
     history = _new_history(include_activity=True)
-    record_state(history=history, state=state, include_activity=True)
-    for _step_index in range(total_steps):
-        in_cue_phase = state.time < config.simulation.cue_duration
-        angular_velocity = 0.0 if in_cue_phase else darkness_angular_velocity
-        state = step_vafidis_toy(
-            state=state,
-            params=params,
-            angular_velocity=angular_velocity,
-            visual_teacher=in_cue_phase,
-            training=False,
-        )
-        record_state(history=history, state=state, include_activity=True)
+    record_state(
+        history=history,
+        state=state,
+        include_activity=True,
+        visual_teacher=True,
+        phase_id=VISUAL_CUE_PHASE_ID,
+    )
+    phase_specs = [
+        (
+            cue_duration if cue_duration is not None else config.simulation.cue_duration,
+            True,
+            VISUAL_CUE_PHASE_ID,
+        ),
+        (darkness_duration, False, DARKNESS_PHASE_ID),
+        (
+            recue_duration if recue_duration is not None else config.simulation.recue_duration,
+            True,
+            VISUAL_RECUE_PHASE_ID,
+        ),
+    ]
+    for phase_duration, visual_teacher, phase_id in phase_specs:
+        phase_steps = int(round(max(phase_duration, 0.0) / params.dt))
+        for _step_index in range(phase_steps):
+            angular_velocity = angular_velocity_step(params.dt)
+            state = step_vafidis_toy(
+                state=state,
+                params=params,
+                angular_velocity=angular_velocity,
+                visual_teacher=visual_teacher,
+                training=False,
+            )
+            record_state(
+                history=history,
+                state=state,
+                include_activity=True,
+                visual_teacher=visual_teacher,
+                phase_id=phase_id,
+            )
     return _history_to_arrays(history)
+
+
+def run_constant_velocity_visual_dark_visual_protocol(
+    *,
+    config: ExperimentConfig,
+    trained_state: VafidisToyState,
+    theta_true: float,
+    darkness_duration: float,
+    angular_velocity: float,
+    cue_duration: float | None = None,
+    recue_duration: float | None = None,
+) -> dict[str, np.ndarray]:
+    constant_angular_velocity = float(angular_velocity)
+
+    def angular_velocity_step(_dt: float) -> float:
+        return constant_angular_velocity
+
+    return run_visual_dark_visual_protocol(
+        config=config,
+        trained_state=trained_state,
+        theta_true=theta_true,
+        darkness_duration=darkness_duration,
+        angular_velocity_step=angular_velocity_step,
+        cue_duration=cue_duration,
+        recue_duration=recue_duration,
+    )
+
+
+def run_ou_visual_dark_visual_protocol(
+    *,
+    config: ExperimentConfig,
+    trained_state: VafidisToyState,
+    theta_true: float,
+    darkness_duration: float,
+    cue_duration: float | None = None,
+    recue_duration: float | None = None,
+) -> dict[str, np.ndarray]:
+    protocol_rng = make_rng(config.simulation.seed + 10_000)
+    ou_process = OUAngularVelocity(
+        mean=config.velocity.mean,
+        std=config.velocity.std,
+        tau=config.velocity.tau,
+        clip=config.velocity.clip,
+        rng=protocol_rng,
+    )
+    return run_visual_dark_visual_protocol(
+        config=config,
+        trained_state=trained_state,
+        theta_true=theta_true,
+        darkness_duration=darkness_duration,
+        angular_velocity_step=ou_process.step,
+        cue_duration=cue_duration,
+        recue_duration=recue_duration,
+    )
+
+
+def phase_mask(history: dict[str, np.ndarray], phase_id: int) -> np.ndarray:
+    phase_id_history = history.get("phase_id", np.empty(0))
+    if phase_id_history.size == 0:
+        return np.zeros_like(history.get("time", np.empty(0)), dtype=bool)
+    return np.asarray(phase_id_history, dtype=float) == float(phase_id)
+
+
+def nanmean_or_nan(values: np.ndarray) -> float:
+    finite_values = np.asarray(values, dtype=float)
+    finite_values = finite_values[np.isfinite(finite_values)]
+    if finite_values.size == 0:
+        return float("nan")
+    return float(np.mean(finite_values))
+
+
+def count_saturated_hd_bins(
+    *,
+    theta_hd_pref: np.ndarray,
+    r_hd: np.ndarray,
+    threshold: float = HD_SATURATION_RATE_THRESHOLD,
+) -> int:
+    """Count paired-HD angular bins whose collapsed rate is near saturation."""
+    _unique_theta, collapsed_rates = collapse_activity_by_theta(theta_hd_pref, r_hd)
+    return int(np.count_nonzero(collapsed_rates >= threshold))
+
+
+def summarize_hd_saturation(
+    *,
+    history: dict[str, np.ndarray],
+    theta_hd_pref: np.ndarray,
+    mask: np.ndarray,
+    metric_prefix: str,
+    threshold: float = HD_SATURATION_RATE_THRESHOLD,
+) -> dict[str, float]:
+    if "r_hd" not in history or not np.any(mask):
+        return {
+            f"{metric_prefix}_mean_saturated_hd_bins": float("nan"),
+            f"{metric_prefix}_max_saturated_hd_bins": float("nan"),
+            f"{metric_prefix}_final_saturated_hd_bins": float("nan"),
+        }
+    saturated_bin_counts = np.asarray(
+        [
+            count_saturated_hd_bins(
+                theta_hd_pref=theta_hd_pref,
+                r_hd=r_hd,
+                threshold=threshold,
+            )
+            for r_hd in history["r_hd"][mask]
+        ],
+        dtype=float,
+    )
+    return {
+        f"{metric_prefix}_mean_saturated_hd_bins": float(np.mean(saturated_bin_counts)),
+        f"{metric_prefix}_max_saturated_hd_bins": float(np.max(saturated_bin_counts)),
+        f"{metric_prefix}_final_saturated_hd_bins": float(saturated_bin_counts[-1]),
+    }
+
+
+def count_near_peak_hd_bins(
+    *,
+    theta_hd_pref: np.ndarray,
+    r_hd: np.ndarray,
+    relative_tolerance: float = HD_NEAR_PEAK_RELATIVE_TOLERANCE,
+) -> int:
+    """Count angular bins that belong to the same near-saturated peak top."""
+    _unique_theta, collapsed_rates = collapse_activity_by_theta(theta_hd_pref, r_hd)
+    if collapsed_rates.size == 0:
+        return 0
+    max_rate = float(np.max(collapsed_rates))
+    min_rate = float(np.min(collapsed_rates))
+    tolerance = max(1e-9, relative_tolerance * max(max_rate - min_rate, abs(max_rate), 1.0))
+    return int(np.count_nonzero(collapsed_rates >= max_rate - tolerance))
+
+
+def summarize_hd_near_peak(
+    *,
+    history: dict[str, np.ndarray],
+    theta_hd_pref: np.ndarray,
+    mask: np.ndarray,
+    metric_prefix: str,
+    relative_tolerance: float = HD_NEAR_PEAK_RELATIVE_TOLERANCE,
+) -> dict[str, float]:
+    if "r_hd" not in history or not np.any(mask):
+        return {
+            f"{metric_prefix}_mean_near_peak_hd_bins": float("nan"),
+            f"{metric_prefix}_max_near_peak_hd_bins": float("nan"),
+            f"{metric_prefix}_final_near_peak_hd_bins": float("nan"),
+        }
+    near_peak_counts = np.asarray(
+        [
+            count_near_peak_hd_bins(
+                theta_hd_pref=theta_hd_pref,
+                r_hd=r_hd,
+                relative_tolerance=relative_tolerance,
+            )
+            for r_hd in history["r_hd"][mask]
+        ],
+        dtype=float,
+    )
+    return {
+        f"{metric_prefix}_mean_near_peak_hd_bins": float(np.mean(near_peak_counts)),
+        f"{metric_prefix}_max_near_peak_hd_bins": float(np.max(near_peak_counts)),
+        f"{metric_prefix}_final_near_peak_hd_bins": float(near_peak_counts[-1]),
+    }
 
 
 def run_bump_maintenance_test(
@@ -222,14 +435,16 @@ def run_bump_maintenance_test(
     config: ExperimentConfig,
     trained_state: VafidisToyState,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
-    bump_history = run_cued_dark_protocol(
+    bump_history = run_constant_velocity_visual_dark_visual_protocol(
         config=config,
         trained_state=trained_state,
         theta_true=config.simulation.theta0,
         darkness_duration=config.simulation.bump_test_duration,
-        darkness_angular_velocity=0.0,
+        angular_velocity=0.0,
+        cue_duration=config.simulation.cue_duration,
+        recue_duration=0.0,
     )
-    cue_mask = bump_history["time"] >= config.simulation.cue_duration
+    cue_mask = phase_mask(bump_history, DARKNESS_PHASE_ID)
     drift = final_abs_circular_error(
         bump_history["theta_hd_decoded"][cue_mask],
         theta_reference=config.simulation.theta0,
@@ -257,6 +472,18 @@ def run_bump_maintenance_test(
         "bump_peak_intrinsic_drift_velocity_deg_s": float(np.rad2deg(peak_intrinsic_drift_velocity)),
         "bump_final_pva_strength": float(bump_history["pva_strength_hd"][cue_mask][-1]),
         "bump_final_contrast": float(bump_history["bump_contrast_hd"][cue_mask][-1]),
+        **summarize_hd_saturation(
+            history=bump_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=cue_mask,
+            metric_prefix="bump",
+        ),
+        **summarize_hd_near_peak(
+            history=bump_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=cue_mask,
+            metric_prefix="bump",
+        ),
     }
 
 
@@ -266,14 +493,16 @@ def run_darkness_path_integration_test(
     trained_state: VafidisToyState,
     angular_velocity: float,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
-    darkness_history = run_cued_dark_protocol(
+    darkness_history = run_constant_velocity_visual_dark_visual_protocol(
         config=config,
         trained_state=trained_state,
         theta_true=config.simulation.theta0,
         darkness_duration=config.simulation.darkness_test_duration,
-        darkness_angular_velocity=angular_velocity,
+        angular_velocity=angular_velocity,
+        cue_duration=get_pi_cue_duration(config),
     )
-    cue_mask = darkness_history["time"] >= config.simulation.cue_duration
+    cue_mask = phase_mask(darkness_history, DARKNESS_PHASE_ID)
+    recue_mask = phase_mask(darkness_history, VISUAL_RECUE_PHASE_ID)
     pi_error = circular_error_trace(
         darkness_history["theta_hd_decoded"][cue_mask],
         darkness_history["theta_true"][cue_mask],
@@ -301,7 +530,7 @@ def run_darkness_path_integration_test(
             darkness_history["theta_hd_decoded"][cue_mask],
             theta_reference=darkness_history["theta_true"][cue_mask][-1],
         ),
-        "darkness_mean_pi_error": float(np.nanmean(pi_error)) if pi_error.size else float("nan"),
+        "darkness_mean_pi_error": nanmean_or_nan(pi_error),
         "darkness_mean_pva_strength": float(np.nanmean(darkness_history["pva_strength_hd"][cue_mask])),
         "darkness_final_pva_strength": float(darkness_history["pva_strength_hd"][cue_mask][-1]),
         "darkness_mean_bump_contrast": float(np.nanmean(darkness_history["bump_contrast_hd"][cue_mask])),
@@ -318,12 +547,44 @@ def run_darkness_path_integration_test(
             darkness_history["theta_hd_decoded_peak"][cue_mask],
             theta_reference=darkness_history["theta_true"][cue_mask][-1],
         ),
-        "darkness_peak_mean_pi_error": float(np.nanmean(pi_error_peak)) if pi_error_peak.size else float("nan"),
+        "darkness_peak_mean_pi_error": nanmean_or_nan(pi_error_peak),
         "darkness_peak_decoded_velocity": decoded_velocity_peak,
         "darkness_peak_decoded_velocity_deg_s": float(np.rad2deg(decoded_velocity_peak)),
         "darkness_peak_velocity_bias": decoded_velocity_peak - angular_velocity,
         "darkness_peak_velocity_bias_deg_s": float(np.rad2deg(decoded_velocity_peak - angular_velocity)),
+        **summarize_hd_saturation(
+            history=darkness_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=cue_mask,
+            metric_prefix="darkness",
+        ),
+        **summarize_hd_near_peak(
+            history=darkness_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=cue_mask,
+            metric_prefix="darkness",
+        ),
     }
+    if np.any(recue_mask):
+        darkness_metrics.update(
+            {
+                "darkness_recue_initial_abs_pi_error": final_abs_circular_error(
+                    darkness_history["theta_hd_decoded"][cue_mask],
+                    theta_reference=darkness_history["theta_true"][cue_mask][-1],
+                ),
+                "darkness_recue_final_abs_pi_error": final_abs_circular_error(
+                    darkness_history["theta_hd_decoded"][recue_mask],
+                    theta_reference=darkness_history["theta_true"][recue_mask][-1],
+                ),
+                "darkness_recue_rms_pi_error": rms_circular_error(
+                    darkness_history["theta_hd_decoded"][recue_mask],
+                    darkness_history["theta_true"][recue_mask],
+                ),
+                "darkness_recue_final_pva_strength": float(
+                    darkness_history["pva_strength_hd"][recue_mask][-1]
+                ),
+            }
+        )
     return darkness_history, darkness_metrics
 
 
@@ -335,7 +596,7 @@ def summarize_zero_velocity_drive(
 ) -> dict[str, float]:
     """Project zero-velocity HD and HR drives onto the bump tangent."""
     params = VafidisToyParams.from_config(config)
-    cue_mask = bump_history["time"] >= config.simulation.cue_duration
+    cue_mask = phase_mask(bump_history, DARKNESS_PHASE_ID)
     if "r_hd" not in bump_history or not np.any(cue_mask):
         return {
             "zero_velocity_hd_tangent_drive": float("nan"),
@@ -385,14 +646,16 @@ def run_velocity_gain_test(
     decoded_velocity_values: list[float] = []
     decoded_peak_velocity_values: list[float] = []
     for commanded_velocity in commanded_velocity_values:
-        gain_history = run_cued_dark_protocol(
+        gain_history = run_constant_velocity_visual_dark_visual_protocol(
             config=config,
             trained_state=trained_state,
             theta_true=config.simulation.theta0,
             darkness_duration=config.simulation.darkness_test_duration,
-            darkness_angular_velocity=float(commanded_velocity),
+            angular_velocity=float(commanded_velocity),
+            cue_duration=get_pi_cue_duration(config),
+            recue_duration=0.0,
         )
-        cue_mask = gain_history["time"] >= config.simulation.cue_duration
+        cue_mask = phase_mask(gain_history, DARKNESS_PHASE_ID)
         decoded_velocity = estimate_decoded_velocity(
             time=gain_history["time"][cue_mask] - gain_history["time"][cue_mask][0],
             theta_decoded=gain_history["theta_hd_decoded"][cue_mask],
@@ -427,16 +690,99 @@ def run_velocity_gain_test(
     }
 
 
+def run_ou_path_integration_test(
+    *,
+    config: ExperimentConfig,
+    trained_state: VafidisToyState,
+) -> tuple[dict[str, np.ndarray], dict[str, float]]:
+    ou_history = run_ou_visual_dark_visual_protocol(
+        config=config,
+        trained_state=trained_state,
+        theta_true=config.simulation.theta0,
+        darkness_duration=config.simulation.darkness_test_duration,
+        cue_duration=get_pi_cue_duration(config),
+    )
+    dark_mask = phase_mask(ou_history, DARKNESS_PHASE_ID)
+    recue_mask = phase_mask(ou_history, VISUAL_RECUE_PHASE_ID)
+    dark_pi_error = circular_error_trace(
+        ou_history["theta_hd_decoded"][dark_mask],
+        ou_history["theta_true"][dark_mask],
+    )
+    metrics = {
+        "ou_darkness_rms_pi_error": rms_circular_error(
+            ou_history["theta_hd_decoded"][dark_mask],
+            ou_history["theta_true"][dark_mask],
+        ),
+        "ou_darkness_mean_abs_pi_error": nanmean_or_nan(np.abs(dark_pi_error)),
+        "ou_darkness_final_abs_pi_error": final_abs_circular_error(
+            ou_history["theta_hd_decoded"][dark_mask],
+            theta_reference=ou_history["theta_true"][dark_mask][-1],
+        ),
+        "ou_darkness_final_pva_strength": float(ou_history["pva_strength_hd"][dark_mask][-1])
+        if np.any(dark_mask)
+        else float("nan"),
+        "ou_darkness_max_abs_angular_velocity": float(
+            np.nanmax(np.abs(ou_history["angular_velocity"][dark_mask]))
+        )
+        if np.any(dark_mask)
+        else float("nan"),
+        "ou_darkness_rms_angular_velocity": float(
+            np.sqrt(np.nanmean(ou_history["angular_velocity"][dark_mask] ** 2))
+        )
+        if np.any(dark_mask)
+        else float("nan"),
+        **summarize_hd_saturation(
+            history=ou_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=dark_mask,
+            metric_prefix="ou_darkness",
+        ),
+        **summarize_hd_near_peak(
+            history=ou_history,
+            theta_hd_pref=trained_state.theta_hd_pref,
+            mask=dark_mask,
+            metric_prefix="ou_darkness",
+        ),
+    }
+    if np.any(recue_mask):
+        metrics.update(
+            {
+                "ou_darkness_recue_final_abs_pi_error": final_abs_circular_error(
+                    ou_history["theta_hd_decoded"][recue_mask],
+                    theta_reference=ou_history["theta_true"][recue_mask][-1],
+                ),
+                "ou_darkness_recue_rms_pi_error": rms_circular_error(
+                    ou_history["theta_hd_decoded"][recue_mask],
+                    ou_history["theta_true"][recue_mask],
+                ),
+                "ou_darkness_recue_final_pva_strength": float(
+                    ou_history["pva_strength_hd"][recue_mask][-1]
+                ),
+            }
+        )
+    return ou_history, metrics
+
+
 def run_all_tests(
     *,
     config: ExperimentConfig,
     trained_state: VafidisToyState,
-) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, np.ndarray], dict[str, float]]:
+) -> tuple[
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, np.ndarray],
+    dict[str, float],
+]:
     bump_history, bump_metrics = run_bump_maintenance_test(config=config, trained_state=trained_state)
     darkness_history, darkness_metrics = run_darkness_path_integration_test(
         config=config,
         trained_state=trained_state,
         angular_velocity=config.tests.darkness_angular_velocity,
+    )
+    ou_darkness_history, ou_darkness_metrics = run_ou_path_integration_test(
+        config=config,
+        trained_state=trained_state,
     )
     velocity_gain_history, velocity_gain_metrics = run_velocity_gain_test(
         config=config,
@@ -454,11 +800,12 @@ def run_all_tests(
     metrics = {
         **bump_metrics,
         **darkness_metrics,
+        **ou_darkness_metrics,
         **velocity_gain_metrics,
         **weight_metrics,
         **zero_velocity_drive_metrics,
     }
-    return bump_history, darkness_history, velocity_gain_history, metrics
+    return bump_history, darkness_history, ou_darkness_history, velocity_gain_history, metrics
 
 
 def save_run_outputs(
@@ -470,6 +817,7 @@ def save_run_outputs(
     training_history: dict[str, np.ndarray],
     bump_history: dict[str, np.ndarray],
     darkness_history: dict[str, np.ndarray],
+    ou_darkness_history: dict[str, np.ndarray],
     velocity_gain_history: dict[str, np.ndarray],
     test_metrics: dict[str, float],
 ) -> None:
@@ -487,6 +835,7 @@ def save_run_outputs(
     save_npz(run_dir / "training_history.npz", **training_history)
     save_npz(run_dir / "bump_history.npz", **bump_history)
     save_npz(run_dir / "darkness_history.npz", **darkness_history)
+    save_npz(run_dir / "ou_darkness_history.npz", **ou_darkness_history)
     save_npz(run_dir / "velocity_gain_history.npz", **velocity_gain_history)
     save_json(run_dir / "test_metrics.json", test_metrics)
 
@@ -508,7 +857,13 @@ def run_experiment(
         run_id=run_id,
     )
     trained_state, training_history = run_training(config=config, rng=rng)
-    bump_history, darkness_history, velocity_gain_history, test_metrics = run_all_tests(
+    (
+        bump_history,
+        darkness_history,
+        ou_darkness_history,
+        velocity_gain_history,
+        test_metrics,
+    ) = run_all_tests(
         config=config,
         trained_state=trained_state,
     )
@@ -520,6 +875,7 @@ def run_experiment(
         training_history=training_history,
         bump_history=bump_history,
         darkness_history=darkness_history,
+        ou_darkness_history=ou_darkness_history,
         velocity_gain_history=velocity_gain_history,
         test_metrics=test_metrics,
     )

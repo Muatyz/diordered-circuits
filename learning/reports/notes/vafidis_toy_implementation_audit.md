@@ -179,6 +179,159 @@ Plotting changes:
 - Long training runs save a readable first-120-s training heatmap plus a full
   heatmap without decode overlay.
 
+## 2026-07-02 darkness semantics / PI-error plotting update
+
+The figure named `darkness_hd_activity_heatmap.png` was ambiguous.  In the
+released code, `day=False` means visual input is zero, but velocity-gain tests
+still inject vestibular input into HR cells.  The toy now labels this condition
+explicitly as `visual off, velocity input on`.  The zero-velocity dark drift
+condition remains the bump-maintenance protocol, labeled as `cue, then visual
+off, omega=0`.
+
+Plotting updates:
+
+- `darkness_pi_error.png` now uses radians on a fixed `[-pi, pi]` axis.
+- `training_heading_short_window.png` shows a 30 s window with network decode
+  in the top panel and true heading in the bottom panel.  The window is chosen
+  from the part of training where decoded heading moves most, so it directly
+  checks whether the bump trajectory is continuous.
+- `velocity_gain_curve.png` now uses 11 test velocities from `-500` to
+  `500 deg/s` in `100 deg/s` increments, following the release code's principle
+  of sampling a velocity range rather than fitting four symmetric points.
+
+Fresh run after the plotting and gain-sampling update:
+
+```text
+runs/vafidis_toy/codex_gain11_semantic_figures
+```
+
+Key metrics:
+
+| Metric | Value |
+| --- | ---: |
+| `velocity_gain` | `0.9721` |
+| `velocity_gain_peak` | `0.9720` |
+| `darkness_decoded_velocity` at 500 deg/s command | `7.7228 rad/s` |
+| `darkness_velocity_bias` at 500 deg/s command | `-1.0038 rad/s` |
+| `bump_intrinsic_drift_velocity_deg_s` | `2.20e-4 deg/s` |
+
+The remaining PI-error issue is therefore not zero-input drift.  It is a
+high-speed darkness under-gain of the current toy HR-to-HD pathway.  A
+paper-compatible next step is to investigate Vafidis-style gain adaptation or
+longer/finer-step training, rather than broadening the visual teacher again or
+using post-hoc supervised calibration.
+
+## 2026-07-02 PI-error interpretation / spectrum outputs
+
+The remaining large `darkness_pi_error.png` should not be interpreted as a
+faithful reproduction of an inherent failure of the Vafidis learning rule.  The
+paper's explicit functional claim is stronger: after training, the network
+should perform almost gain-1 path integration in darkness across the fly-scale
+range `|v| < 500 deg/s`, with failure expected mainly near synaptic-delay
+velocity limits.  The released code's `utilities.py::vel_gain` also tests
+`day=False` while still injecting velocity input into HR cells, matching the
+toy's current darkness PI protocol.
+
+For `runs/vafidis_toy/codex_gain11_semantic_figures`, the zero-input drift is
+negligible (`2.20e-4 deg/s`), but the 500 deg/s darkness test is under-gained:
+
+```text
+commanded velocity =  8.7266 rad/s
+decoded velocity   =  7.7228 rad/s
+bias               = -1.0038 rad/s
+```
+
+Over a 6 s test this accumulated velocity bias wraps around the circular
+`[-pi, pi]` error axis, producing a large RMS PI error even though the final
+wrapped error can be small by coincidence.  This is therefore best classified
+as an incomplete toy/protocol reproduction of the paper's quantitative gain-1
+result, not as evidence that the original local learning rule is intrinsically
+unable to solve darkness PI.
+
+The standard figure generator now also writes:
+
+- `figures/training_weight_matrices_side_by_side.png`
+- `figures/training_weight_eigen_spectrum.png`
+- `weight_eigenvalues.npz`
+- `weight_spectrum_diagnostics.json`
+
+For the latest run, the HD recurrent matrix shows approximate nonconstant-mode
+double degeneracy in the usual ring-attractor sense: after removing the
+constant mode, `86.2%` of adjacent sorted-real eigenvalue pairs fall within a
+2% normalized gap threshold, with first nonconstant pair gap `0.00386`.  This
+supports the view that `W_HD->HD` has learned a mostly ring-like symmetric
+operator.  The `W_HR->HD` spectrum is plotted too, but because that matrix is a
+feedforward HR-to-HD map rather than a recurrent operator on one population,
+its complex eigenvalues should be treated as a structural diagnostic rather
+than direct Clark-style attractor modes.
+
+## 2026-07-03 V-D-V protocol / peak-readout diagnostic update
+
+The test protocol now separates two visually similar but conceptually
+different conditions:
+
+- bump maintenance uses the short `cue_duration` to initialize a bump, then
+  tests zero-velocity darkness with frozen weights;
+- PI tests use `pi_cue_duration` followed by darkness and re-cue, matching the
+  visual-dark-visual layout in the released Figure 2A / Appendix 1 example.
+
+For the current 6 s darkness diagnostic, the default timing is 4 s visual,
+6 s dark, and 2 s visual re-cue.  This preserves the original example's
+20:30:10 ratio while keeping the toy run short.  During all test phases,
+`training=False`; visual input during cue and re-cue is only a teacher/correction
+signal, not ongoing plasticity.
+
+The paper's main heading estimate is the PVA/COM of HD activity.  The toy keeps
+that as `theta_hd_decoded` and uses it for PI-error metrics.  The added
+`theta_hd_decoded_peak` remains a diagnostic readout for the user's concern
+that a small HD population should look more like a polygonal tuning curve than
+a smooth dense curve.  When several adjacent paired-HD angular bins saturate
+near the sigmoid ceiling, peak decode can become worse than PVA because there
+is no unique biological "highest bin" to select.  The code now records
+`*_saturated_hd_bins` metrics after collapsing odd/even HD partners so this
+failure mode is visible in `test_metrics.json`.
+
+The large visually uniform or "pure color" regions in exported weight matrices
+are therefore not automatically normal.  A constant-color component can reflect
+common-mode learned drive or color-scale compression, and it should be read
+together with bump contrast, PVA strength, saturated-bin counts, row/column
+balance, and eigenvalue diagnostics.  The released model relies on global
+inhibition and long local training rather than an online mirroring operation or
+post-hoc symmetry projection of HR weights; such nonlocal cleanup should remain
+outside the biological toy unless it is explicitly labeled as a control.
+
+Plotting changes:
+
+- `training_heading_short_window.png` now overlays true heading, PVA decode,
+  and peak decode in one panel, with wrapped circular error in the second.
+- Constant-velocity and OU path-integration heading plots use `pi rad` y-units
+  rather than thousands of degrees.
+
+## 2026-07-03 activation / peak-sharpness audit
+
+The latest peak-readout failure was not fixed by a simple activation-parameter
+change.  Short retraining probes showed:
+
+- lowering sigmoid gain from `2.5` toward `1.5` reduced saturation, but damaged
+  bump maintenance and velocity gain;
+- raising sigmoid bias reduced saturated dark bins only when it also strongly
+  reduced PI gain;
+- narrowing the visual teacher produced single-bin peaks, but departed from the
+  released-code `sigma = 0.15` mapping and caused poor velocity gain.
+- lowering plastic weight upper bounds sharpened the peak in short probes, but
+  worsened constant-velocity darkness PI and reduced velocity gain.
+
+The current default therefore keeps the paper-like logistic shape
+(`beta = 2.5`, `x0 = 1`) and visual width.  The code-level change is limited to
+making peak decoding plateau-aware: bins within 0.5% of the same collapsed-HD
+peak top are treated as one saturated peak.  This makes the diagnostic readout
+less sensitive to arbitrary tiny differences inside a biologically
+indistinguishable plateau, while the new `*_near_peak_hd_bins` metrics expose
+whether the model has actually learned a single-bin peak.  A real dynamics fix
+should retune the reduced toy's voltage scale or local learning-rate scale
+rather than adding winner-take-all, HR-weight mirroring, or supervised decoder
+calibration.
+
 ## 2026-06-29 diagnostic update
 
 The poor learned-weight performance is not caused by the velocity-gain
