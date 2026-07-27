@@ -15,6 +15,7 @@ def test_initialized_state_shapes_are_valid() -> None:
     assert state.r_hd.shape == (12,)
     assert state.r_hr.shape == (12,)
     assert state.r_hd_to_hr_lp.shape == (12,)
+    assert state.i_vis_to_hd.shape == (12,)
     assert state.p_hd_synaptic.shape == (12,)
     assert state.p_hd.shape == (12,)
     assert state.p_hr_synaptic.shape == (12,)

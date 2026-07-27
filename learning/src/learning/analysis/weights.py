@@ -137,7 +137,15 @@ def summarize_weight_structure(w_hd_to_hd: np.ndarray, w_hr_to_hd: np.ndarray) -
         theta_rhr_pref = make_theta_hd_pref(n_hr_per_wing)
     w_lhr_to_hd = w_hr_to_hd[:, :n_hr_per_wing]
     w_rhr_to_hd = w_hr_to_hd[:, n_hr_per_wing:]
+    hd_near_zero_tolerance = 0.01 * max(float(np.max(np.abs(w_hd_to_hd))), 1e-12)
+    hr_near_zero_tolerance = 0.01 * max(float(np.max(np.abs(w_hr_to_hd))), 1e-12)
     return {
+        "hd_to_hd_near_zero_1pct_max_fraction": float(
+            np.mean(np.abs(w_hd_to_hd) <= hd_near_zero_tolerance)
+        ),
+        "hr_to_hd_near_zero_1pct_max_fraction": float(
+            np.mean(np.abs(w_hr_to_hd) <= hr_near_zero_tolerance)
+        ),
         "hd_to_hd_local_symmetry_score": local_symmetry_score(w_hd_to_hd),
         "hd_to_hd_mean_source_offset": mean_source_offset(
             weight_target_by_source=w_hd_to_hd,
@@ -179,4 +187,38 @@ def summarize_weight_structure(w_hd_to_hd: np.ndarray, w_hr_to_hd: np.ndarray) -
             theta_target_pref=theta_hd_pref,
             theta_source_pref=theta_rhr_pref,
         ),
+    }
+
+
+def sort_weight_matrices_by_hd_preference(
+    *,
+    w_hd_to_hd: np.ndarray,
+    w_hr_to_hd: np.ndarray,
+    theta_hd_preference: np.ndarray,
+) -> dict[str, np.ndarray]:
+    """Sort target/source axes explicitly by empirical HD COM preference.
+
+    HR sources retain separate left/right wing blocks; each wing is sorted by
+    the empirical preference of the HD partner that projects to it.
+    """
+    w_hd_to_hd = np.asarray(w_hd_to_hd, dtype=float)
+    w_hr_to_hd = np.asarray(w_hr_to_hd, dtype=float)
+    theta_hd_preference = np.asarray(theta_hd_preference, dtype=float)
+    n_hd = theta_hd_preference.size
+    if w_hd_to_hd.shape != (n_hd, n_hd) or w_hr_to_hd.shape[0] != n_hd:
+        raise ValueError("weight matrices do not match theta_hd_preference")
+    if n_hd % 2 != 0 or w_hr_to_hd.shape[1] != n_hd:
+        raise ValueError("paired HD/HR sorting requires equal even HD and HR counts")
+    finite_preference = np.where(np.isfinite(theta_hd_preference), theta_hd_preference, np.inf)
+    hd_order = np.argsort(finite_preference, kind="stable")
+    n_hr_per_wing = n_hd // 2
+    left_order = np.argsort(finite_preference[0::2], kind="stable")
+    right_order = n_hr_per_wing + np.argsort(finite_preference[1::2], kind="stable")
+    hr_order = np.concatenate([left_order, right_order])
+    return {
+        "w_hd_to_hd": w_hd_to_hd[np.ix_(hd_order, hd_order)],
+        "w_hr_to_hd": w_hr_to_hd[np.ix_(hd_order, hr_order)],
+        "hd_order": hd_order,
+        "hr_order": hr_order,
+        "theta_hd_preference": theta_hd_preference[hd_order],
     }

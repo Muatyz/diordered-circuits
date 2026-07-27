@@ -1,0 +1,7 @@
+source_run: null
+adaptation_strengths: [0.0, 0.1, 0.2, 0.3, 0.4]
+velocities: [-20.0, -10.0, 0.0, 10.0, 20.0]
+duration: 25.0
+transient_duration: 10.0
+sample_interval_steps: 10
+

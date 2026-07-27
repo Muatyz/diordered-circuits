@@ -41,3 +41,13 @@
 - Local path: `references/oreilly2026_neocortex_learning/`
 - Role: temporal-derivative/error-driven predictive learning 的生物实现参考。
 - Status: 已摄取精华；需与“无监督局部规则”严格区分。
+
+## Attractor-analysis papers
+
+### sagodi2024_back_to_continuous_attractor
+
+- Title: Back to the Continuous Attractor
+- Local path: `references/sagodi2024_back_to_continuous_attractor/`
+- Role: 以 persistent-manifold/fast-slow 理论重新定义 approximate continuous attractor，并给出 autonomous slow-manifold、Jacobian spectral gap、tangential flow、finite-time error bound 与 basin topology 的分析规范。
+- Implementation: `learning/src/learning/analysis/phase_flow.py` 和 `run_timescale_separation_test` 已部分覆盖；full-state autonomous manifold 与动力学 Jacobian 尚未实现。
+- Status: 已摄取并映射到 learning 设计。

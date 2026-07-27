@@ -20,12 +20,6 @@ def assert_nonnegative(array: np.ndarray, name: str, tolerance: float = 1e-12) -
         raise ValueError(f"{name} contains negative values")
 
 
-def clip_array(array: np.ndarray, lower_bound: float, upper_bound: float) -> np.ndarray:
-    if lower_bound > upper_bound:
-        raise ValueError("lower_bound must be <= upper_bound")
-    return np.clip(array, lower_bound, upper_bound)
-
-
 def l2_norm(array: np.ndarray) -> float:
     """Return L2 norm without depending on numpy.linalg."""
     return float(np.sqrt(np.sum(np.asarray(array, dtype=float) ** 2)))

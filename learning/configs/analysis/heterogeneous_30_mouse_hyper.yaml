@@ -1,0 +1,129 @@
+# Confirmatory hyper experiment: K=30 independently trained simulated mice.
+#
+# The robustness runner's fixed neuron-count branch is used as a replication
+# driver here, not as a population-size comparison. Every seed creates one
+# independent N_HD=360, N_HR=360 network and independently resamples network
+# initialization, OU training trajectory, and heterogeneous visual profiles.
+#
+# Hyper analysis emits the requested peak-normalized COM-aligned tuning summary
+# plus a Clark Figure 4-style COM/correlation diagnostic. In the tuning panels,
+# thin light-gray lines are within-mouse neuron mean/std curves and the thick
+# black line is their equal-weight average across mice.
+#
+# Run from learning/:
+# python -m learning.experiments.run_attractor_robustness --robustness-config configs/analysis/heterogeneous_30_mouse_hyper.yaml
+
+experiment:
+  config: configs/experiments/vafidis_mammalian_heterogeneous.yaml
+  run_dir: null
+
+output:
+  directory: reports/attractor_robustness/heterogeneous_30_mouse_hyper
+  run_id_prefix: heterogeneous_mouse_n360
+
+runtime:
+  train_duration: null
+  # This changes recording density only, not training dynamics. The coarser
+  # interval keeps 30 full-duration runs from producing unnecessary histories.
+  save_interval_steps: 100
+  progress: true
+  training_progress: true
+  skip_existing_runs: true
+  # With the base simulation.seed=42, the actual seeds are 42 through 71.
+  seed_offsets:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 8
+    - 9
+    - 10
+    - 11
+    - 12
+    - 13
+    - 14
+    - 15
+    - 16
+    - 17
+    - 18
+    - 19
+    - 20
+    - 21
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 28
+    - 29
+
+probes:
+  extended_recue:
+    enabled: false
+    duration: 8.0
+  manifold_perturbation:
+    enabled: false
+    manifold_points: 360
+    settle_duration: 1.0
+    perturbation_count: 6
+    perturbation_duration: 2.0
+    perturbation_scale: 0.05
+
+plots:
+  # This fixed-N experiment is not a neuron-count comparison.
+  neuron_count_metrics:
+    enabled: false
+  cross_mouse_tuning:
+    enabled: true
+    # Keep all 30 mice visible in this first data-processing audit. The archive
+    # records each run's converged fraction so convergence can be inspected
+    # without silently reducing the mouse count.
+    minimum_converged_fraction: null
+    normalizations:
+      - per_neuron_peak
+  clark_figure4:
+    enabled: true
+    # A: post-training COM dots; B: a count-matched uniform circular null.
+    # C uses four cohort-spanning examples and nested neuron subsets, matching
+    # Clark Eq. 4's uncentered two-point function. The same permutation prefix
+    # is reused as N_subset grows within each mouse.
+    minimum_converged_fraction: null
+    # Per-mouse Kuiper tests are corrected across the 30-mouse family with BH.
+    uniformity_alpha: 0.05
+    example_mouse_indices:
+      - 1
+      - 10
+      - 20
+      - 30
+    subset_sizes:
+      - 5
+      - 10
+      - 20
+      - 40
+      - 80
+      - 120
+      - 240
+      - 360
+    random_seed: 20251026
+
+sweeps:
+  visual_noise:
+    enabled: false
+    stds:
+      - 0.0
+  neuron_count:
+    enabled: true
+    min_visual_sigma_bins: null
+    counts:
+      - 360
+  noise_by_neuron_count:
+    enabled: false
+    stds:
+      - 0.0
+    counts:
+      - 360

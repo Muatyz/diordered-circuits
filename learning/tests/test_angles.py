@@ -61,6 +61,24 @@ def test_peak_decode_groups_near_saturated_peak_top() -> None:
     assert np.isclose(decoded_angle, 0.0)
 
 
+def test_peak_decode_handles_plateau_across_angle_boundary() -> None:
+    theta_hd_pref = make_theta_hd_pref(8)
+    r_hd = np.zeros(8)
+    r_hd[0] = 1.0
+    r_hd[-1] = 1.0
+    decoded_angle = peak_decode(theta_hd_pref, r_hd)
+    assert np.isclose(decoded_angle, 7.0 * np.pi / 8.0)
+
+
+def test_peak_decode_rejects_ambiguous_separated_peak_tops() -> None:
+    theta_hd_pref = make_theta_hd_pref(8)
+    r_hd = np.zeros(8)
+    r_hd[1] = 1.0
+    r_hd[5] = 1.0
+    decoded_angle = peak_decode(theta_hd_pref, r_hd)
+    assert np.isnan(decoded_angle)
+
+
 def test_collapse_activity_by_theta_averages_partner_cells() -> None:
     theta_hd_pref = make_vafidis_paired_theta_hd_pref(8)
     r_hd = np.arange(8, dtype=float)

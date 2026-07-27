@@ -1,8 +1,8 @@
 experiment_name: vafidis_toy
 
 model:
-  n_theta: 60
-  n_hr: 60
+  n_theta: 120
+  n_hr: 120
   tau_s: 0.065
   tau_hd_to_hr: 0.04
   tau_l_hd: 0.01
@@ -23,24 +23,28 @@ model:
     random_jitter: 0.001
 
 simulation:
-  seed: 11
+  seed: 42
   dt: 0.01
-  recurrent_warmup_duration: 80.0
-  freeze_hd_to_hd_after_warmup: false
-  train_duration: 5000.0
+  # Faithful to the release-code training protocol: one OU trajectory with
+  # visual teacher present and all plastic weights updated from t=0.
+  train_duration: 6000.0
   bump_test_duration: 4.0
   darkness_test_duration: 6.0
   cue_duration: 0.35
   pi_cue_duration: 4.0
-  recue_duration: 2.0
-  save_interval_steps: 40
+  # Keep re-visual input long enough to verify whether the drifted bump
+  # re-locks to the true heading after darkness.
+  recue_duration: 8.0
+  save_interval_steps: 20
+  # Lower values give finer weight-development resolution. The recorder also
+  # includes the exact t=0 initialization and final state.
+  weight_snapshot_interval_steps: 500
   theta0: 0.0
   progress: true
 
 learning_rule:
   eta_hd_to_hd: 3.0
   eta_hr_to_hd: 20.0
-  hd_to_hd_learning_velocity_threshold: 4.0
   tau_delta: 0.10
   w_hd_to_hd_min: -1.5
   w_hd_to_hd_max: 2.0
@@ -57,6 +61,12 @@ visual:
   normalize_peak: true
   light_excitation: 4.0
   proximal_scale: 0.3333333333
+  noise_std: 0.0
+  noise_process: ou_additive
+  noise_correlation_time: 0.065
+  apply_noise_during_training: true
+  apply_noise_during_visual_test: true
+  noise_seed_offset: 20000
 
 velocity:
   process: ou
@@ -68,13 +78,87 @@ velocity:
 
 tests:
   darkness_angular_velocity: 8.726646259971648
+  # Vafidis-style zero-velocity diffusion probe. Independent IID noise is
+  # injected into distal HD, proximal HD, and HR synaptic inputs. We retain
+  # 120 trials (>100) while keeping the standard bump test noise-free.
+  bump_diffusion_duration: 10.0
+  bump_diffusion_trials: 300
+  bump_diffusion_test_noise_std: 0.1
+  bump_diffusion_seed_offset: 30000
+  # Fit Var[Delta theta(t)] = D_alpha * t^alpha after the initial cue-release
+  # transient. null uses the complete remainder of the darkness interval.
+  bump_diffusion_fit_start_time: 1.0
+  bump_diffusion_fit_end_time: null
+  # Frozen-weight attractor-landscape screening protocol. Uniform cue starts
+  # are released into zero-velocity darkness and decoded by PVA, peak neuron,
+  # and Clark Eq. 6 overlap. Use 360 starts / 60 s for a formal dense map.
+  bump_attractor_trajectory_enabled: true
+  bump_attractor_initial_conditions: 120
+  bump_attractor_duration: 30.0
+  bump_attractor_cue_duration: 4.0
+  bump_attractor_sample_interval: 0.25
+  # Shared-origin trajectories are intentionally dense below 0.6 rad/s to
+  # resolve pinning, nonlinear sliding, and the depinning transition.
+  velocity_trajectory_sweep_enabled: true
+  velocity_trajectory_sweep_velocities:
+    - 0.0
+    - 0.05
+    - 0.1
+    - 0.15
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+    - 0.8
+    - 1.0
+    - 1.4
+    - 2.0
+  velocity_trajectory_sweep_max_velocity: 2.0
+  velocity_trajectory_sweep_count: 11
+  velocity_trajectory_sweep_ring_velocity_count: 4
+  velocity_trajectory_sweep_zero_input_flow_window: 5.0
+  velocity_phase_flow_probe_enabled: true
+  velocity_phase_flow_initial_conditions: 360
+  velocity_phase_flow_duration: 2.0
+  velocity_phase_flow_sample_interval: 0.02
+  velocity_phase_flow_fit_start_time: 0.0
+  velocity_phase_flow_fit_duration: 2.0
+  velocity_phase_flow_angular_bins: 360
+  velocity_phase_flow_smoothing_bins: 5
+  velocity_phase_flow_empirical_lambda_speed_floor: 0.02
+  velocity_phase_flow_probe_velocities:
+    - 0.0
+    - 0.05
+    - 0.1
+    - 0.15
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+  velocity_trajectory_sweep_initial_heading: 0.0
+  velocity_trajectory_sweep_initial_conditions: 1
+  velocity_trajectory_sweep_duration: 30.0
+  velocity_trajectory_sweep_cue_duration: 4.0
+  velocity_trajectory_sweep_sample_interval: 0.05
+  velocity_trajectory_sweep_fit_start_time: 2.0
+  velocity_trajectory_sweep_depinning_gain_threshold: 0.5
+  velocity_trajectory_sweep_depinning_max_stall_fraction: 0.2
+  velocity_trajectory_sweep_depinning_success_fraction: 0.9
   gain_velocities:
     - -8.726646259971648
     - -6.981317007977318
     - -5.235987755982989
     - -3.490658503988659
     - -1.7453292519943295
+    - -0.75
+    - -0.5
+    - -0.25
     - 0.0
+    - 0.25
+    - 0.5
+    - 0.75
     - 1.7453292519943295
     - 3.490658503988659
     - 5.235987755982989

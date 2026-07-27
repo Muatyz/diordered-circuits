@@ -1,0 +1,75 @@
+# Visual-current-noise standard-deviation comparison for the Vafidis toy model.
+#
+# Run from learning/:
+# python -m learning.experiments.run_attractor_robustness --robustness-config configs/analysis/visual_current_noise_std_comparison.yaml
+#
+# This preset isolates the absolute OU additive current-noise std. All base
+# visual-teacher parameters other than visual.noise_std are kept fixed.
+
+experiment:
+  config: configs/experiments/vafidis_toy.yaml
+  run_dir: null
+
+output:
+  # Parent directory. Each invocation writes a timestamped child report under
+  # this directory so previous comparisons are preserved.
+  directory: reports/attractor_robustness/visual_current_noise_std_comparison
+  run_id_prefix: attractor_visual_noise_std
+
+runtime:
+  # null keeps the train_duration from experiment.config.
+  # Use a small value such as 160.0 for smoke tests.
+  train_duration: null
+  save_interval_steps: 80
+  progress: true
+  training_progress: true
+  skip_existing_runs: true
+  # Fixed seed by default for diagnostic comparisons. Add more offsets only
+  # after the single-seed behavior is understood.
+  seed_offsets:
+    - 0
+
+probes:
+  extended_recue:
+    enabled: false
+    duration: 8.0
+
+  manifold_perturbation:
+    enabled: false
+    manifold_points: 180
+    settle_duration: 1.0
+    perturbation_count: 6
+    perturbation_duration: 2.0
+    perturbation_scale: 0.05
+
+sweeps:
+  visual_noise:
+    enabled: true
+    # OU additive current noise is added after proximal scaling, in effective
+    # HD-current units. The OU tau is set by visual.noise_correlation_time in
+    # the base experiment config.
+    stds:
+      - 0.0
+      - 0.02
+      - 0.05
+      - 0.1
+      - 0.2
+      - 0.4
+      - 0.6
+      - 0.8
+      - 1.0
+      - 1.25
+      - 1.5
+      - 2.0
+
+  neuron_count:
+    enabled: false
+    counts:
+      - 60
+
+  noise_by_neuron_count:
+    enabled: false
+    stds:
+      - 0.0
+    counts:
+      - 60

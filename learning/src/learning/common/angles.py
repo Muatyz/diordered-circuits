@@ -75,6 +75,47 @@ def collapse_activity_by_theta(theta_hd_pref: np.ndarray, r_hd: np.ndarray) -> t
     return unique_theta, collapsed_rates / counts
 
 
+def _circular_true_runs(mask: np.ndarray) -> list[np.ndarray]:
+    """Return contiguous true runs on a circular boolean grid."""
+    mask = np.asarray(mask, dtype=bool)
+    if mask.ndim != 1:
+        raise ValueError("mask must be 1D")
+    if mask.size == 0 or not np.any(mask):
+        return []
+
+    runs: list[np.ndarray] = []
+    run_start: int | None = None
+    for index, value in enumerate(mask):
+        if value and run_start is None:
+            run_start = index
+        elif not value and run_start is not None:
+            runs.append(np.arange(run_start, index, dtype=int))
+            run_start = None
+    if run_start is not None:
+        runs.append(np.arange(run_start, mask.size, dtype=int))
+
+    if len(runs) > 1 and mask[0] and mask[-1]:
+        merged_run = np.concatenate([runs[-1], runs[0]])
+        runs = [merged_run, *runs[1:-1]]
+    return runs
+
+
+def _select_peak_component(peak_mask: np.ndarray, collapsed_rates: np.ndarray) -> np.ndarray | None:
+    """Select one contiguous near-peak component, or None if it is ambiguous."""
+    peak_runs = _circular_true_runs(peak_mask)
+    if not peak_runs:
+        return None
+    if len(peak_runs) == 1:
+        return peak_runs[0]
+
+    run_scores = np.asarray([np.sum(collapsed_rates[run]) for run in peak_runs], dtype=float)
+    best_score = float(np.max(run_scores))
+    tied_best = np.flatnonzero(np.isclose(run_scores, best_score, rtol=1e-9, atol=1e-12))
+    if tied_best.size != 1:
+        return None
+    return peak_runs[int(tied_best[0])]
+
+
 def peak_decode(
     theta_hd_pref: np.ndarray,
     r_hd: np.ndarray,
@@ -105,7 +146,10 @@ def peak_decode(
         relative_tolerance * max(abs(max_rate), max_rate - min_rate, 1.0),
     )
     peak_mask = collapsed_rates >= max_rate - tolerance
-    peak_vector = np.sum(np.exp(1j * unique_theta[peak_mask]))
+    peak_component = _select_peak_component(peak_mask, collapsed_rates)
+    if peak_component is None:
+        return float("nan")
+    peak_vector = np.sum(np.exp(1j * unique_theta[peak_component]))
     if np.abs(peak_vector) < 1e-12:
         return float("nan")
     return float(wrap_angle(np.angle(peak_vector)))

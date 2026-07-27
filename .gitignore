@@ -19,3 +19,14 @@
 /.dist
 __pycache__/
 *.pyc
+.pytest_cache/
+
+
+# 运行文件
+
+/learning/runs/vafidis_toy/
+/learning/runs/vafidis_toy/**
+/learning/reports/attractor_robustness/
+/learning/reports/attractor_robustness/**
+
+/prospective/runs/**

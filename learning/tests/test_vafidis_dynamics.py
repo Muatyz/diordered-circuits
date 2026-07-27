@@ -4,7 +4,11 @@ import numpy as np
 
 from learning.config.schema import ExperimentConfig
 from learning.dynamics.activation import apply_activation
-from learning.dynamics.hd_dynamics import euler_update_v_hd_distal
+from learning.dynamics.hd_dynamics import (
+    compute_hd_distal_pathway_drives,
+    euler_update_i_hd_distal,
+    euler_update_v_hd_distal,
+)
 from learning.dynamics.hr_dynamics import compute_i_hr, euler_update_r_hd_to_hr_lp
 from learning.models.vafidis_toy import VafidisToyParams, initialize_vafidis_toy_state, step_vafidis_toy
 from learning.common.random import make_rng
@@ -23,6 +27,73 @@ def test_hd_distal_voltage_is_independent_leaky_state() -> None:
         tau_l_hd=0.2,
     )
     assert np.allclose(next_v_hd_distal, np.array([0.5, 1.0]))
+
+
+def test_raw_sum_hd_distal_update_remains_the_default() -> None:
+    next_current = euler_update_i_hd_distal(
+        i_hd_distal=np.zeros(2),
+        w_hd_to_hd=np.ones((2, 2)),
+        r_hd=np.array([1.0, 2.0]),
+        w_hr_to_hd=np.ones((2, 2)),
+        r_hr=np.array([3.0, 4.0]),
+        b_hd=1.0,
+        dt=0.1,
+        tau_s=0.2,
+    )
+    np.testing.assert_allclose(next_current, 0.5 * (3.0 + 7.0 - 1.0))
+
+
+def test_population_mean_normalizes_hd_and_each_hr_wing_separately() -> None:
+    i_hd_from_hd, i_hd_from_lhr, i_hd_from_rhr = compute_hd_distal_pathway_drives(
+        w_hd_to_hd=np.ones((4, 4)),
+        r_hd=np.array([1.0, 2.0, 3.0, 4.0]),
+        w_hr_to_hd=np.ones((4, 4)),
+        r_hr=np.array([2.0, 4.0, 6.0, 8.0]),
+        normalization="presynaptic_population_mean",
+    )
+    np.testing.assert_allclose(i_hd_from_hd, 2.5)
+    np.testing.assert_allclose(i_hd_from_lhr, 3.0)
+    np.testing.assert_allclose(i_hd_from_rhr, 7.0)
+
+
+def test_population_mean_is_invariant_to_replicating_all_population_samples() -> None:
+    replication = 3
+    base_w_hd = np.array([[1.0, 2.0], [3.0, 4.0]])
+    base_w_lhr = np.array([[0.5], [1.5]])
+    base_w_rhr = np.array([[-1.0], [2.0]])
+    base_w_hr = np.concatenate([base_w_lhr, base_w_rhr], axis=1)
+    base_r_hd = np.array([0.25, 0.75])
+    base_r_hr = np.array([0.4, 0.8])
+    base_drives = compute_hd_distal_pathway_drives(
+        w_hd_to_hd=base_w_hd,
+        r_hd=base_r_hd,
+        w_hr_to_hd=base_w_hr,
+        r_hr=base_r_hr,
+        normalization="presynaptic_population_mean",
+    )
+
+    replicated_w_hd = np.tile(base_w_hd, (replication, replication))
+    replicated_w_hr = np.concatenate(
+        [
+            np.tile(base_w_lhr, (replication, replication)),
+            np.tile(base_w_rhr, (replication, replication)),
+        ],
+        axis=1,
+    )
+    replicated_drives = compute_hd_distal_pathway_drives(
+        w_hd_to_hd=replicated_w_hd,
+        r_hd=np.tile(base_r_hd, replication),
+        w_hr_to_hd=replicated_w_hr,
+        r_hr=np.concatenate(
+            [
+                np.tile(base_r_hr[:1], replication),
+                np.tile(base_r_hr[1:], replication),
+            ]
+        ),
+        normalization="presynaptic_population_mean",
+    )
+    for base_drive, replicated_drive in zip(base_drives, replicated_drives):
+        np.testing.assert_allclose(replicated_drive, np.tile(base_drive, replication))
 
 
 def test_hr_velocity_input_is_not_low_pass_filtered_with_hd_input() -> None:
@@ -188,3 +259,36 @@ def test_step_uses_previous_presynaptic_rates_for_hd_current_and_psp() -> None:
     assert np.max(next_state.r_hr) > 0.0
     assert np.allclose(next_state.i_hd_distal, 0.0)
     assert np.allclose(next_state.p_hr_synaptic, 0.0)
+
+
+def test_step_accepts_explicit_noise_at_all_synaptic_inputs() -> None:
+    config = ExperimentConfig()
+    config.model.n_theta = 4
+    config.model.n_hr = 4
+    params = VafidisToyParams.from_config(config)
+    state = initialize_vafidis_toy_state(config=config, rng=make_rng(config.simulation.seed))
+
+    quiet_state = step_vafidis_toy(
+        state=state,
+        params=params,
+        angular_velocity=0.0,
+        visual_teacher=False,
+        training=False,
+    )
+    noisy_state = step_vafidis_toy(
+        state=state,
+        params=params,
+        angular_velocity=0.0,
+        visual_teacher=False,
+        training=False,
+        i_hd_distal_noise=np.full(params.n_theta, 0.2),
+        i_hd_proximal_noise=np.full(params.n_theta, 0.3),
+        i_hr_noise=np.full(params.n_hr, 0.4),
+    )
+
+    assert np.allclose(
+        noisy_state.i_hd_distal - quiet_state.i_hd_distal,
+        params.dt / params.tau_s * 0.2,
+    )
+    assert np.allclose(noisy_state.i_hr - quiet_state.i_hr, 0.4)
+    assert not np.allclose(noisy_state.r_hd, quiet_state.r_hd)

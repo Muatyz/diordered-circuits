@@ -16,15 +16,22 @@ from learning.connectivity.initialize import (
 )
 from learning.dynamics.activation import apply_activation
 from learning.dynamics.hd_dynamics import (
+    HD_DISTAL_NORMALIZATION_MODES,
+    compute_hd_distal_pathway_drives,
     compute_hd_compartments,
-    euler_update_i_hd_distal,
+    euler_update_i_hd_distal_from_pathway_drives,
     euler_update_v_hd_distal,
 )
 from learning.dynamics.hr_dynamics import compute_i_hr, euler_update_r_hd_to_hr_lp
 from learning.plasticity.predictive_local import compute_e_hd, update_predictive_local_weights
 from learning.plasticity.traces import euler_update_psp_trace
 from learning.stimuli.velocity import make_i_vel_to_hr
-from learning.stimuli.visual import make_i_vis_to_hd, make_zero_i_vis_to_hd
+from learning.stimuli.visual import (
+    generate_heterogeneous_visual_profiles,
+    make_heterogeneous_i_vis_to_hd,
+    make_i_vis_to_hd,
+    make_zero_i_vis_to_hd,
+)
 
 
 @dataclass(frozen=True)
@@ -38,16 +45,28 @@ class VafidisToyParams:
     p_distal_to_proximal: float
     b_hd: float
     b_hr: float
+    hd_distal_normalization: str
     activation_name: str
     activation_gain: float
     activation_bias: float
     k_vel: float
+    visual_profile: str
     visual_amplitude: float
     visual_kappa: float
     visual_baseline: float
     visual_normalize_peak: bool
     visual_light_excitation: float
     visual_proximal_scale: float
+    visual_noise_std: float
+    visual_heterogeneous_sigma: float
+    visual_heterogeneous_beta: float
+    visual_heterogeneous_bias: float
+    visual_heterogeneous_n_angles: int
+    visual_heterogeneous_seed: int
+    visual_heterogeneous_alignment: str
+    visual_heterogeneous_normalization: str
+    visual_heterogeneous_population_sampling: str
+    visual_heterogeneous_master_n_hd_cells: int | None
     tau_delta: float
     eta_hd_to_hd: float
     eta_hr_to_hd: float
@@ -66,6 +85,12 @@ class VafidisToyParams:
             raise ValueError("The Vafidis-style toy model expects model.n_hr == model.n_theta")
         if n_hr % 2 != 0:
             raise ValueError("model.n_hr must be even so left/right HR wings have equal size")
+        hd_distal_normalization = config.model.hd_distal_normalization.lower()
+        if hd_distal_normalization not in HD_DISTAL_NORMALIZATION_MODES:
+            raise ValueError(
+                "model.hd_distal_normalization must be one of "
+                f"{sorted(HD_DISTAL_NORMALIZATION_MODES)}"
+            )
         return cls(
             n_theta=config.model.n_theta,
             n_hr=n_hr,
@@ -80,16 +105,34 @@ class VafidisToyParams:
             p_distal_to_proximal=config.model.p_distal_to_proximal,
             b_hd=config.model.b_hd,
             b_hr=config.model.b_hr,
+            hd_distal_normalization=hd_distal_normalization,
             activation_name=config.model.activation.name,
             activation_gain=config.model.activation.gain,
             activation_bias=config.model.activation.bias,
             k_vel=config.velocity.k_vel,
+            visual_profile=config.visual.profile,
             visual_amplitude=config.visual.amplitude,
             visual_kappa=config.visual.kappa,
             visual_baseline=config.visual.baseline,
             visual_normalize_peak=config.visual.normalize_peak,
             visual_light_excitation=config.visual.light_excitation,
             visual_proximal_scale=config.visual.proximal_scale,
+            visual_noise_std=config.visual.noise_std,
+            visual_heterogeneous_sigma=config.visual.heterogeneous_sigma,
+            visual_heterogeneous_beta=config.visual.heterogeneous_beta,
+            visual_heterogeneous_bias=config.visual.heterogeneous_bias,
+            visual_heterogeneous_n_angles=config.visual.heterogeneous_n_angles,
+            visual_heterogeneous_seed=(
+                config.simulation.seed + config.visual.heterogeneous_seed_offset
+            ),
+            visual_heterogeneous_alignment=config.visual.heterogeneous_alignment,
+            visual_heterogeneous_normalization=config.visual.heterogeneous_normalization,
+            visual_heterogeneous_population_sampling=(
+                config.visual.heterogeneous_population_sampling
+            ),
+            visual_heterogeneous_master_n_hd_cells=(
+                config.visual.heterogeneous_master_n_hd_cells
+            ),
             tau_delta=config.learning_rule.tau_delta,
             eta_hd_to_hd=config.learning_rule.eta_hd_to_hd,
             eta_hr_to_hd=config.learning_rule.eta_hr_to_hd,
@@ -109,13 +152,18 @@ class VafidisToyState:
     theta_true: float
     angular_velocity: float
     theta_hd_pref: np.ndarray
+    visual_tuning_profiles: np.ndarray | None
     r_hd_to_hr_lp: np.ndarray
     i_hr: np.ndarray
     r_hr: np.ndarray
+    i_hd_from_hd: np.ndarray
+    i_hd_from_lhr: np.ndarray
+    i_hd_from_rhr: np.ndarray
     i_hd_distal: np.ndarray
     v_hd_distal: np.ndarray
     v_hd_ss: np.ndarray
     v_hd_proximal: np.ndarray
+    i_vis_to_hd: np.ndarray
     r_hd: np.ndarray
     e_hd: np.ndarray
     p_hd_synaptic: np.ndarray
@@ -152,13 +200,22 @@ class VafidisToyState:
             theta_true=float(self.theta_true),
             angular_velocity=float(self.angular_velocity),
             theta_hd_pref=self.theta_hd_pref.copy(),
+            visual_tuning_profiles=(
+                None
+                if self.visual_tuning_profiles is None
+                else self.visual_tuning_profiles.copy()
+            ),
             r_hd_to_hr_lp=self.r_hd_to_hr_lp.copy(),
             i_hr=self.i_hr.copy(),
             r_hr=self.r_hr.copy(),
+            i_hd_from_hd=self.i_hd_from_hd.copy(),
+            i_hd_from_lhr=self.i_hd_from_lhr.copy(),
+            i_hd_from_rhr=self.i_hd_from_rhr.copy(),
             i_hd_distal=self.i_hd_distal.copy(),
             v_hd_distal=self.v_hd_distal.copy(),
             v_hd_ss=self.v_hd_ss.copy(),
             v_hd_proximal=self.v_hd_proximal.copy(),
+            i_vis_to_hd=self.i_vis_to_hd.copy(),
             r_hd=self.r_hd.copy(),
             e_hd=self.e_hd.copy(),
             p_hd_synaptic=self.p_hd_synaptic.copy(),
@@ -187,6 +244,8 @@ def _make_i_vis_to_hd_proximal(
     theta_hd_pref: np.ndarray,
     theta_true: float,
     params: VafidisToyParams,
+    visual_tuning_profiles: np.ndarray | None = None,
+    visual_noise: np.ndarray | None = None,
 ) -> np.ndarray:
     """Return the effective axon-proximal visual drive.
 
@@ -194,17 +253,35 @@ def _make_i_vis_to_hd_proximal(
     the axon-proximal compartment.  In the steady-state reduction used by the
     toy model, Eq. 31 scales that current by 1 / (gD + gL).
     """
-    i_vis_to_hd_raw = make_i_vis_to_hd(
-        theta_hd_pref=theta_hd_pref,
-        theta_true=theta_true,
-        amplitude=params.visual_amplitude,
-        kappa=params.visual_kappa,
-        baseline=params.visual_baseline,
-        normalize_peak=params.visual_normalize_peak,
-    )
-    return params.visual_proximal_scale * (
+    visual_profile = params.visual_profile.lower()
+    if visual_profile == "von_mises":
+        i_vis_to_hd_raw = make_i_vis_to_hd(
+            theta_hd_pref=theta_hd_pref,
+            theta_true=theta_true,
+            amplitude=params.visual_amplitude,
+            kappa=params.visual_kappa,
+            baseline=params.visual_baseline,
+            normalize_peak=params.visual_normalize_peak,
+        )
+    elif visual_profile == "heterogeneous_gaussian_process":
+        if visual_tuning_profiles is None:
+            raise ValueError("heterogeneous visual profile requires generated tuning profiles")
+        i_vis_to_hd_raw = make_heterogeneous_i_vis_to_hd(
+            tuning_profiles=visual_tuning_profiles,
+            theta_true=theta_true,
+            amplitude=params.visual_amplitude,
+            baseline=params.visual_baseline,
+        )
+    else:
+        raise ValueError(f"Unknown visual.profile: {params.visual_profile}")
+    i_vis_to_hd = params.visual_proximal_scale * (
         i_vis_to_hd_raw + params.visual_light_excitation
     )
+    if visual_noise is not None:
+        if visual_noise.shape != i_vis_to_hd.shape:
+            raise ValueError("visual_noise must match the HD visual input shape")
+        i_vis_to_hd = i_vis_to_hd + visual_noise
+    return i_vis_to_hd
 
 
 def validate_vafidis_toy_state(state: VafidisToyState, params: VafidisToyParams) -> None:
@@ -220,10 +297,14 @@ def validate_vafidis_toy_state(state: VafidisToyState, params: VafidisToyParams)
     for array_name in [
         "r_hd_to_hr_lp",
         "i_hr",
+        "i_hd_from_hd",
+        "i_hd_from_lhr",
+        "i_hd_from_rhr",
         "i_hd_distal",
         "v_hd_distal",
         "v_hd_ss",
         "v_hd_proximal",
+        "i_vis_to_hd",
         "e_hd",
         "p_hd_synaptic",
         "p_hd",
@@ -233,6 +314,14 @@ def validate_vafidis_toy_state(state: VafidisToyState, params: VafidisToyParams)
         "delta_w_hr_to_hd",
     ]:
         assert_finite(getattr(state, array_name), array_name)
+    for pathway_name in ["i_hd_from_hd", "i_hd_from_lhr", "i_hd_from_rhr"]:
+        if getattr(state, pathway_name).shape != (params.n_theta,):
+            raise ValueError(f"{pathway_name} must have shape (n_theta,)")
+    if state.visual_tuning_profiles is not None:
+        expected_rows = params.n_theta
+        if state.visual_tuning_profiles.ndim != 2 or state.visual_tuning_profiles.shape[0] != expected_rows:
+            raise ValueError("visual_tuning_profiles must have shape (n_theta, n_angles)")
+        assert_finite(state.visual_tuning_profiles, "visual_tuning_profiles")
     if not np.allclose(np.diag(state.w_hd_to_hd), 0.0):
         raise ValueError("w_hd_to_hd diagonal must be zero")
 
@@ -245,6 +334,20 @@ def initialize_vafidis_toy_state(
 ) -> VafidisToyState:
     params = VafidisToyParams.from_config(config)
     theta_hd_pref = make_vafidis_paired_theta_hd_pref(params.n_theta)
+    visual_tuning_profiles = None
+    if params.visual_profile.lower() == "heterogeneous_gaussian_process":
+        visual_tuning_profiles = generate_heterogeneous_visual_profiles(
+            theta_hd_pref=theta_hd_pref,
+            n_angles=params.visual_heterogeneous_n_angles,
+            sigma=params.visual_heterogeneous_sigma,
+            beta=params.visual_heterogeneous_beta,
+            bias=params.visual_heterogeneous_bias,
+            seed=params.visual_heterogeneous_seed,
+            alignment=params.visual_heterogeneous_alignment,
+            normalization=params.visual_heterogeneous_normalization,
+            population_sampling=params.visual_heterogeneous_population_sampling,
+            master_n_hd_cells=params.visual_heterogeneous_master_n_hd_cells,
+        )
     initial_theta_true = wrap_angle(config.simulation.theta0 if theta_true is None else theta_true)
     w_hd_to_hd = initialize_w_hd_to_hd(
         n_theta=params.n_theta,
@@ -281,6 +384,7 @@ def initialize_vafidis_toy_state(
         theta_hd_pref=theta_hd_pref,
         theta_true=float(initial_theta_true),
         params=params,
+        visual_tuning_profiles=visual_tuning_profiles,
     )
     v_hd_distal, v_hd_ss, v_hd_proximal = compute_hd_compartments(
         v_hd_distal=v_hd_distal,
@@ -296,6 +400,13 @@ def initialize_vafidis_toy_state(
         b_hr=params.b_hr,
     )
     r_hr = _activation(params, i_hr)
+    i_hd_from_hd, i_hd_from_lhr, i_hd_from_rhr = compute_hd_distal_pathway_drives(
+        w_hd_to_hd=w_hd_to_hd,
+        r_hd=r_hd,
+        w_hr_to_hd=w_hr_to_hd,
+        r_hr=r_hr,
+        normalization=params.hd_distal_normalization,
+    )
     r_hd_distal_prediction = _activation(params, v_hd_ss)
     e_hd = compute_e_hd(r_hd=r_hd, r_hd_distal_prediction=r_hd_distal_prediction)
     p_hd_synaptic = np.zeros(params.n_theta, dtype=float)
@@ -309,13 +420,18 @@ def initialize_vafidis_toy_state(
         theta_true=float(initial_theta_true),
         angular_velocity=0.0,
         theta_hd_pref=theta_hd_pref,
+        visual_tuning_profiles=visual_tuning_profiles,
         r_hd_to_hr_lp=r_hd_to_hr_lp,
         i_hr=i_hr,
         r_hr=r_hr,
+        i_hd_from_hd=i_hd_from_hd,
+        i_hd_from_lhr=i_hd_from_lhr,
+        i_hd_from_rhr=i_hd_from_rhr,
         i_hd_distal=i_hd_distal,
         v_hd_distal=v_hd_distal,
         v_hd_ss=v_hd_ss,
         v_hd_proximal=v_hd_proximal,
+        i_vis_to_hd=i_vis_to_hd,
         r_hd=r_hd,
         e_hd=e_hd,
         p_hd_synaptic=p_hd_synaptic,
@@ -332,21 +448,6 @@ def initialize_vafidis_toy_state(
     return state
 
 
-def make_visual_input_for_state(
-    *,
-    state: VafidisToyState,
-    params: VafidisToyParams,
-    visual_teacher: bool,
-) -> np.ndarray:
-    if not visual_teacher:
-        return make_zero_i_vis_to_hd(params.n_theta)
-    return _make_i_vis_to_hd_proximal(
-        theta_hd_pref=state.theta_hd_pref,
-        theta_true=state.theta_true,
-        params=params,
-    )
-
-
 def step_vafidis_toy(
     *,
     state: VafidisToyState,
@@ -354,14 +455,29 @@ def step_vafidis_toy(
     angular_velocity: float,
     visual_teacher: bool,
     training: bool,
+    visual_noise: np.ndarray | None = None,
+    i_hd_distal_noise: np.ndarray | None = None,
+    i_hd_proximal_noise: np.ndarray | None = None,
+    i_hr_noise: np.ndarray | None = None,
 ) -> VafidisToyState:
-    """Advance the toy model by one Euler step."""
+    """Advance one step, with optional IID noise at all synaptic inputs."""
+    for noise_name, noise_value, expected_shape in (
+        ("i_hd_distal_noise", i_hd_distal_noise, (params.n_theta,)),
+        ("i_hd_proximal_noise", i_hd_proximal_noise, (params.n_theta,)),
+        ("i_hr_noise", i_hr_noise, (params.n_hr,)),
+    ):
+        if noise_value is not None:
+            if np.asarray(noise_value).shape != expected_shape:
+                raise ValueError(f"{noise_name} must have shape {expected_shape}")
+            assert_finite(np.asarray(noise_value, dtype=float), noise_name)
     theta_true = float(wrap_angle(state.theta_true + angular_velocity * params.dt))
     i_vis_to_hd = (
         _make_i_vis_to_hd_proximal(
             theta_hd_pref=state.theta_hd_pref,
             theta_true=theta_true,
             params=params,
+            visual_tuning_profiles=state.visual_tuning_profiles,
+            visual_noise=visual_noise,
         )
         if visual_teacher
         else make_zero_i_vis_to_hd(params.n_theta)
@@ -384,18 +500,31 @@ def step_vafidis_toy(
         i_vel_to_hr=i_vel_to_hr,
         b_hr=params.b_hr,
     )
+    if i_hr_noise is not None:
+        i_hr = i_hr + np.asarray(i_hr_noise, dtype=float)
     r_hr = _activation(params, i_hr)
 
-    i_hd_distal = euler_update_i_hd_distal(
-        i_hd_distal=state.i_hd_distal,
+    i_hd_from_hd, i_hd_from_lhr, i_hd_from_rhr = compute_hd_distal_pathway_drives(
         w_hd_to_hd=state.w_hd_to_hd,
         r_hd=state.r_hd,
         w_hr_to_hd=state.w_hr_to_hd,
         r_hr=state.r_hr,
+        normalization=params.hd_distal_normalization,
+    )
+    i_hd_distal = euler_update_i_hd_distal_from_pathway_drives(
+        i_hd_distal=state.i_hd_distal,
+        i_hd_from_hd=i_hd_from_hd,
+        i_hd_from_lhr=i_hd_from_lhr,
+        i_hd_from_rhr=i_hd_from_rhr,
         b_hd=params.b_hd,
         dt=params.dt,
         tau_s=params.tau_s,
     )
+    if i_hd_distal_noise is not None:
+        i_hd_distal = i_hd_distal + (params.dt / params.tau_s) * np.asarray(
+            i_hd_distal_noise,
+            dtype=float,
+        )
     v_hd_distal = euler_update_v_hd_distal(
         v_hd_distal=state.v_hd_distal,
         i_hd_distal=i_hd_distal,
@@ -407,6 +536,8 @@ def step_vafidis_toy(
         i_vis_to_hd=i_vis_to_hd,
         p_distal_to_proximal=params.p_distal_to_proximal,
     )
+    if i_hd_proximal_noise is not None:
+        v_hd_proximal = v_hd_proximal + np.asarray(i_hd_proximal_noise, dtype=float)
     r_hd = _activation(params, v_hd_proximal)
     r_hd_distal_prediction = _activation(params, v_hd_ss)
     e_hd = compute_e_hd(r_hd=r_hd, r_hd_distal_prediction=r_hd_distal_prediction)
@@ -465,13 +596,18 @@ def step_vafidis_toy(
         theta_true=theta_true,
         angular_velocity=float(angular_velocity),
         theta_hd_pref=state.theta_hd_pref.copy(),
+        visual_tuning_profiles=state.visual_tuning_profiles,
         r_hd_to_hr_lp=r_hd_to_hr_lp,
         i_hr=i_hr,
         r_hr=r_hr,
+        i_hd_from_hd=i_hd_from_hd,
+        i_hd_from_lhr=i_hd_from_lhr,
+        i_hd_from_rhr=i_hd_from_rhr,
         i_hd_distal=i_hd_distal,
         v_hd_distal=v_hd_distal,
         v_hd_ss=v_hd_ss,
         v_hd_proximal=v_hd_proximal,
+        i_vis_to_hd=i_vis_to_hd,
         r_hd=r_hd,
         e_hd=e_hd,
         p_hd_synaptic=p_hd_synaptic,

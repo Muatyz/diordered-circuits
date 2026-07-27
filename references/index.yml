@@ -28,3 +28,10 @@ papers:
     status: digested
     path: references/oreilly2026_neocortex_learning
     tasks: [learning, literature]
+  sagodi2024_back_to_continuous_attractor:
+    title: Back to the Continuous Attractor
+    year: 2024
+    kind: attractor_analysis
+    status: digested
+    path: references/sagodi2024_back_to_continuous_attractor
+    tasks: [learning, diagnostics, robustness]
