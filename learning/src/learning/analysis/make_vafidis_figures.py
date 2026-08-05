@@ -14,6 +14,7 @@ from learning.analysis.metrics import (
 )
 from learning.analysis.phase_flow import summarize_velocity_phase_flows
 from learning.config.load_config import load_experiment_config
+from learning.config.diagnostics import selected_diagnostic_groups
 from learning.dynamics.hd_dynamics import (
     HD_DISTAL_NORMALIZATION_RAW_SUM,
     effective_hd_distal_weight_matrices,
@@ -49,6 +50,12 @@ from learning.plotting.heading import (
     plot_velocity_phase_flow_diagnostics,
     plot_velocity_trajectory_sweep,
     plot_velocity_gain_curve,
+)
+from learning.plotting.slow_manifold import (
+    plot_ramesan_firing_rate_diagnostics,
+    plot_ramesan_pca_variance_rank,
+    plot_ramesan_phase_landscape,
+    plot_slow_manifold_diagnostics,
 )
 from learning.plotting.weights import (
     plot_hd_to_hd_weight_profile_history,
@@ -183,6 +190,561 @@ def make_velocity_phase_flow_figures_for_run(*, run_dir: str | Path) -> None:
     )
 
 
+def _load_group_history(
+    *,
+    run_dir: Path,
+    filename: str,
+    group_name: str,
+):
+    path = run_dir / filename
+    if not path.exists():
+        raise FileNotFoundError(
+            f"diagnostic group {group_name!r} requires {filename}"
+        )
+    return load_npz(path)
+
+
+def _make_grouped_diagnostic_figures(
+    *,
+    run_dir: Path,
+    resolved_config,
+    activity_dir: Path,
+    heading_dir: Path,
+    weights_dir: Path,
+    gain_dir: Path,
+    diagnostics_dir: Path,
+) -> None:
+    """Plot only the diagnostic groups selected by the hyper config."""
+
+    groups = selected_diagnostic_groups(resolved_config)
+    if not groups:
+        return
+    test_metrics = (
+        load_json(run_dir / "test_metrics.json")
+        if (run_dir / "test_metrics.json").exists()
+        else {}
+    )
+    trained_weights = load_npz(run_dir / "trained_weights.npz")
+    theta_hd_pref = np.asarray(
+        trained_weights.get("theta_hd_pref", np.empty(0)),
+        dtype=float,
+    )
+    firing_rate_label = (
+        "HD firing rate [kHz]"
+        if np.isclose(resolved_config.model.activation.max_rate, 0.15)
+        else "normalized HD firing rate [a.u.]"
+    )
+
+    if "bump_maintenance" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="bump_history.npz",
+            group_name="bump_maintenance",
+        )
+        plot_activity_heatmap(
+            r_hd_history=history["r_hd"],
+            time=history["time"],
+            path=activity_dir / "bump_maintenance_hd_activity_heatmap.png",
+            title="Bump maintenance (cue, then darkness)",
+            theta_hd_pref=theta_hd_pref,
+            theta_hd_decoded=history.get("theta_hd_decoded"),
+            theta_hd_decoded_peak=history.get("theta_hd_decoded_peak"),
+            decode_theta_hd_pref=theta_hd_pref,
+            phase_id=history.get("phase_id"),
+            firing_rate_label=firing_rate_label,
+        )
+        plot_hd_current_heatmap(
+            current_history=history.get("i_vis_to_hd", np.empty((0, 0))),
+            time=history["time"],
+            path=activity_dir / "bump_maintenance_visual_input_heatmap.png",
+            title="Bump maintenance visual input",
+            theta_hd_pref=theta_hd_pref,
+            theta_true=history.get("theta_true"),
+            phase_id=history.get("phase_id"),
+            colorbar_label="I_vis to HD [current]",
+        )
+        plot_true_vs_decoded_heading(
+            time=history["time"],
+            theta_true=history["theta_true"],
+            theta_hd_decoded=history["theta_hd_decoded"],
+            theta_hd_decoded_peak=history.get("theta_hd_decoded_peak"),
+            path=heading_dir / "bump_maintenance_decoded_heading.png",
+            title="Bump maintenance (cue, then darkness)",
+        )
+
+    if "path_integration_and_pi_error" in groups:
+        darkness_history = _load_group_history(
+            run_dir=run_dir,
+            filename="darkness_history.npz",
+            group_name="path_integration_and_pi_error",
+        )
+        darkness_error = circular_error_trace(
+            darkness_history["theta_hd_decoded"],
+            darkness_history["theta_true"],
+        )
+        plot_activity_heatmap(
+            r_hd_history=darkness_history["r_hd"],
+            time=darkness_history["time"],
+            path=activity_dir / "darkness_hd_activity_heatmap.png",
+            title="Constant-velocity PI HD activity",
+            theta_hd_pref=theta_hd_pref,
+            theta_hd_decoded=darkness_history.get("theta_hd_decoded"),
+            theta_hd_decoded_peak=darkness_history.get(
+                "theta_hd_decoded_peak"
+            ),
+            decode_theta_hd_pref=theta_hd_pref,
+            phase_id=darkness_history.get("phase_id"),
+            firing_rate_label=firing_rate_label,
+        )
+        plot_hd_current_heatmap(
+            current_history=darkness_history.get(
+                "i_vis_to_hd", np.empty((0, 0))
+            ),
+            time=darkness_history["time"],
+            path=activity_dir / "darkness_visual_input_heatmap.png",
+            title="Constant-velocity PI visual input",
+            theta_hd_pref=theta_hd_pref,
+            theta_true=darkness_history.get("theta_true"),
+            phase_id=darkness_history.get("phase_id"),
+            colorbar_label="I_vis to HD [current]",
+        )
+        plot_heading_and_pi_error_panels(
+            time=darkness_history["time"],
+            theta_true=darkness_history["theta_true"],
+            theta_hd_decoded=darkness_history["theta_hd_decoded"],
+            theta_hd_decoded_peak=darkness_history.get("theta_hd_decoded_peak"),
+            phase_id=darkness_history.get("phase_id"),
+            path=heading_dir / "darkness_heading_and_pi_error.png",
+            title="Constant-velocity path integration",
+        )
+        plot_pi_error(
+            time=darkness_history["time"],
+            pi_error=darkness_error,
+            phase_id=darkness_history.get("phase_id"),
+            path=heading_dir / "darkness_pi_error.png",
+            title="Constant-velocity PI error",
+        )
+        ou_history = _load_group_history(
+            run_dir=run_dir,
+            filename="ou_darkness_history.npz",
+            group_name="path_integration_and_pi_error",
+        )
+        ou_error = circular_error_trace(
+            ou_history["theta_hd_decoded"],
+            ou_history["theta_true"],
+        )
+        plot_activity_heatmap(
+            r_hd_history=ou_history["r_hd"],
+            time=ou_history["time"],
+            path=activity_dir / "ou_darkness_hd_activity_heatmap.png",
+            title="OU PI HD activity",
+            theta_hd_pref=theta_hd_pref,
+            theta_hd_decoded=ou_history.get("theta_hd_decoded"),
+            theta_hd_decoded_peak=ou_history.get("theta_hd_decoded_peak"),
+            decode_theta_hd_pref=theta_hd_pref,
+            phase_id=ou_history.get("phase_id"),
+            firing_rate_label=firing_rate_label,
+        )
+        plot_hd_current_heatmap(
+            current_history=ou_history.get("i_vis_to_hd", np.empty((0, 0))),
+            time=ou_history["time"],
+            path=activity_dir / "ou_darkness_visual_input_heatmap.png",
+            title="OU PI visual input",
+            theta_hd_pref=theta_hd_pref,
+            theta_true=ou_history.get("theta_true"),
+            phase_id=ou_history.get("phase_id"),
+            colorbar_label="I_vis to HD [current]",
+        )
+        plot_heading_and_pi_error_panels(
+            time=ou_history["time"],
+            theta_true=ou_history["theta_true"],
+            theta_hd_decoded=ou_history["theta_hd_decoded"],
+            theta_hd_decoded_peak=ou_history.get("theta_hd_decoded_peak"),
+            phase_id=ou_history.get("phase_id"),
+            path=heading_dir / "ou_darkness_heading_and_pi_error.png",
+            title="OU path integration",
+        )
+        plot_pi_error(
+            time=ou_history["time"],
+            pi_error=ou_error,
+            phase_id=ou_history.get("phase_id"),
+            path=heading_dir / "ou_darkness_pi_error.png",
+            title="OU PI error",
+        )
+        ensemble = _load_group_history(
+            run_dir=run_dir,
+            filename="ou_pi_ensemble_history.npz",
+            group_name="path_integration_and_pi_error",
+        )
+        plot_pi_error_ensemble(
+            time=ensemble["time"],
+            pi_error_mean=ensemble["pva_pi_error_mean"],
+            pi_error_sem=ensemble["pva_pi_error_sem"],
+            systematic_drift_velocity=float(
+                test_metrics.get("ou_pi_ensemble_systematic_drift_velocity", np.nan)
+            ),
+            drift_intercept=float(
+                test_metrics.get("ou_pi_ensemble_drift_intercept", np.nan)
+            ),
+            n_trials=int(test_metrics.get("ou_pi_ensemble_n_trials", 0)),
+            path=heading_dir / "ou_pi_error_ensemble.png",
+        )
+
+    if "pva_spectrum_and_visualization" in groups:
+        tuning = _load_group_history(
+            run_dir=run_dir,
+            filename="hd_tuning_history.npz",
+            group_name="pva_spectrum_and_visualization",
+        )
+        preferred_direction = np.asarray(
+            tuning.get("empirical_preferred_direction", theta_hd_pref),
+            dtype=float,
+        )
+        preferred_direction = np.where(
+            np.isfinite(preferred_direction),
+            preferred_direction,
+            theta_hd_pref,
+        )
+        plot_single_neuron_hd_tuning_curves(
+            theta_true=tuning["theta_true"],
+            r_hd_by_heading=tuning["r_hd"],
+            preferred_direction=preferred_direction,
+            path=activity_dir / "single_neuron_hd_tuning_curves.png",
+            sample_count=resolved_config.tests.hd_tuning_curve_sample_count,
+            seed=resolved_config.simulation.seed + 70_000,
+        )
+        tuning_summary = summarize_com_aligned_tuning_curves(
+            theta_true=tuning["theta_true"],
+            r_hd_by_heading=tuning["r_hd"],
+        )
+        save_npz(run_dir / "hd_tuning_com_aligned.npz", **tuning_summary)
+        plot_com_aligned_hd_tuning_population(
+            theta_aligned=tuning_summary["theta_aligned"],
+            r_hd_peak_normalized_com_aligned=tuning_summary[
+                "r_hd_peak_normalized_com_aligned"
+            ],
+            population_mean=tuning_summary[
+                "r_hd_peak_normalized_com_aligned_mean"
+            ],
+            population_std=tuning_summary[
+                "r_hd_peak_normalized_com_aligned_std"
+            ],
+            path=activity_dir / "com_aligned_hd_tuning_population.png",
+        )
+        if "r_hd_visual_only" in tuning:
+            visual_only_summary = summarize_com_aligned_tuning_curves(
+                theta_true=tuning["theta_true"],
+                r_hd_by_heading=tuning["r_hd_visual_only"],
+            )
+            plot_hd_tuning_stage_comparison(
+                theta_aligned=tuning_summary["theta_aligned"],
+                visual_only_mean=visual_only_summary[
+                    "r_hd_peak_normalized_com_aligned_mean"
+                ],
+                visual_only_std=visual_only_summary[
+                    "r_hd_peak_normalized_com_aligned_std"
+                ],
+                post_training_mean=tuning_summary[
+                    "r_hd_peak_normalized_com_aligned_mean"
+                ],
+                post_training_std=tuning_summary[
+                    "r_hd_peak_normalized_com_aligned_std"
+                ],
+                path=activity_dir / "hd_tuning_visual_only_vs_post_training.png",
+            )
+        training_history = _load_group_history(
+            run_dir=run_dir,
+            filename="training_history.npz",
+            group_name="pva_spectrum_and_visualization",
+        )
+        plot_hd_current_heatmap(
+            current_history=training_history.get(
+                "i_vis_to_hd", np.empty((0, 0))
+            ),
+            time=training_history.get("time", np.empty(0)),
+            path=activity_dir / "training_visual_input_heatmap.png",
+            title="Training visual input to HD",
+            theta_hd_pref=preferred_direction,
+            theta_true=training_history.get("theta_true"),
+            colorbar_label="I_vis to HD [current]",
+        )
+        slow = _load_group_history(
+            run_dir=run_dir,
+            filename="slow_manifold_diagnostics.npz",
+            group_name="pva_spectrum_and_visualization",
+        )
+        if np.asarray(slow.get("candidate_theta", np.empty(0))).size:
+            plot_slow_manifold_diagnostics(
+                history=slow,
+                path=diagnostics_dir / "slow_manifold_diagnostics.png",
+            )
+        if np.asarray(slow.get("ramesan_probe_phase", np.empty(0))).size:
+            plot_ramesan_firing_rate_diagnostics(
+                history=slow,
+                path=diagnostics_dir / "ramesan_firing_rate_diagnostics.png",
+            )
+        if np.asarray(
+            slow.get("ramesan_pca_explained_variance_spectrum", np.empty(0))
+        ).size:
+            plot_ramesan_pca_variance_rank(
+                history=slow,
+                path=diagnostics_dir / "ramesan_pca_variance_rank.png",
+            )
+        if np.asarray(slow.get("ramesan_phase_bin_center", np.empty(0))).size:
+            plot_ramesan_phase_landscape(
+                history=slow,
+                path=(
+                    diagnostics_dir
+                    / "ramesan_phase_slow_regions_and_effective_potential.png"
+                ),
+            )
+
+    if "velocity_gain" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="velocity_gain_history.npz",
+            group_name="velocity_gain",
+        )
+        plot_velocity_gain_curve(
+            commanded_velocity=history["commanded_velocity"],
+            decoded_velocity=history["decoded_velocity"],
+            decoded_velocity_peak=history.get("decoded_velocity_peak"),
+            decoded_velocity_visual=history.get("decoded_velocity_visual"),
+            decoded_velocity_visual_peak=history.get(
+                "decoded_velocity_visual_peak"
+            ),
+            path=gain_dir / "velocity_gain_curve.png",
+            title="Velocity gain curve (visual cue vs darkness)",
+        )
+
+    if "trajectory_and_fixed_points" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="bump_attractor_trajectory_history.npz",
+            group_name="trajectory_and_fixed_points",
+        )
+        plot_bump_attractor_decoder_trajectories(
+            time=history["time"],
+            theta_initial=history["theta_initial"],
+            theta_pva=history["theta_pva"],
+            theta_peak=history["theta_peak"],
+            theta_overlap=history["theta_overlap"],
+            path=heading_dir / "bump_attractor_decoder_trajectories.png",
+        )
+
+    if "weight_snapshots_and_development" in groups:
+        w_hd_to_hd = trained_weights["w_hd_to_hd"]
+        w_hr_to_hd = trained_weights["w_hr_to_hd"]
+        plot_weight_matrices_side_by_side(
+            w_hd_to_hd=w_hd_to_hd,
+            w_hr_to_hd=w_hr_to_hd,
+            path=weights_dir / "training_weight_matrices_side_by_side.png",
+            title="Trained weights (model index order)",
+        )
+        weight_history = _load_group_history(
+            run_dir=run_dir,
+            filename="weight_history.npz",
+            group_name="weight_snapshots_and_development",
+        )
+        plot_weight_snapshot_grid(
+            weight_history=weight_history.get(
+                "w_hd_to_hd", np.empty((0, 0, 0))
+            ),
+            time=weight_history.get("time", np.empty(0)),
+            path=weights_dir / "training_weight_hd_to_hd_over_time.png",
+            title="HD-to-HD weights across training",
+            x_label="source HD neuron ID",
+            y_label="target HD neuron ID",
+        )
+        plot_weight_snapshot_grid(
+            weight_history=weight_history.get(
+                "w_hr_to_hd", np.empty((0, 0, 0))
+            ),
+            time=weight_history.get("time", np.empty(0)),
+            path=weights_dir / "training_weight_hr_to_hd_over_time.png",
+            title="HR-to-HD weights across training",
+            x_label="source HR neuron ID",
+            y_label="target HD neuron ID",
+        )
+        plot_weight_norm_trace(
+            time=weight_history.get("time", np.empty(0)),
+            weight_norm_hd_to_hd=weight_history.get(
+                "effective_weight_norm_hd_to_hd",
+                weight_history.get("weight_norm_hd_to_hd", np.empty(0)),
+            ),
+            weight_norm_hr_to_hd=weight_history.get(
+                "effective_weight_norm_hr_to_hd",
+                weight_history.get("weight_norm_hr_to_hd", np.empty(0)),
+            ),
+            path=weights_dir / "training_weight_norms_over_time.png",
+            title="Effective connectivity norms across training",
+        )
+
+    if "bump_diffusion" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="bump_diffusion_history.npz",
+            group_name="bump_diffusion",
+        )
+        anomalous = fit_anomalous_diffusion_power_law(
+            time=history["time"],
+            displacement_variance=history["pva_displacement_variance"],
+            fit_start_time=float(resolved_config.tests.bump_diffusion_fit_start_time),
+            fit_end_time=resolved_config.tests.bump_diffusion_fit_end_time,
+        )
+        for summary_name, metric_name in {
+            "anomalous_diffusion_exponent": (
+                "bump_ensemble_anomalous_diffusion_exponent"
+            ),
+            "generalized_diffusion_coefficient": (
+                "bump_ensemble_generalized_diffusion_coefficient"
+            ),
+            "anomalous_diffusion_log_r_squared": (
+                "bump_ensemble_anomalous_diffusion_log_r_squared"
+            ),
+            "anomalous_diffusion_fit_n_points": (
+                "bump_ensemble_anomalous_diffusion_fit_n_points"
+            ),
+            "anomalous_diffusion_fit_start_time": (
+                "bump_ensemble_anomalous_diffusion_fit_start_time"
+            ),
+            "anomalous_diffusion_fit_end_time": (
+                "bump_ensemble_anomalous_diffusion_fit_end_time"
+            ),
+        }.items():
+            test_metrics[metric_name] = float(anomalous[summary_name])
+        rad2_to_deg2 = float(np.rad2deg(1.0) ** 2)
+        if "bump_ensemble_diffusion_coefficient" in test_metrics:
+            test_metrics["bump_ensemble_diffusion_coefficient_deg2_s"] = float(
+                rad2_to_deg2
+                * test_metrics["bump_ensemble_diffusion_coefficient"]
+            )
+        test_metrics[
+            "bump_ensemble_generalized_diffusion_coefficient_deg2_s_alpha"
+        ] = float(
+            rad2_to_deg2
+            * test_metrics["bump_ensemble_generalized_diffusion_coefficient"]
+        )
+        save_json(run_dir / "test_metrics.json", test_metrics)
+        displacement_trials = np.asarray(
+            history.get("pva_angular_displacement", np.empty((0, 0)))
+        )
+        plot_ensemble_diffusion_variance(
+            time=history["time"],
+            displacement_mean=history["pva_displacement_mean"],
+            displacement_variance=history["pva_displacement_variance"],
+            diffusion_coefficient=float(
+                test_metrics.get("bump_ensemble_diffusion_coefficient", np.nan)
+            ),
+            systematic_drift_velocity=float(
+                test_metrics.get("bump_ensemble_systematic_drift_velocity", np.nan)
+            ),
+            anomalous_diffusion_fit=np.asarray(
+                anomalous["anomalous_diffusion_fit_trace"]
+            ),
+            anomalous_diffusion_exponent=float(
+                anomalous["anomalous_diffusion_exponent"]
+            ),
+            generalized_diffusion_coefficient=float(
+                anomalous["generalized_diffusion_coefficient"]
+            ),
+            anomalous_diffusion_log_r_squared=float(
+                anomalous["anomalous_diffusion_log_r_squared"]
+            ),
+            anomalous_diffusion_fit_start_time=float(
+                anomalous["anomalous_diffusion_fit_start_time"]
+            ),
+            anomalous_diffusion_fit_end_time=float(
+                anomalous["anomalous_diffusion_fit_end_time"]
+            ),
+            n_trials=(
+                int(displacement_trials.shape[0])
+                if displacement_trials.ndim == 2
+                else None
+            ),
+            path=diagnostics_dir / "bump_ensemble_diffusion_variance.png",
+        )
+
+    if "timescale_separation" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="timescale_separation_history.npz",
+            group_name="timescale_separation",
+        )
+        plot_timescale_separation_diagnostics(
+            normal_time=history["normal_time"],
+            perturbation_scale=history["perturbation_scale"],
+            normal_distance_to_manifold=history["normal_distance_to_manifold"],
+            normal_control_distance_to_manifold=history[
+                "normal_control_distance_to_manifold"
+            ],
+            normal_e_folding_time=history["normal_e_folding_time"],
+            normal_recovery_observed=history["normal_recovery_observed"],
+            tangential_time=history["tangential_time"],
+            tangential_overlap_displacement=history[
+                "tangential_overlap_displacement"
+            ],
+            tangential_first_passage_time=history[
+                "tangential_first_passage_time"
+            ],
+            tangential_first_passage_observed=history[
+                "tangential_first_passage_observed"
+            ],
+            tangential_threshold_rad=float(history["tangential_threshold_rad"]),
+            normal_time_p90=float(history["normal_time_p90"]),
+            tangential_time_p10=float(history["tangential_time_p10"]),
+            conservative_timescale_ratio=float(
+                history["conservative_timescale_ratio"]
+            ),
+            criterion_ratio_threshold=float(history["criterion_ratio_threshold"]),
+            criterion_passed=bool(float(history["criterion_passed"])),
+            criterion_ratio_is_lower_bound=bool(
+                float(history["criterion_ratio_is_lower_bound"])
+            ),
+            path=heading_dir / "timescale_separation_diagnostics.png",
+        )
+
+    if "velocity_dynamics_and_phase_flow" in groups:
+        history = _load_group_history(
+            run_dir=run_dir,
+            filename="velocity_trajectory_sweep_history.npz",
+            group_name="velocity_dynamics_and_phase_flow",
+        )
+        plot_velocity_trajectory_sweep(
+            time=history["time"],
+            commanded_velocity=history["commanded_velocity"],
+            theta_initial=history["theta_initial"],
+            pva_angular_displacement=history["pva_angular_displacement"],
+            overlap_angular_displacement=history["overlap_angular_displacement"],
+            decoded_velocity_pva=history["decoded_velocity_pva"],
+            decoded_velocity_overlap=history["decoded_velocity_overlap"],
+            path=heading_dir / "velocity_trajectory_sweep.png",
+        )
+        summary = summarize_velocity_phase_flows(
+            velocity_history=history,
+            angular_bin_count=int(resolved_config.tests.velocity_phase_flow_angular_bins),
+            smoothing_bin_count=int(
+                resolved_config.tests.velocity_phase_flow_smoothing_bins
+            ),
+            empirical_lambda_speed_floor=float(
+                resolved_config.tests.velocity_phase_flow_empirical_lambda_speed_floor
+            ),
+        )
+        save_npz(run_dir / "velocity_phase_flow_summary.npz", **summary)
+        plot_actual_fp_basin_rings(
+            summary=summary,
+            path=heading_dir / "velocity_actual_fp_basin_rings.png",
+        )
+        plot_velocity_dense_probe_trajectories(
+            summary=summary,
+            path=heading_dir / "velocity_dense_probe_trajectories.png",
+        )
+        plot_velocity_phase_flow_diagnostics(
+            summary=summary,
+            path=heading_dir / "velocity_phase_flow_diagnostics.png",
+        )
+
+
 def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
     run_dir = Path(run_dir)
     figures_dir = run_dir / "figures"
@@ -204,6 +766,24 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         load_experiment_config(resolved_config_path)
         if resolved_config_path.exists()
         else None
+    )
+    if resolved_config is None:
+        raise FileNotFoundError("run is missing a resolved config")
+    _make_grouped_diagnostic_figures(
+        run_dir=run_dir,
+        resolved_config=resolved_config,
+        activity_dir=activity_dir,
+        heading_dir=heading_dir,
+        weights_dir=weights_dir,
+        gain_dir=gain_dir,
+        diagnostics_dir=diagnostics_dir,
+    )
+    return
+    firing_rate_label = (
+        "HD firing rate [kHz]"
+        if resolved_config is not None
+        and np.isclose(resolved_config.model.activation.max_rate, 0.15)
+        else "normalized HD firing rate [a.u.]"
     )
     trained_weights = load_npz(run_dir / "trained_weights.npz")
     test_metrics = load_json(run_dir / "test_metrics.json") if (run_dir / "test_metrics.json").exists() else {}
@@ -232,6 +812,11 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
     timescale_separation_history = (
         load_npz(run_dir / "timescale_separation_history.npz")
         if (run_dir / "timescale_separation_history.npz").exists()
+        else None
+    )
+    slow_manifold_history = (
+        load_npz(run_dir / "slow_manifold_diagnostics.npz")
+        if (run_dir / "slow_manifold_diagnostics.npz").exists()
         else None
     )
     velocity_trajectory_sweep_history = (
@@ -498,6 +1083,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         theta_hd_decoded=training_activity_history.get("theta_hd_decoded", None),
         theta_hd_decoded_peak=training_activity_history.get("theta_hd_decoded_peak", None),
         decode_theta_hd_pref=theta_hd_plot_pref,
+        firing_rate_label=firing_rate_label,
     )
     plot_hd_current_heatmap(
         current_history=training_activity_history.get("i_vis_to_hd", np.empty((0, 0))),
@@ -523,6 +1109,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
             path=activity_dir / "training_hd_activity_heatmap_full.png",
             title=f"Training HD activity ({activity_sort_label} sorted; full)",
             theta_hd_pref=theta_hd_plot_pref,
+            firing_rate_label=firing_rate_label,
         )
     plot_activity_tuning_slices(
         r_hd_history=training_history.get("r_hd", np.empty((0, 0))),
@@ -530,6 +1117,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         theta_hd_pref=theta_hd_plot_pref,
         path=activity_dir / "training_hd_activity_slices.png",
         title=f"Training HD activity slices ({activity_sort_label} sorted)",
+        firing_rate_label=firing_rate_label,
     )
     plot_activity_heatmap(
         r_hd_history=bump_history.get("r_hd", np.empty((0, 0))),
@@ -541,6 +1129,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         theta_hd_decoded_peak=bump_history.get("theta_hd_decoded_peak", None),
         decode_theta_hd_pref=theta_hd_plot_pref,
         phase_id=bump_history.get("phase_id", None),
+        firing_rate_label=firing_rate_label,
     )
     plot_hd_current_heatmap(
         current_history=bump_history.get("i_vis_to_hd", np.empty((0, 0))),
@@ -560,6 +1149,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         title="Post-training bump maintenance HD activity slices",
         slice_times=_select_bump_maintenance_slice_times(bump_history),
         time_context="frozen-weight protocol",
+        firing_rate_label=firing_rate_label,
     )
     plot_activity_heatmap(
         r_hd_history=darkness_history.get("r_hd", np.empty((0, 0))),
@@ -571,6 +1161,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         theta_hd_decoded_peak=darkness_history.get("theta_hd_decoded_peak", None),
         decode_theta_hd_pref=theta_hd_plot_pref,
         phase_id=darkness_history.get("phase_id", None),
+        firing_rate_label=firing_rate_label,
     )
     plot_hd_current_heatmap(
         current_history=darkness_history.get("i_vis_to_hd", np.empty((0, 0))),
@@ -588,6 +1179,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
         theta_hd_pref=theta_hd_plot_pref,
         path=activity_dir / "darkness_hd_activity_slices.png",
         title="Constant-velocity PI HD tuning slices",
+        firing_rate_label=firing_rate_label,
     )
     if ou_darkness_history is not None:
         plot_activity_heatmap(
@@ -600,6 +1192,7 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
             theta_hd_decoded_peak=ou_darkness_history.get("theta_hd_decoded_peak", None),
             decode_theta_hd_pref=theta_hd_plot_pref,
             phase_id=ou_darkness_history.get("phase_id", None),
+            firing_rate_label=firing_rate_label,
         )
         plot_hd_current_heatmap(
             current_history=ou_darkness_history.get("i_vis_to_hd", np.empty((0, 0))),
@@ -733,6 +1326,59 @@ def make_vafidis_figures_for_run(*, run_dir: str | Path) -> None:
             theta_peak=bump_attractor_trajectory_history["theta_peak"],
             theta_overlap=bump_attractor_trajectory_history["theta_overlap"],
             path=heading_dir / "bump_attractor_decoder_trajectories.png",
+        )
+    if (
+        slow_manifold_history is not None
+        and np.asarray(
+            slow_manifold_history.get("candidate_theta", np.empty(0)),
+            dtype=float,
+        ).size
+        > 0
+    ):
+        plot_slow_manifold_diagnostics(
+            history=slow_manifold_history,
+            path=diagnostics_dir / "slow_manifold_diagnostics.png",
+        )
+    if (
+        slow_manifold_history is not None
+        and np.asarray(
+            slow_manifold_history.get("ramesan_probe_phase", np.empty(0)),
+            dtype=float,
+        ).size
+        > 0
+    ):
+        plot_ramesan_firing_rate_diagnostics(
+            history=slow_manifold_history,
+            path=diagnostics_dir / "ramesan_firing_rate_diagnostics.png",
+        )
+    if (
+        slow_manifold_history is not None
+        and np.asarray(
+            slow_manifold_history.get(
+                "ramesan_pca_explained_variance_spectrum", np.empty(0)
+            ),
+            dtype=float,
+        ).size
+        > 0
+    ):
+        plot_ramesan_pca_variance_rank(
+            history=slow_manifold_history,
+            path=diagnostics_dir / "ramesan_pca_variance_rank.png",
+        )
+    if (
+        slow_manifold_history is not None
+        and np.asarray(
+            slow_manifold_history.get("ramesan_phase_bin_center", np.empty(0)),
+            dtype=float,
+        ).size
+        > 0
+    ):
+        plot_ramesan_phase_landscape(
+            history=slow_manifold_history,
+            path=(
+                diagnostics_dir
+                / "ramesan_phase_slow_regions_and_effective_potential.png"
+            ),
         )
     if (
         timescale_separation_history is not None

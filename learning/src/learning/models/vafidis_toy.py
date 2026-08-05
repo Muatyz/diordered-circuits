@@ -17,10 +17,14 @@ from learning.connectivity.initialize import (
 from learning.dynamics.activation import apply_activation
 from learning.dynamics.hd_dynamics import (
     HD_DISTAL_NORMALIZATION_MODES,
+    PROXIMAL_INTEGRATION_FORWARD_EULER,
+    PROXIMAL_INTEGRATION_METHODS,
     compute_hd_distal_pathway_drives,
     compute_hd_compartments,
+    compute_v_hd_proximal_steady_state,
     euler_update_i_hd_distal_from_pathway_drives,
     euler_update_v_hd_distal,
+    update_v_hd_proximal,
 )
 from learning.dynamics.hr_dynamics import compute_i_hr, euler_update_r_hd_to_hr_lp
 from learning.plasticity.predictive_local import compute_e_hd, update_predictive_local_weights
@@ -39,16 +43,21 @@ class VafidisToyParams:
     n_theta: int
     n_hr: int
     dt: float
+    proximal_integration_method: str
     tau_s: float
     tau_hd_to_hr: float
     tau_l_hd: float
     p_distal_to_proximal: float
+    c_hd_proximal: float
+    g_l_hd_proximal: float
+    g_d_hd_to_proximal: float
     b_hd: float
     b_hr: float
     hd_distal_normalization: str
     activation_name: str
     activation_gain: float
     activation_bias: float
+    activation_max_rate: float
     k_vel: float
     visual_profile: str
     visual_amplitude: float
@@ -70,13 +79,14 @@ class VafidisToyParams:
     tau_delta: float
     eta_hd_to_hd: float
     eta_hr_to_hd: float
-    w_hd_to_hd_min: float
-    w_hd_to_hd_max: float
-    w_hr_to_hd_min: float
-    w_hr_to_hd_max: float
+    w_hd_to_hd_min: float | None
+    w_hd_to_hd_max: float | None
+    w_hr_to_hd_min: float | None
+    w_hr_to_hd_max: float | None
     hd_to_hd_symmetry_mode: str
     hd_to_hd_balance_mode: str
     hr_to_hd_balance_mode: str
+    zero_hd_to_hd_diagonal: bool
 
     @classmethod
     def from_config(cls, config: ExperimentConfig) -> "VafidisToyParams":
@@ -91,10 +101,56 @@ class VafidisToyParams:
                 "model.hd_distal_normalization must be one of "
                 f"{sorted(HD_DISTAL_NORMALIZATION_MODES)}"
             )
+        c_hd_proximal = float(config.model.c_hd_proximal)
+        g_l_hd_proximal = float(config.model.g_l_hd_proximal)
+        g_d_hd_to_proximal = float(config.model.g_d_hd_to_proximal)
+        if c_hd_proximal <= 0.0:
+            raise ValueError("model.c_hd_proximal must be positive")
+        if g_l_hd_proximal < 0.0 or g_d_hd_to_proximal < 0.0:
+            raise ValueError("HD proximal conductances must be non-negative")
+        total_proximal_conductance = g_l_hd_proximal + g_d_hd_to_proximal
+        if total_proximal_conductance <= 0.0:
+            raise ValueError("HD proximal conductances must have a positive sum")
+        proximal_integration_method = str(
+            config.simulation.proximal_integration_method
+        ).lower()
+        if proximal_integration_method not in PROXIMAL_INTEGRATION_METHODS:
+            raise ValueError(
+                "simulation.proximal_integration_method must be one of "
+                f"{sorted(PROXIMAL_INTEGRATION_METHODS)}"
+            )
+        expected_distal_attenuation = (
+            g_d_hd_to_proximal / total_proximal_conductance
+        )
+        if not np.isclose(
+            config.model.p_distal_to_proximal,
+            expected_distal_attenuation,
+            rtol=1e-8,
+            atol=1e-10,
+        ):
+            raise ValueError(
+                "model.p_distal_to_proximal must equal "
+                "g_d_hd_to_proximal / (g_d_hd_to_proximal + g_l_hd_proximal)"
+            )
+        proximal_euler_factor = (
+            config.simulation.dt * total_proximal_conductance / c_hd_proximal
+        )
+        if (
+            proximal_integration_method == PROXIMAL_INTEGRATION_FORWARD_EULER
+            and proximal_euler_factor >= 2.0
+        ):
+            raise ValueError(
+                "simulation.dt is unstable for the Vafidis Eq. 4 forward-Euler "
+                "update; require dt * (gL + gD) / C < 2"
+            )
+        activation_max_rate = float(config.model.activation.max_rate)
+        if activation_max_rate <= 0.0:
+            raise ValueError("model.activation.max_rate must be positive")
         return cls(
             n_theta=config.model.n_theta,
             n_hr=n_hr,
             dt=config.simulation.dt,
+            proximal_integration_method=proximal_integration_method,
             tau_s=config.model.tau_s,
             tau_hd_to_hr=(
                 config.model.tau_s
@@ -103,12 +159,16 @@ class VafidisToyParams:
             ),
             tau_l_hd=config.model.tau_l_hd,
             p_distal_to_proximal=config.model.p_distal_to_proximal,
+            c_hd_proximal=c_hd_proximal,
+            g_l_hd_proximal=g_l_hd_proximal,
+            g_d_hd_to_proximal=g_d_hd_to_proximal,
             b_hd=config.model.b_hd,
             b_hr=config.model.b_hr,
             hd_distal_normalization=hd_distal_normalization,
             activation_name=config.model.activation.name,
             activation_gain=config.model.activation.gain,
             activation_bias=config.model.activation.bias,
+            activation_max_rate=activation_max_rate,
             k_vel=config.velocity.k_vel,
             visual_profile=config.visual.profile,
             visual_amplitude=config.visual.amplitude,
@@ -143,6 +203,7 @@ class VafidisToyParams:
             hd_to_hd_symmetry_mode=config.learning_rule.hd_to_hd_symmetry_mode,
             hd_to_hd_balance_mode=config.learning_rule.hd_to_hd_balance_mode,
             hr_to_hd_balance_mode=config.learning_rule.hr_to_hd_balance_mode,
+            zero_hd_to_hd_diagonal=config.learning_rule.zero_hd_to_hd_diagonal,
         )
 
 
@@ -236,6 +297,7 @@ def _activation(params: VafidisToyParams, voltage: np.ndarray) -> np.ndarray:
         activation_name=params.activation_name,
         gain=params.activation_gain,
         bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
     )
 
 
@@ -247,11 +309,11 @@ def _make_i_vis_to_hd_proximal(
     visual_tuning_profiles: np.ndarray | None = None,
     visual_noise: np.ndarray | None = None,
 ) -> np.ndarray:
-    """Return the effective axon-proximal visual drive.
+    """Return the complete light-dependent current entering paper Eq. 4.
 
     Vafidis et al. Eq. 4 injects visual input and light-only excitation into
-    the axon-proximal compartment.  In the steady-state reduction used by the
-    toy model, Eq. 31 scales that current by 1 / (gD + gL).
+    the axon-proximal compartment. ``visual.proximal_scale`` is an optional
+    experimental current gain; the paper-aligned baseline sets it to one.
     """
     visual_profile = params.visual_profile.lower()
     if visual_profile == "von_mises":
@@ -322,7 +384,9 @@ def validate_vafidis_toy_state(state: VafidisToyState, params: VafidisToyParams)
         if state.visual_tuning_profiles.ndim != 2 or state.visual_tuning_profiles.shape[0] != expected_rows:
             raise ValueError("visual_tuning_profiles must have shape (n_theta, n_angles)")
         assert_finite(state.visual_tuning_profiles, "visual_tuning_profiles")
-    if not np.allclose(np.diag(state.w_hd_to_hd), 0.0):
+    if params.zero_hd_to_hd_diagonal and not np.allclose(
+        np.diag(state.w_hd_to_hd), 0.0
+    ):
         raise ValueError("w_hd_to_hd diagonal must be zero")
 
 
@@ -360,6 +424,7 @@ def initialize_vafidis_toy_state(
         upper_bound=params.w_hd_to_hd_max,
         symmetry_mode=params.hd_to_hd_symmetry_mode,
         balance_mode=params.hd_to_hd_balance_mode,
+        zero_diagonal=params.zero_hd_to_hd_diagonal,
     )
     w_hr_to_hd = initialize_w_hr_to_hd(
         n_theta=params.n_theta,
@@ -386,9 +451,15 @@ def initialize_vafidis_toy_state(
         params=params,
         visual_tuning_profiles=visual_tuning_profiles,
     )
-    v_hd_distal, v_hd_ss, v_hd_proximal = compute_hd_compartments(
+    v_hd_proximal = compute_v_hd_proximal_steady_state(
         v_hd_distal=v_hd_distal,
         i_vis_to_hd=i_vis_to_hd,
+        g_l_hd_proximal=params.g_l_hd_proximal,
+        g_d_hd_to_proximal=params.g_d_hd_to_proximal,
+    )
+    v_hd_distal, v_hd_ss, v_hd_proximal = compute_hd_compartments(
+        v_hd_distal=v_hd_distal,
+        v_hd_proximal=v_hd_proximal,
         p_distal_to_proximal=params.p_distal_to_proximal,
     )
     r_hd = _activation(params, v_hd_proximal)
@@ -488,22 +559,11 @@ def step_vafidis_toy(
         k_vel=params.k_vel,
     )
 
-    r_hd_to_hr_lp = euler_update_r_hd_to_hr_lp(
-        r_hd_to_hr_lp=state.r_hd_to_hr_lp,
-        r_hd=state.r_hd,
-        dt=params.dt,
-        tau_s=params.tau_hd_to_hr,
-    )
-    i_hr = compute_i_hr(
-        w_hd_to_hr=state.w_hd_to_hr,
-        r_hd_to_hr_lp=r_hd_to_hr_lp,
-        i_vel_to_hr=i_vel_to_hr,
-        b_hr=params.b_hr,
-    )
-    if i_hr_noise is not None:
-        i_hr = i_hr + np.asarray(i_hr_noise, dtype=float)
-    r_hr = _activation(params, i_hr)
-
+    # Match the ordered fixed-step data stream in the released LearnPI network:
+    # distal current -> distal voltage -> PSP -> HD-to-HR delay/HR -> proximal
+    # voltage -> prediction error -> plasticity. The proximal substep uses the
+    # configured Euler or exact-linear Eq. (4) update. All population drives
+    # below deliberately use the old rates and weights from ``state``.
     i_hd_from_hd, i_hd_from_lhr, i_hd_from_rhr = compute_hd_distal_pathway_drives(
         w_hd_to_hd=state.w_hd_to_hd,
         r_hd=state.r_hd,
@@ -531,16 +591,6 @@ def step_vafidis_toy(
         dt=params.dt,
         tau_l_hd=params.tau_l_hd,
     )
-    v_hd_distal, v_hd_ss, v_hd_proximal = compute_hd_compartments(
-        v_hd_distal=v_hd_distal,
-        i_vis_to_hd=i_vis_to_hd,
-        p_distal_to_proximal=params.p_distal_to_proximal,
-    )
-    if i_hd_proximal_noise is not None:
-        v_hd_proximal = v_hd_proximal + np.asarray(i_hd_proximal_noise, dtype=float)
-    r_hd = _activation(params, v_hd_proximal)
-    r_hd_distal_prediction = _activation(params, v_hd_ss)
-    e_hd = compute_e_hd(r_hd=r_hd, r_hd_distal_prediction=r_hd_distal_prediction)
 
     p_hd_synaptic, p_hd = euler_update_psp_trace(
         p_synaptic=state.p_hd_synaptic,
@@ -558,6 +608,47 @@ def step_vafidis_toy(
         tau_s=params.tau_s,
         tau_l=params.tau_l_hd,
     )
+
+    r_hd_to_hr_lp = euler_update_r_hd_to_hr_lp(
+        r_hd_to_hr_lp=state.r_hd_to_hr_lp,
+        r_hd=state.r_hd,
+        dt=params.dt,
+        tau_s=params.tau_hd_to_hr,
+    )
+    i_hr = compute_i_hr(
+        w_hd_to_hr=state.w_hd_to_hr,
+        r_hd_to_hr_lp=r_hd_to_hr_lp,
+        i_vel_to_hr=i_vel_to_hr,
+        b_hr=params.b_hr,
+    )
+    if i_hr_noise is not None:
+        i_hr = i_hr + np.asarray(i_hr_noise, dtype=float)
+    r_hr = _activation(params, i_hr)
+
+    i_hd_proximal = i_vis_to_hd
+    if i_hd_proximal_noise is not None:
+        i_hd_proximal = i_hd_proximal + np.asarray(
+            i_hd_proximal_noise,
+            dtype=float,
+        )
+    v_hd_proximal = update_v_hd_proximal(
+        v_hd_proximal=state.v_hd_proximal,
+        v_hd_distal=v_hd_distal,
+        i_vis_to_hd=i_hd_proximal,
+        dt=params.dt,
+        c_hd_proximal=params.c_hd_proximal,
+        g_l_hd_proximal=params.g_l_hd_proximal,
+        g_d_hd_to_proximal=params.g_d_hd_to_proximal,
+        integration_method=params.proximal_integration_method,
+    )
+    v_hd_distal, v_hd_ss, v_hd_proximal = compute_hd_compartments(
+        v_hd_distal=v_hd_distal,
+        v_hd_proximal=v_hd_proximal,
+        p_distal_to_proximal=params.p_distal_to_proximal,
+    )
+    r_hd = _activation(params, v_hd_proximal)
+    r_hd_distal_prediction = _activation(params, v_hd_ss)
+    e_hd = compute_e_hd(r_hd=r_hd, r_hd_distal_prediction=r_hd_distal_prediction)
 
     if training:
         (
@@ -584,6 +675,7 @@ def step_vafidis_toy(
             hd_to_hd_symmetry_mode=params.hd_to_hd_symmetry_mode,
             hd_to_hd_balance_mode=params.hd_to_hd_balance_mode,
             hr_to_hd_balance_mode=params.hr_to_hd_balance_mode,
+            zero_hd_to_hd_diagonal=params.zero_hd_to_hd_diagonal,
         )
     else:
         w_hd_to_hd = state.w_hd_to_hd.copy()

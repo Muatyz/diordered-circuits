@@ -4,14 +4,14 @@
 
 | Paper concept | Current code | Current status | Required change |
 |---|---|---|---|
-| Frozen autonomous dynamics | `models/vafidis_toy.py::step_vafidis_toy` | Dynamics, stimulus and plasticity share one step API | Add a pure frozen autonomous state/map wrapper before Jacobian work |
-| Slow ring candidate | `run_bump_attractor_trajectory_test` | Long zero-input trajectories exist | Save full dynamic state, not decoded angle/HD voltage alone |
+| Frozen autonomous dynamics | `dynamics/autonomous.py::FrozenAutonomousDynamics` | Implemented; exact map and analytic flow Jacobian match the existing darkness step | Keep `r_hr` as explicit lagged state unless model dynamics are deliberately changed |
+| Slow ring candidate | `run_bump_attractor_trajectory_test` | Implemented per-trajectory `10^-3 max speed` capture without storing the full all-trajectory tensor | Always report angular support before fitting |
 | Reference manifold | `run_timescale_separation_test` | Uses visual-teacher `v_hd_distal` curve | Keep as teacher-manifold assay; add separately identified autonomous manifold |
 | Normal recovery | `run_timescale_separation_test` | Operational trajectory e-folding test exists | Perturb/project in full Markov state around autonomous manifold |
-| Tangential flow | `analysis/phase_flow.py` | Direct PVA angular flow is implemented | Add zero-input `eta`, coverage/QC and bound validation |
-| Fixed points and basins | `phase_flow.py::_periodic_roots`, `actual_stable_basins` | Implemented geometrically | Add independent long-run validation, basin fractions and entropy |
-| Normal hyperbolicity | none | Weight spectrum and trajectory ratio are only proxies | Compute full dynamics Jacobian along manifold and tangent alignment |
-| PCA visualization | pending TODO | Not implemented | Plot identified manifold/perturbations only after full-state analysis; PCA is display-only |
+| Tangential flow | `analysis/slow_manifold.py`, `analysis/phase_flow.py` | Spline-coordinate zero-input flow and existing rollout phase flow implemented | Add finite-horizon bound validation |
+| Fixed points and basins | `analysis/slow_manifold.py`, `phase_flow.py::actual_stable_basins` | Reversal roots and basin entropy implemented for coverage-qualified ring | Add independent long-run root/basin validation |
+| Normal hyperbolicity | `dynamics/autonomous.py::flow_jacobian`, `analysis/slow_manifold.py` | Leading full-dynamics spectrum and tangent alignment implemented conditionally | Do not compute/interpret a ring spectrum when angular coverage fails |
+| PCA visualization | `plotting/slow_manifold.py` | Full-state ring PCA implemented only for accepted fit; rejected fit gets candidate coverage plot | PCA remains display-only |
 | S-type robustness | input/state-noise and perturbation tests | Several noise paths exist but semantics are mixed | Add explicit state perturbation/noise result group |
 | D-type robustness | none | Training-noise sweeps are not D-type | Add frozen weight-perturbation sweep with paired seeds/directions |
 | Finite-time bound | angular errors + phase flow primitives | Not assembled | Compare empirical circular error with `min(t eta, pi)` |
@@ -21,9 +21,10 @@
 
 - `learning/src/learning/dynamics/autonomous.py`: canonical frozen state and vector field/step map.
 - `learning/src/learning/analysis/slow_manifold.py`: tail-state selection, periodic manifold, full-state projection and invariance diagnostics.
-- `learning/src/learning/analysis/jacobian.py`: finite-difference Jacobian, eigenspectrum and tangent alignment.
+- `learning/src/learning/dynamics/autonomous.py`: exact analytic Jacobian; central finite difference is its test oracle.
 - `learning/src/learning/analysis/phase_flow.py`: decoded tangent field, fixed points, basin metrics and finite-time bound inputs.
 - `learning/src/learning/experiments/test_vafidis_toy.py`: CLI orchestration only.
+- `learning/src/learning/experiments/analyze_slow_manifold.py`: focused saved-run entry point.
 - `learning/src/learning/analysis/make_vafidis_figures.py`: plots saved diagnostics without recomputing dynamics.
 
 ## Dependency order
@@ -47,3 +48,6 @@ canonical frozen state/map
 - near-unit velocity gain tests driven integration, not zero-input memory drift.
 - low diffusion under stochastic noise does not replace deterministic phase-flow/fixed-point analysis.
 
+## First saved-run audit
+
+`learning/runs/vafidis_toy/20260727-144656_vafidis_toy_42` retained 1024 strict slow points but covered only 21 of 180 angular bins (11.7%). The 21 occupied regions are disconnected low-speed angle clusters. The configured 50% support gate therefore rejected the periodic-ring fit and suppressed Jacobian/root claims. This is evidence for discrete/pinned slow states, not yet a direct flow-reversal count of fixed points.

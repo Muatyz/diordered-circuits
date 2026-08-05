@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Sequence
 
 from learning.analysis.make_vafidis_figures import make_vafidis_figures_for_run
 from learning.common.random import make_rng
+from learning.config.diagnostics import selected_diagnostics
 from learning.config.load_config import (
     find_project_root,
     load_experiment_config,
@@ -26,12 +28,15 @@ from learning.models.vafidis_toy import (
 )
 
 
-def load_trained_state_from_run(*, run_dir: Path):
-    test_config_path = run_dir / "test_config_resolved.yaml"
+def load_trained_state_from_run(
+    *,
+    run_dir: Path,
+    diagnostics_config_path: Path,
+):
+    base_config_path = run_dir / "config_resolved.yaml"
     config = load_experiment_config(
-        test_config_path
-        if test_config_path.exists()
-        else run_dir / "config_resolved.yaml"
+        base_config_path,
+        diagnostics_path=diagnostics_config_path,
     )
     trained_weights = load_npz(run_dir / "trained_weights.npz")
     rng = make_rng(config.simulation.seed)
@@ -50,49 +55,27 @@ def run_tests_for_existing_run(
     *,
     run_dir: Path,
     make_figures: bool,
-    bump_attractor_duration: float | None = None,
-    enable_timescale_separation: bool = False,
-    enable_velocity_trajectory_sweep: bool = False,
-    enable_velocity_phase_flow: bool = False,
-    velocity_sweep_values: list[float] | None = None,
-    velocity_phase_flow_values: list[float] | None = None,
-    velocity_phase_flow_probe_count: int | None = None,
+    diagnostics_config_path: Path,
 ) -> None:
-    config, trained_state = load_trained_state_from_run(run_dir=run_dir)
-    if bump_attractor_duration is not None:
-        if bump_attractor_duration <= 0.0:
-            raise ValueError("bump_attractor_duration must be positive")
-        config.tests.bump_attractor_trajectory_enabled = True
-        config.tests.bump_attractor_duration = float(bump_attractor_duration)
-    if enable_timescale_separation:
-        config.tests.bump_attractor_trajectory_enabled = True
-        config.tests.timescale_separation_enabled = True
-    if enable_velocity_trajectory_sweep:
-        config.tests.velocity_trajectory_sweep_enabled = True
-    if enable_velocity_phase_flow:
-        config.tests.velocity_trajectory_sweep_enabled = True
-        config.tests.velocity_phase_flow_probe_enabled = True
-    if velocity_sweep_values is not None:
-        config.tests.velocity_trajectory_sweep_enabled = True
-        config.tests.velocity_trajectory_sweep_velocities = velocity_sweep_values
-    if velocity_phase_flow_values is not None:
-        config.tests.velocity_trajectory_sweep_enabled = True
-        config.tests.velocity_phase_flow_probe_enabled = True
-        config.tests.velocity_phase_flow_probe_velocities = (
-            velocity_phase_flow_values
+    config, trained_state = load_trained_state_from_run(
+        run_dir=run_dir,
+        diagnostics_config_path=diagnostics_config_path,
+    )
+    cached_histories = {}
+    cached_hd_tuning_path = run_dir / "hd_tuning_history.npz"
+    if cached_hd_tuning_path.exists():
+        cached_histories["hd_tuning"] = load_npz(cached_hd_tuning_path)
+    cached_trajectory_path = run_dir / "bump_attractor_trajectory_history.npz"
+    if cached_trajectory_path.exists():
+        cached_histories["bump_attractor_trajectories"] = load_npz(
+            cached_trajectory_path
         )
-    if velocity_phase_flow_probe_count is not None:
-        if velocity_phase_flow_probe_count < 3:
-            raise ValueError("velocity_phase_flow_probe_count must be at least three")
-        config.tests.velocity_trajectory_sweep_enabled = True
-        config.tests.velocity_phase_flow_probe_enabled = True
-        config.tests.velocity_phase_flow_initial_conditions = int(
-            velocity_phase_flow_probe_count
-        )
+
     (
         hd_tuning_history,
         bump_history,
         bump_attractor_trajectory_history,
+        slow_manifold_history,
         timescale_separation_history,
         velocity_trajectory_sweep_history,
         bump_diffusion_history,
@@ -104,35 +87,72 @@ def run_tests_for_existing_run(
     ) = run_all_tests(
         config=config,
         trained_state=trained_state,
+        cached_histories=cached_histories,
     )
-    save_npz(run_dir / "bump_history.npz", **bump_history)
-    save_npz(run_dir / "hd_tuning_history.npz", **hd_tuning_history)
-    save_npz(
-        run_dir / "bump_attractor_trajectory_history.npz",
-        **bump_attractor_trajectory_history,
-    )
-    save_npz(
-        run_dir / "timescale_separation_history.npz",
-        **timescale_separation_history,
-    )
-    save_npz(
-        run_dir / "velocity_trajectory_sweep_history.npz",
-        **velocity_trajectory_sweep_history,
-    )
-    save_npz(run_dir / "bump_diffusion_history.npz", **bump_diffusion_history)
-    save_npz(run_dir / "darkness_history.npz", **darkness_history)
-    save_npz(run_dir / "ou_darkness_history.npz", **ou_darkness_history)
-    save_npz(run_dir / "ou_pi_ensemble_history.npz", **ou_pi_ensemble_history)
-    save_npz(run_dir / "velocity_gain_history.npz", **velocity_gain_history)
+
+    enabled_diagnostic_names = selected_diagnostics(config)
+    histories_to_save = {
+        "bump_maintenance": ("bump_history.npz", bump_history),
+        "hd_tuning": ("hd_tuning_history.npz", hd_tuning_history),
+        "bump_attractor_trajectories": (
+            "bump_attractor_trajectory_history.npz",
+            bump_attractor_trajectory_history,
+        ),
+        "slow_manifold": (
+            "slow_manifold_diagnostics.npz",
+            slow_manifold_history,
+        ),
+        "timescale_separation": (
+            "timescale_separation_history.npz",
+            timescale_separation_history,
+        ),
+        "velocity_trajectory_sweep": (
+            "velocity_trajectory_sweep_history.npz",
+            velocity_trajectory_sweep_history,
+        ),
+        "bump_diffusion": ("bump_diffusion_history.npz", bump_diffusion_history),
+        "darkness_path_integration": ("darkness_history.npz", darkness_history),
+        "ou_path_integration": ("ou_darkness_history.npz", ou_darkness_history),
+        "ou_pi_ensemble": ("ou_pi_ensemble_history.npz", ou_pi_ensemble_history),
+        "velocity_gain": ("velocity_gain_history.npz", velocity_gain_history),
+    }
+    for diagnostic_name, (filename, history) in histories_to_save.items():
+        if diagnostic_name in enabled_diagnostic_names:
+            save_npz(run_dir / filename, **history)
+    if (
+        "hd_tuning_dependency_computed" in test_metrics
+        and "hd_tuning" not in enabled_diagnostic_names
+    ):
+        save_npz(run_dir / "hd_tuning_history.npz", **hd_tuning_history)
+    if (
+        "bump_attractor_dependency_computed" in test_metrics
+        and "bump_attractor_trajectories" not in enabled_diagnostic_names
+    ):
+        save_npz(
+            run_dir / "bump_attractor_trajectory_history.npz",
+            **bump_attractor_trajectory_history,
+        )
     save_json(run_dir / "test_metrics.json", test_metrics)
     save_yaml(run_dir / "test_config_resolved.yaml", config.to_dict())
     if make_figures:
         make_vafidis_figures_for_run(run_dir=run_dir)
 
 
-def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
+def run_tests_from_config(
+    *,
+    config_path: Path,
+    make_figures: bool,
+    diagnostics_config_path: Path,
+    profile_paths: Sequence[Path] = (),
+    config_overrides: Sequence[str] = (),
+) -> Path:
     project_root = find_project_root(config_path)
-    config = load_experiment_config(config_path)
+    config = load_experiment_config(
+        config_path,
+        diagnostics_path=diagnostics_config_path,
+        profile_paths=profile_paths,
+        overrides=config_overrides,
+    )
     rng = make_rng(config.simulation.seed)
     trained_state = initialize_vafidis_toy_state(config=config, rng=rng)
     run_dir = create_run_dir(
@@ -145,6 +165,7 @@ def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
         hd_tuning_history,
         bump_history,
         bump_attractor_trajectory_history,
+        slow_manifold_history,
         timescale_separation_history,
         velocity_trajectory_sweep_history,
         bump_diffusion_history,
@@ -167,6 +188,7 @@ def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
         hd_tuning_history=hd_tuning_history,
         bump_history=bump_history,
         bump_attractor_trajectory_history=bump_attractor_trajectory_history,
+        slow_manifold_history=slow_manifold_history,
         timescale_separation_history=timescale_separation_history,
         velocity_trajectory_sweep_history=velocity_trajectory_sweep_history,
         bump_diffusion_history=bump_diffusion_history,
@@ -182,83 +204,70 @@ def run_tests_from_config(*, config_path: Path, make_figures: bool) -> Path:
 
 
 def main() -> None:
+    """CLI driven exclusively by the grouped diagnostics hyper config."""
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--run-dir", default=None, help="Existing run directory with trained_weights.npz.")
-    parser.add_argument("--config", default=None, help="Config path for untrained frozen-weight tests.")
-    parser.add_argument("--no-figures", action="store_true", help="Skip figure generation.")
-    parser.add_argument(
-        "--bump-attractor-duration",
-        type=float,
-        default=None,
-        help="Override zero-input darkness duration when retesting an existing run.",
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument(
+        "--run-dir",
+        help="Existing run directory containing trained_weights.npz.",
+    )
+    source.add_argument(
+        "--config",
+        help="Experiment config for untrained frozen-weight tests.",
     )
     parser.add_argument(
-        "--enable-timescale-separation",
+        "--diagnostics-config",
+        required=True,
+        help="Single grouped diagnostics hyper config.",
+    )
+    parser.add_argument(
+        "--profile",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help="Partial config for --config mode; repeat to compose.",
+    )
+    parser.add_argument(
+        "--set",
+        dest="config_overrides",
+        action="append",
+        default=[],
+        metavar="PATH=VALUE",
+        help="Dotted config override for --config mode; repeat as needed.",
+    )
+    parser.add_argument(
+        "--no-figures",
         action="store_true",
-        help="Enable the Clark-style timescale assay when retesting an existing run.",
-    )
-    parser.add_argument(
-        "--enable-velocity-trajectory-sweep",
-        action="store_true",
-        help="Enable the frozen-weight constant-velocity trajectory sweep.",
-    )
-    parser.add_argument(
-        "--enable-velocity-phase-flow",
-        action="store_true",
-        help="Run dense rollouts for direct phase-flow, fixed-point, and basin analysis.",
-    )
-    parser.add_argument(
-        "--velocity-sweep-values",
-        type=lambda value: [float(item) for item in value.split(",")],
-        default=None,
-        help="Comma-separated constant velocities for an existing trained run.",
-    )
-    parser.add_argument(
-        "--velocity-phase-flow-values",
-        type=lambda value: [float(item) for item in value.split(",")],
-        default=None,
-        help="Comma-separated subset to receive dense phase-flow probes.",
-    )
-    parser.add_argument(
-        "--velocity-phase-flow-probes",
-        type=int,
-        default=None,
-        help="Number of uniformly spaced independent phase-flow probes.",
+        help="Skip figure generation.",
     )
     args = parser.parse_args()
 
-    if args.run_dir is None and args.config is None:
-        parser.error("Provide either --run-dir or --config")
-    if args.config is not None and (
-        args.bump_attractor_duration is not None
-        or args.enable_timescale_separation
-        or args.enable_velocity_trajectory_sweep
-        or args.enable_velocity_phase_flow
-        or args.velocity_sweep_values is not None
-        or args.velocity_phase_flow_values is not None
-        or args.velocity_phase_flow_probes is not None
-    ):
-        parser.error("test overrides are only valid together with --run-dir")
+    if args.run_dir is not None and (args.profile or args.config_overrides):
+        parser.error("--profile and --set are only valid together with --config")
+    diagnostics_config_path = resolve_config_path(args.diagnostics_config)
     if args.run_dir is not None:
         run_dir = Path(args.run_dir).resolve()
         run_tests_for_existing_run(
             run_dir=run_dir,
             make_figures=not args.no_figures,
-            bump_attractor_duration=args.bump_attractor_duration,
-            enable_timescale_separation=args.enable_timescale_separation,
-            enable_velocity_trajectory_sweep=(
-                args.enable_velocity_trajectory_sweep
-            ),
-            enable_velocity_phase_flow=args.enable_velocity_phase_flow,
-            velocity_sweep_values=args.velocity_sweep_values,
-            velocity_phase_flow_values=args.velocity_phase_flow_values,
-            velocity_phase_flow_probe_count=args.velocity_phase_flow_probes,
+            diagnostics_config_path=diagnostics_config_path,
         )
         print(f"Updated tests in {run_dir}")
-    else:
-        config_path = resolve_config_path(args.config)
-        run_dir = run_tests_from_config(config_path=config_path, make_figures=not args.no_figures)
-        print(f"Saved untrained tests to {run_dir}")
+        return
+
+    config_path = resolve_config_path(args.config)
+    profile_paths = [
+        resolve_config_path(profile_path) for profile_path in args.profile
+    ]
+    run_dir = run_tests_from_config(
+        config_path=config_path,
+        make_figures=not args.no_figures,
+        diagnostics_config_path=diagnostics_config_path,
+        profile_paths=profile_paths,
+        config_overrides=args.config_overrides,
+    )
+    print(f"Saved untrained tests to {run_dir}")
 
 
 if __name__ == "__main__":

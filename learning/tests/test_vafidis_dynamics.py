@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 import numpy as np
+import pytest
 
 from learning.config.schema import ExperimentConfig
 from learning.dynamics.activation import apply_activation
 from learning.dynamics.hd_dynamics import (
+    PROXIMAL_INTEGRATION_EXACT_LINEAR,
+    PROXIMAL_INTEGRATION_FORWARD_EULER,
     compute_hd_distal_pathway_drives,
     euler_update_i_hd_distal,
     euler_update_v_hd_distal,
+    euler_update_v_hd_proximal,
+    exact_linear_update_v_hd_proximal,
+    update_v_hd_proximal,
 )
 from learning.dynamics.hr_dynamics import compute_i_hr, euler_update_r_hd_to_hr_lp
 from learning.models.vafidis_toy import VafidisToyParams, initialize_vafidis_toy_state, step_vafidis_toy
@@ -27,6 +35,245 @@ def test_hd_distal_voltage_is_independent_leaky_state() -> None:
         tau_l_hd=0.2,
     )
     assert np.allclose(next_v_hd_distal, np.array([0.5, 1.0]))
+
+
+def test_sigmoid_returns_release_firing_rate_in_khz() -> None:
+    rate = apply_activation(
+        np.array([1.0, 100.0]),
+        activation_name="sigmoid",
+        gain=2.5,
+        bias=1.0,
+        max_rate=0.15,
+    )
+
+    np.testing.assert_allclose(rate, np.array([0.075, 0.15]), atol=1e-12)
+
+
+def test_sigmoid_rejects_nonpositive_firing_rate_ceiling() -> None:
+    with pytest.raises(ValueError, match="max_rate must be positive"):
+        apply_activation(
+            np.array([0.0]),
+            activation_name="sigmoid",
+            max_rate=0.0,
+        )
+
+
+def test_release_rate_migration_preserves_currents_but_restores_physical_error() -> None:
+    """The migrated state stores kHz rates/errors and release-scale weights."""
+    f_max_khz = 0.15
+    normalized_config = ExperimentConfig()
+    normalized_config.model.n_theta = 8
+    normalized_config.model.n_hr = 8
+    normalized_config.model.init.w_hd_to_hd_mode = "random_normal"
+    normalized_config.model.init.w_hr_to_hd_mode = "random_normal"
+    normalized_config.model.init.w_hd_to_hd_scale = 0.02
+    normalized_config.model.init.w_hr_to_hd_scale = 0.02
+    normalized_config.model.init.random_jitter = 0.0
+    normalized_config.model.activation.max_rate = 1.0
+    normalized_config.model.w_hd_to_hr_strength = 2.0
+    normalized_config.learning_rule.eta_hd_to_hd = 0.16875
+    normalized_config.learning_rule.eta_hr_to_hd = 0.16875
+    normalized_config.learning_rule.w_hd_to_hd_min = None
+    normalized_config.learning_rule.w_hd_to_hd_max = None
+    normalized_config.learning_rule.w_hr_to_hd_min = None
+    normalized_config.learning_rule.w_hr_to_hd_max = None
+
+    release_config = deepcopy(normalized_config)
+    release_config.model.activation.max_rate = f_max_khz
+    release_config.model.w_hd_to_hr_strength /= f_max_khz
+    release_config.model.init.w_hd_to_hd_scale /= f_max_khz
+    release_config.model.init.w_hr_to_hd_scale /= f_max_khz
+    release_config.learning_rule.eta_hd_to_hd /= f_max_khz**3
+    release_config.learning_rule.eta_hr_to_hd /= f_max_khz**3
+
+    normalized_state = initialize_vafidis_toy_state(
+        config=normalized_config,
+        rng=make_rng(19),
+    )
+    release_state = initialize_vafidis_toy_state(
+        config=release_config,
+        rng=make_rng(19),
+    )
+    normalized_next = step_vafidis_toy(
+        state=normalized_state,
+        params=VafidisToyParams.from_config(normalized_config),
+        angular_velocity=0.7,
+        visual_teacher=True,
+        training=True,
+    )
+    release_next = step_vafidis_toy(
+        state=release_state,
+        params=VafidisToyParams.from_config(release_config),
+        angular_velocity=0.7,
+        visual_teacher=True,
+        training=True,
+    )
+
+    for current_name in [
+        "i_hr",
+        "i_hd_distal",
+        "v_hd_distal",
+        "v_hd_ss",
+        "v_hd_proximal",
+    ]:
+        np.testing.assert_allclose(
+            getattr(release_next, current_name),
+            getattr(normalized_next, current_name),
+            atol=1e-12,
+        )
+    for rate_name in ["r_hd", "r_hr", "p_hd", "p_hr", "e_hd"]:
+        np.testing.assert_allclose(
+            getattr(release_next, rate_name),
+            f_max_khz * getattr(normalized_next, rate_name),
+            atol=1e-12,
+        )
+    for weight_name in ["w_hd_to_hd", "w_hr_to_hd", "w_hd_to_hr"]:
+        np.testing.assert_allclose(
+            getattr(release_next, weight_name),
+            getattr(normalized_next, weight_name) / f_max_khz,
+            atol=1e-12,
+        )
+
+
+def test_hd_proximal_voltage_follows_vafidis_equation_4() -> None:
+    next_v_hd_proximal = euler_update_v_hd_proximal(
+        v_hd_proximal=np.array([1.0, -1.0]),
+        v_hd_distal=np.array([2.0, 0.5]),
+        i_vis_to_hd=np.array([0.5, -0.5]),
+        dt=0.0005,
+        c_hd_proximal=0.001,
+        g_l_hd_proximal=1.0,
+        g_d_hd_to_proximal=2.0,
+    )
+    # Va + dt/C * [-gL*Va - gD*(Va - Vd) + Iprox]
+    np.testing.assert_allclose(next_v_hd_proximal, np.array([1.75, 0.75]))
+
+
+def test_exact_linear_proximal_voltage_matches_analytic_solution() -> None:
+    v_hd_proximal = np.array([1.0, -1.0])
+    v_hd_distal = np.array([2.0, 0.5])
+    i_vis_to_hd = np.array([0.5, -0.5])
+    dt = 0.0005
+    c_hd_proximal = 0.001
+    g_l_hd_proximal = 1.0
+    g_d_hd_to_proximal = 2.0
+
+    actual = exact_linear_update_v_hd_proximal(
+        v_hd_proximal=v_hd_proximal,
+        v_hd_distal=v_hd_distal,
+        i_vis_to_hd=i_vis_to_hd,
+        dt=dt,
+        c_hd_proximal=c_hd_proximal,
+        g_l_hd_proximal=g_l_hd_proximal,
+        g_d_hd_to_proximal=g_d_hd_to_proximal,
+    )
+
+    total_conductance = g_l_hd_proximal + g_d_hd_to_proximal
+    steady_state = (
+        g_d_hd_to_proximal * v_hd_distal + i_vis_to_hd
+    ) / total_conductance
+    retention = np.exp(-dt * total_conductance / c_hd_proximal)
+    expected = steady_state + retention * (v_hd_proximal - steady_state)
+    np.testing.assert_allclose(actual, expected, atol=1e-15)
+
+
+def test_proximal_update_dispatches_both_configured_methods() -> None:
+    arguments = {
+        "v_hd_proximal": np.array([0.4]),
+        "v_hd_distal": np.array([1.2]),
+        "i_vis_to_hd": np.array([-0.3]),
+        "dt": 0.0005,
+        "c_hd_proximal": 0.001,
+        "g_l_hd_proximal": 1.0,
+        "g_d_hd_to_proximal": 2.0,
+    }
+
+    euler_value = update_v_hd_proximal(
+        **arguments,
+        integration_method=PROXIMAL_INTEGRATION_FORWARD_EULER,
+    )
+    exact_value = update_v_hd_proximal(
+        **arguments,
+        integration_method=PROXIMAL_INTEGRATION_EXACT_LINEAR,
+    )
+
+    np.testing.assert_allclose(
+        euler_value,
+        euler_update_v_hd_proximal(**arguments),
+    )
+    np.testing.assert_allclose(
+        exact_value,
+        exact_linear_update_v_hd_proximal(**arguments),
+    )
+    assert not np.allclose(euler_value, exact_value)
+
+
+def test_vafidis_equation_4_rejects_unstable_euler_step() -> None:
+    config = ExperimentConfig()
+    config.simulation.dt = 0.001
+
+    with pytest.raises(ValueError, match="unstable.*Eq. 4"):
+        VafidisToyParams.from_config(config)
+
+
+def test_exact_linear_proximal_step_accepts_dt_outside_euler_stability_interval() -> None:
+    config = ExperimentConfig()
+    config.simulation.dt = 0.001
+    config.simulation.proximal_integration_method = PROXIMAL_INTEGRATION_EXACT_LINEAR
+
+    params = VafidisToyParams.from_config(config)
+
+    assert params.proximal_integration_method == PROXIMAL_INTEGRATION_EXACT_LINEAR
+
+
+def test_vafidis_rejects_unknown_proximal_integration_method() -> None:
+    config = ExperimentConfig()
+    config.simulation.proximal_integration_method = "mystery_solver"
+
+    with pytest.raises(ValueError, match="proximal_integration_method"):
+        VafidisToyParams.from_config(config)
+
+
+def test_vafidis_step_uses_configured_proximal_integration_method() -> None:
+    euler_config = ExperimentConfig()
+    euler_config.model.n_theta = 8
+    euler_config.model.n_hr = 8
+    exact_config = deepcopy(euler_config)
+    exact_config.simulation.proximal_integration_method = (
+        PROXIMAL_INTEGRATION_EXACT_LINEAR
+    )
+    state = initialize_vafidis_toy_state(
+        config=euler_config,
+        rng=make_rng(23),
+    )
+
+    euler_next = step_vafidis_toy(
+        state=state.copy(),
+        params=VafidisToyParams.from_config(euler_config),
+        angular_velocity=0.7,
+        visual_teacher=True,
+        training=False,
+    )
+    exact_next = step_vafidis_toy(
+        state=state.copy(),
+        params=VafidisToyParams.from_config(exact_config),
+        angular_velocity=0.7,
+        visual_teacher=True,
+        training=False,
+    )
+
+    expected_exact = exact_linear_update_v_hd_proximal(
+        v_hd_proximal=state.v_hd_proximal,
+        v_hd_distal=exact_next.v_hd_distal,
+        i_vis_to_hd=exact_next.i_vis_to_hd,
+        dt=exact_config.simulation.dt,
+        c_hd_proximal=exact_config.model.c_hd_proximal,
+        g_l_hd_proximal=exact_config.model.g_l_hd_proximal,
+        g_d_hd_to_proximal=exact_config.model.g_d_hd_to_proximal,
+    )
+    np.testing.assert_allclose(exact_next.v_hd_proximal, expected_exact)
+    np.testing.assert_allclose(exact_next.v_hd_distal, euler_next.v_hd_distal)
+    assert not np.allclose(exact_next.v_hd_proximal, euler_next.v_hd_proximal)
 
 
 def test_raw_sum_hd_distal_update_remains_the_default() -> None:
@@ -291,4 +538,14 @@ def test_step_accepts_explicit_noise_at_all_synaptic_inputs() -> None:
         params.dt / params.tau_s * 0.2,
     )
     assert np.allclose(noisy_state.i_hr - quiet_state.i_hr, 0.4)
+    expected_distal_voltage_noise = (
+        params.dt / params.tau_l_hd * params.dt / params.tau_s * 0.2
+    )
+    expected_proximal_voltage_noise = params.dt / params.c_hd_proximal * (
+        0.3 + params.g_d_hd_to_proximal * expected_distal_voltage_noise
+    )
+    assert np.allclose(
+        noisy_state.v_hd_proximal - quiet_state.v_hd_proximal,
+        expected_proximal_voltage_noise,
+    )
     assert not np.allclose(noisy_state.r_hd, quiet_state.r_hd)

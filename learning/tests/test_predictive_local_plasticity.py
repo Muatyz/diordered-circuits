@@ -36,6 +36,7 @@ def test_predictive_local_update_respects_hd_diagonal_and_bounds() -> None:
         w_hd_to_hd_max=0.2,
         w_hr_to_hd_min=-0.2,
         w_hr_to_hd_max=0.2,
+        zero_hd_to_hd_diagonal=True,
     )
     assert np.allclose(np.diag(next_w_hd_to_hd), 0.0)
     assert np.max(next_w_hd_to_hd) <= 0.2
@@ -43,6 +44,50 @@ def test_predictive_local_update_respects_hd_diagonal_and_bounds() -> None:
     assert np.all(next_w_hr_to_hd >= 0.0)
     assert np.allclose(next_delta_w_hd_to_hd, 1.0)
     assert np.allclose(next_delta_w_hr_to_hd, 1.0)
+
+
+def test_release_rate_units_need_only_ms_to_seconds_eta_conversion() -> None:
+    """One update equals release ``w += 0.05 * Delta * dt_ms`` exactly."""
+    dt_seconds = 0.0005
+    dt_milliseconds = 0.5
+    tau_delta_seconds = 0.1
+    release_eta_per_millisecond_step = 0.05
+    eta_for_seconds_engine = 1000.0 * release_eta_per_millisecond_step
+    e_hd_khz = np.array([0.03])
+    p_pre_khz = np.array([0.04])
+    old_delta_khz_squared = np.array([[0.001]])
+
+    (
+        next_w_hd_to_hd,
+        _next_w_hr_to_hd,
+        next_delta_w_hd_to_hd,
+        _next_delta_w_hr_to_hd,
+    ) = update_predictive_local_weights(
+        w_hd_to_hd=np.array([[0.2]]),
+        w_hr_to_hd=np.array([[0.2]]),
+        delta_w_hd_to_hd=old_delta_khz_squared,
+        delta_w_hr_to_hd=old_delta_khz_squared,
+        e_hd=e_hd_khz,
+        p_hd=p_pre_khz,
+        p_hr=p_pre_khz,
+        dt=dt_seconds,
+        tau_delta=tau_delta_seconds,
+        eta_hd_to_hd=eta_for_seconds_engine,
+        eta_hr_to_hd=eta_for_seconds_engine,
+        w_hd_to_hd_min=None,
+        w_hd_to_hd_max=None,
+        w_hr_to_hd_min=None,
+        w_hr_to_hd_max=None,
+    )
+
+    expected_delta = old_delta_khz_squared + (
+        dt_milliseconds / 100.0
+    ) * (np.outer(e_hd_khz, p_pre_khz) - old_delta_khz_squared)
+    expected_weight = 0.2 + (
+        release_eta_per_millisecond_step * expected_delta * dt_milliseconds
+    )
+    np.testing.assert_allclose(next_delta_w_hd_to_hd, expected_delta)
+    np.testing.assert_allclose(next_w_hd_to_hd, expected_weight)
 
 
 def test_hr_to_hd_antisymmetric_balance_removes_common_mode() -> None:
@@ -69,6 +114,31 @@ def test_hr_to_hd_antisymmetric_balance_removes_common_mode() -> None:
     )
 
 
+def test_null_weight_bounds_and_vafidis_default_keep_full_hd_matrix() -> None:
+    w_hd_to_hd = np.array(
+        [
+            [9.0, 3.0, -4.0],
+            [5.0, -8.0, 6.0],
+            [-7.0, 8.0, 2.0],
+        ]
+    )
+    w_hr_to_hd = np.array([[3.0, -4.0], [5.0, -6.0]])
+
+    unconstrained_hd = constrain_w_hd_to_hd(
+        w_hd_to_hd,
+        lower_bound=None,
+        upper_bound=None,
+    )
+    unconstrained_hr = constrain_w_hr_to_hd(
+        w_hr_to_hd,
+        lower_bound=None,
+        upper_bound=None,
+    )
+
+    assert np.allclose(unconstrained_hd, w_hd_to_hd)
+    assert np.allclose(unconstrained_hr, w_hr_to_hd)
+
+
 def test_hd_to_hd_symmetric_constraint_removes_antisymmetric_component() -> None:
     w_hd_to_hd = np.array(
         [
@@ -82,6 +152,7 @@ def test_hd_to_hd_symmetric_constraint_removes_antisymmetric_component() -> None
         lower_bound=-2.0,
         upper_bound=2.0,
         symmetry_mode="symmetric",
+        zero_diagonal=True,
     )
 
     assert np.allclose(constrained_w_hd_to_hd, constrained_w_hd_to_hd.T)

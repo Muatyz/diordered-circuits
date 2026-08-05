@@ -3,12 +3,14 @@ from __future__ import annotations
 import numpy as np
 
 from learning.common.random import make_rng
-from learning.config.load_config import load_experiment_config
+from learning.config.diagnostics import DIAGNOSTIC_GROUPS
+from learning.config.load_config import load_experiment_config, save_yaml
 from learning.config.schema import ExperimentConfig
 from learning.experiments.run_vafidis_toy import (
     count_local_hd_peaks,
     run_bump_attractor_trajectory_test,
     run_bump_diffusion_ensemble_test,
+    run_all_tests,
     run_hd_tuning_curve_test,
     run_experiment,
     run_training,
@@ -29,31 +31,39 @@ def make_short_config() -> ExperimentConfig:
     config.model.n_theta = 12
     config.model.n_hr = 12
     config.simulation.seed = 3
-    config.simulation.dt = 0.01
+    config.simulation.dt = 0.0005
     config.simulation.train_duration = 0.05
     config.simulation.bump_test_duration = 0.03
     config.simulation.darkness_test_duration = 0.03
     config.simulation.cue_duration = 0.02
     config.simulation.pi_cue_duration = 0.04
     config.simulation.recue_duration = 0.02
-    config.simulation.save_interval_steps = 1
-    config.simulation.weight_snapshot_interval_steps = 2
+    # Preserve the old 10 ms record and 20 ms weight-snapshot cadence after
+    # adopting the paper's stable 0.5 ms integration step.
+    config.simulation.save_interval_steps = 20
+    config.simulation.weight_snapshot_interval_steps = 40
     config.simulation.progress = False
     config.tests.bump_diffusion_duration = 0.03
     config.tests.bump_diffusion_trials = 4
     config.tests.bump_diffusion_test_noise_std = 0.1
-    config.tests.bump_attractor_trajectory_enabled = True
+    config.diagnostics.bump_maintenance = True
+    config.diagnostics.path_integration_and_pi_error = True
+    config.diagnostics.pva_spectrum_and_visualization = True
+    config.diagnostics.velocity_gain = True
+    config.diagnostics.trajectory_and_fixed_points = True
+    config.diagnostics.weight_snapshots_and_development = True
+    config.diagnostics.bump_diffusion = True
+    config.diagnostics.timescale_separation = True
+    config.diagnostics.velocity_dynamics_and_phase_flow = True
     config.tests.bump_attractor_initial_conditions = 8
     config.tests.bump_attractor_duration = 0.02
     config.tests.bump_attractor_cue_duration = 0.01
     config.tests.bump_attractor_sample_interval = 0.01
-    config.tests.timescale_separation_enabled = True
     config.tests.timescale_separation_initial_conditions = 2
     config.tests.timescale_separation_normal_duration = 0.02
     config.tests.timescale_separation_sample_interval = 0.01
     config.tests.timescale_separation_perturbation_scales = [0.05]
     config.tests.timescale_separation_perturbations_per_condition = 1
-    config.tests.velocity_trajectory_sweep_enabled = True
     config.tests.velocity_trajectory_sweep_velocities = [0.0, 0.05, 0.2]
     config.tests.velocity_trajectory_sweep_max_velocity = 0.2
     config.tests.velocity_trajectory_sweep_count = 3
@@ -62,7 +72,6 @@ def make_short_config() -> ExperimentConfig:
     config.tests.velocity_trajectory_sweep_cue_duration = 0.01
     config.tests.velocity_trajectory_sweep_sample_interval = 0.01
     config.tests.velocity_trajectory_sweep_fit_start_time = 0.0
-    config.tests.velocity_phase_flow_probe_enabled = True
     config.tests.velocity_phase_flow_initial_conditions = 4
     config.tests.velocity_phase_flow_duration = 0.02
     config.tests.velocity_phase_flow_sample_interval = 0.01
@@ -79,6 +88,46 @@ def make_short_config() -> ExperimentConfig:
     config.tests.ou_pi_ensemble_fit_start_time = 0.0
     config.tests.gain_velocities = [-0.5, 0.5]
     return config
+
+
+def test_explicit_trajectory_selection_skips_unrelated_diagnostics() -> None:
+    config = make_short_config()
+    for group_name in DIAGNOSTIC_GROUPS:
+        setattr(config.diagnostics, group_name, False)
+    config.diagnostics.trajectory_and_fixed_points = True
+    trained_state = initialize_vafidis_toy_state(
+        config=config,
+        rng=make_rng(config.simulation.seed),
+    )
+
+    outputs = run_all_tests(config=config, trained_state=trained_state)
+    (
+        hd_tuning_history,
+        bump_history,
+        trajectory_history,
+        _slow_manifold_history,
+        _timescale_history,
+        _velocity_sweep_history,
+        bump_diffusion_history,
+        darkness_history,
+        ou_darkness_history,
+        ou_ensemble_history,
+        velocity_gain_history,
+        metrics,
+    ) = outputs
+
+    assert hd_tuning_history["theta_true"].size == config.tests.hd_tuning_curve_angles
+    assert trajectory_history["theta_initial"].size == (
+        config.tests.bump_attractor_initial_conditions
+    )
+    assert not bump_history
+    assert not bump_diffusion_history
+    assert not darkness_history
+    assert not ou_darkness_history
+    assert not ou_ensemble_history
+    assert not velocity_gain_history
+    assert metrics["hd_tuning_dependency_computed"] == 1.0
+    assert metrics["bump_diffusion_diagnostic_enabled"] == 0.0
 
 
 def test_testing_phase_freezes_weights() -> None:
@@ -475,10 +524,18 @@ def test_short_experiment_writes_required_outputs(tmp_path) -> None:
     assert int(hd_tuning_com_aligned["simulated_mouse_count"]) == 1
     assert ou_pi_ensemble_history["pva_pi_error"].shape[0] == 2
     assert "ou_pi_ensemble_systematic_drift_velocity" in test_metrics
-    assert np.count_nonzero(bump_history["phase_id"] == 0.0) == 3
-    assert np.count_nonzero(darkness_history["phase_id"] == 0.0) == 5
-    assert np.count_nonzero(darkness_history["phase_id"] == 1.0) == 3
-    assert np.count_nonzero(darkness_history["phase_id"] == 2.0) == 2
+    assert np.count_nonzero(bump_history["phase_id"] == 0.0) == (
+        int(round(config.simulation.cue_duration / config.simulation.dt)) + 1
+    )
+    assert np.count_nonzero(darkness_history["phase_id"] == 0.0) == (
+        int(round(config.simulation.pi_cue_duration / config.simulation.dt)) + 1
+    )
+    assert np.count_nonzero(darkness_history["phase_id"] == 1.0) == int(
+        round(config.simulation.darkness_test_duration / config.simulation.dt)
+    )
+    assert np.count_nonzero(darkness_history["phase_id"] == 2.0) == int(
+        round(config.simulation.recue_duration / config.simulation.dt)
+    )
     assert np.allclose(darkness_history["i_vis_to_hd"][darkness_history["phase_id"] == 1.0], 0.0)
     assert np.allclose(bump_history["i_vis_to_hd"][bump_history["phase_id"] == 1.0], 0.0)
     assert np.any(np.abs(darkness_history["i_vis_to_hd"][darkness_history["phase_id"] == 0.0]) > 0.0)
@@ -553,29 +610,87 @@ def test_short_experiment_with_ou_visual_noise(tmp_path) -> None:
     assert np.allclose(darkness_history["i_vis_to_hd"][darkness_history["phase_id"] == 1.0], 0.0)
 
 
-def test_existing_run_can_persist_timescale_test_overrides(tmp_path) -> None:
+def test_existing_run_uses_group_switches_from_one_hyper_config(tmp_path) -> None:
     config = make_short_config()
-    config.tests.timescale_separation_enabled = False
-    config.tests.velocity_trajectory_sweep_enabled = False
+    for group_name in DIAGNOSTIC_GROUPS:
+        setattr(config.diagnostics, group_name, False)
     run_dir = run_experiment(config=config, project_root=tmp_path, make_figures=False)
+    diagnostics_path = tmp_path / "diagnostics.yaml"
+    switches = {group_name: False for group_name in DIAGNOSTIC_GROUPS}
+    switches["timescale_separation"] = True
+    switches["velocity_dynamics_and_phase_flow"] = True
+    save_yaml(
+        diagnostics_path,
+        {
+            "diagnostics": switches,
+            "tests": {
+                "bump_attractor_initial_conditions": 12,
+                "bump_attractor_duration": 0.04,
+            },
+        },
+    )
 
     run_tests_for_existing_run(
         run_dir=run_dir,
         make_figures=False,
-        bump_attractor_duration=0.04,
-        enable_timescale_separation=True,
-        enable_velocity_trajectory_sweep=True,
+        diagnostics_config_path=diagnostics_path,
     )
 
     resolved_test_config = load_experiment_config(
         run_dir / "test_config_resolved.yaml"
     )
+    assert resolved_test_config.tests.bump_attractor_initial_conditions == 12
     assert np.isclose(resolved_test_config.tests.bump_attractor_duration, 0.04)
-    assert resolved_test_config.tests.timescale_separation_enabled is True
-    assert resolved_test_config.tests.velocity_trajectory_sweep_enabled is True
+    assert resolved_test_config.diagnostics.timescale_separation is True
+    assert resolved_test_config.diagnostics.velocity_dynamics_and_phase_flow is True
     timescale_history = load_npz(run_dir / "timescale_separation_history.npz")
     assert timescale_history["normal_time"].size > 0
     velocity_trajectory_history = load_npz(
         run_dir / "velocity_trajectory_sweep_history.npz"
     )
     assert velocity_trajectory_history["time"].size > 0
+
+
+def test_existing_run_can_apply_reusable_diagnostics_config(tmp_path) -> None:
+    config = make_short_config()
+    for group_name in DIAGNOSTIC_GROUPS:
+        setattr(config.diagnostics, group_name, False)
+    run_dir = run_experiment(config=config, project_root=tmp_path, make_figures=False)
+    diagnostics_path = tmp_path / "short_diagnostics.yaml"
+    switches = {group_name: False for group_name in DIAGNOSTIC_GROUPS}
+    switches["trajectory_and_fixed_points"] = True
+    save_yaml(
+        diagnostics_path,
+        {
+            "diagnostics": switches,
+            "simulation": {"darkness_test_duration": 0.04},
+            "tests": {"bump_attractor_initial_conditions": 10},
+        },
+    )
+
+    run_tests_for_existing_run(
+        run_dir=run_dir,
+        make_figures=True,
+        diagnostics_config_path=diagnostics_path,
+    )
+
+    resolved_test_config = load_experiment_config(
+        run_dir / "test_config_resolved.yaml"
+    )
+    assert resolved_test_config.model.n_theta == config.model.n_theta
+    assert np.isclose(
+        resolved_test_config.simulation.train_duration,
+        config.simulation.train_duration,
+    )
+    assert np.isclose(resolved_test_config.simulation.darkness_test_duration, 0.04)
+    assert resolved_test_config.tests.bump_attractor_initial_conditions == 10
+    assert resolved_test_config.diagnostics.trajectory_and_fixed_points is True
+    assert resolved_test_config.diagnostics.bump_diffusion is False
+    assert (
+        run_dir
+        / "figures"
+        / "heading"
+        / "bump_attractor_decoder_trajectories.png"
+    ).exists()
+    assert not (run_dir / "bump_diffusion_history.npz").exists()
+    assert not (run_dir / "darkness_history.npz").exists()

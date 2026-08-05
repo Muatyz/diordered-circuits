@@ -5,6 +5,7 @@ import numpy as np
 from learning.analysis.metrics import (
     angular_first_passage_time,
     benjamini_hochberg_adjusted_p_values,
+    classify_endpoint_map_fixed_points,
     clark_overlap_order_parameter,
     decode_heading_by_clark_overlap,
     empirical_two_point_correlation,
@@ -23,6 +24,83 @@ from learning.analysis.metrics import (
     summarize_velocity_tracking,
     summarize_pi_error_ensemble,
 )
+
+
+def test_endpoint_map_classifies_attractors_and_repellers_by_trend() -> None:
+    theta_initial = np.linspace(-np.pi, np.pi, 360, endpoint=False)
+    theta_final = np.where(
+        np.abs(theta_initial) < 0.5 * np.pi,
+        0.0,
+        -np.pi,
+    )
+
+    fixed_points = classify_endpoint_map_fixed_points(
+        theta_initial=theta_initial,
+        theta_final=theta_final,
+    )
+
+    theta = fixed_points["fixed_point_theta"]
+    stability = fixed_points["fixed_point_stability"]
+    assert np.count_nonzero(stability == -1) == 2
+    assert np.count_nonzero(stability == 1) == 2
+    attracting = np.sort(theta[stability == -1])
+    repelling = np.sort(theta[stability == 1])
+    np.testing.assert_allclose(attracting, [-np.pi, 0.0], atol=np.deg2rad(1.1))
+    np.testing.assert_allclose(
+        repelling,
+        [-0.5 * np.pi, 0.5 * np.pi],
+        atol=np.deg2rad(1.1),
+    )
+
+
+def test_endpoint_map_identity_has_no_discrete_fixed_point_markers() -> None:
+    theta_initial = np.linspace(-np.pi, np.pi, 120, endpoint=False)
+
+    fixed_points = classify_endpoint_map_fixed_points(
+        theta_initial=theta_initial,
+        theta_final=theta_initial,
+    )
+
+    assert fixed_points["fixed_point_theta"].size == 0
+    assert fixed_points["fixed_point_stability"].size == 0
+
+
+def test_endpoint_map_resolves_two_sample_plateaus_and_basin_boundaries() -> None:
+    theta_initial = np.linspace(-np.pi, np.pi, 60, endpoint=False)
+    theta_final = np.repeat(theta_initial[::2], 2)
+
+    fixed_points = classify_endpoint_map_fixed_points(
+        theta_initial=theta_initial,
+        theta_final=theta_final,
+    )
+
+    stability = fixed_points["fixed_point_stability"]
+    assert np.count_nonzero(stability == -1) == 30
+    assert np.count_nonzero(stability == 1) == 30
+    circular_order = np.argsort(
+        np.mod(fixed_points["fixed_point_theta"] + np.pi, 2.0 * np.pi)
+    )
+    ordered_stability = stability[circular_order]
+    assert np.all(ordered_stability != np.roll(ordered_stability, 1))
+
+
+def test_endpoint_map_does_not_turn_stationary_singleton_into_repeller() -> None:
+    theta_initial = np.linspace(-np.pi, np.pi, 6, endpoint=False)
+    theta_final = np.deg2rad([-120.0, -120.0, -60.0, 60.0, 60.0, 60.0])
+
+    fixed_points = classify_endpoint_map_fixed_points(
+        theta_initial=theta_initial,
+        theta_final=theta_final,
+    )
+
+    theta = fixed_points["fixed_point_theta"]
+    stability = fixed_points["fixed_point_stability"]
+    assert np.count_nonzero(stability == -1) == 3
+    assert np.count_nonzero(stability == 1) == 3
+    repeller_distance_from_singleton = np.abs(
+        np.angle(np.exp(1j * (theta[stability == 1] - np.deg2rad(-60.0))))
+    )
+    assert np.min(repeller_distance_from_singleton) >= np.deg2rad(29.0)
 
 
 def test_closed_manifold_distance_interpolates_between_heading_bins() -> None:

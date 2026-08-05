@@ -405,3 +405,62 @@ some dynamics listed below.
   used to keep the short diagnostic out of dense common-mode recurrent drive;
   the released full model instead relies on longer training, global
   inhibition, random initialization, and the full dynamics.
+
+## 2026-08-05 Eq. 4 and full-recurrent correction
+
+The items above describe historical states of the toy model. They are
+superseded by the current implementation in four important respects:
+
+- `v_hd_proximal` is now a genuine Markov state advanced by paper Eq. 4 with
+  a configurable forward-Euler or exact-linear substep, using `C=1 ms`,
+  `gL=1`, and `gD=2` in the release-parameter baseline.
+  The factor `1/(gD+gL)` is no longer pre-applied to visual current; it emerges
+  from the dynamic equation at steady state.
+- The release-parameter baseline uses `dt=0.5 ms`. When the configured method
+  is `forward_euler`, validation rejects `dt*(gL+gD)/C >= 2`, so old 10 ms and
+  1 ms configurations cannot silently run the stiff proximal equation with
+  unstable Euler settings.
+- HD recurrent weights include their diagonal by default, matching the full
+  matrix learned in `learning/original/fly_rec.py`. Diagonal removal remains an
+  opt-in non-paper control.
+- Frozen-darkness and slow-manifold analysis now retains
+  `[r_hd_to_hr_lp, r_hr, i_hd_distal, v_hd_distal, v_hd_proximal]` as the
+  canonical Markov state. Visual release and normal perturbations preserve the
+  proximal voltage instead of projecting it instantaneously to `p*Vd`.
+- Authored experiment configs now use the release firing-rate ceiling
+  `fmax=0.15 kHz` directly. Fixed and plastic weights are stored on the release
+  numerical scale (`wHD=2/0.15`, random-weight std `1/sqrt(120)`), and the
+  seconds-based loop uses `eta=50=1000*0.05`; prediction error is therefore an
+  actual kHz rate difference rather than a unit-peak normalized quantity.
+
+The numerical loop remains a single-clock ordered fixed-step scheme. Distal
+state, PSP, plasticity induction, and weights use Euler updates; the proximal
+Eq. (4) substep is configurable. Every state advances once per timestep, with
+no relaxation/convergence gate before learning. Updated weights first affect
+the distal drive on the next timestep. See `learning/notebooks/Vafidis.md`,
+section "Toy model 设计", for the exact old/new dependency order and the
+remaining time-unit/reproducible-RNG differences from the release script.
+
+## 2026-08-06 exact-linear proximal integration
+
+The active `configs/experiments/vafidis_toy.yaml` training baseline now sets
+`simulation.proximal_integration_method: exact_linear`. For the ordered Eq. (4)
+subproblem,
+
+```text
+V* = (gD * Vd_next + Iprox) / (gL + gD)
+Va_next = V* + exp(-(gL + gD) * dt / C) * (Va_old - V*)
+```
+
+where `Vd_next` and the current timestep's proximal input are held piecewise
+constant. This removes the local forward-Euler stability limit without adding
+a general ODE solver or changing the global timestep/update order. It is exact
+for the scalar linear proximal subproblem only; all other differential states
+retain their existing ordered Euler updates.
+
+The alternative value `forward_euler` preserves the released Eq. (4)
+discretization. Historical resolved configs that predate the new field default
+to `forward_euler`; the authored training baseline selects `exact_linear`
+explicitly. Frozen autonomous rollouts and their analytic map Jacobian consume
+the same coefficients as the main model step, preventing training/diagnostic
+dynamics from silently diverging.

@@ -4,7 +4,238 @@ from __future__ import annotations
 
 import numpy as np
 
-from learning.common.angles import circular_difference, unwrap_heading_trace
+from learning.common.angles import (
+    circular_difference,
+    unwrap_heading_trace,
+    wrap_angle,
+)
+
+
+def classify_endpoint_map_fixed_points(
+    *,
+    theta_initial: np.ndarray,
+    theta_final: np.ndarray,
+    minimum_trend_rad: float | None = None,
+    attractor_cluster_tolerance_rad: float = np.deg2rad(0.5),
+    minimum_attractor_samples: int = 2,
+) -> dict[str, np.ndarray]:
+    """Infer attracting and repelling fixed points from an endpoint map.
+
+    Repeated terminal endpoints identify attracting plateaus.  A stationary
+    singleton endpoint is also retained when the endpoint map is otherwise
+    supported by repeated plateaus; this handles a narrow basin sampled only
+    at its fixed point without turning an identity map into discrete FPs.
+
+    Repellers are inferred at transitions between the basin labels of two
+    immediately adjacent probes.  A direct negative-to-positive displacement
+    bracket is interpolated; otherwise the transition is placed at the probe
+    interval midpoint.  Neutral probes are never skipped, because doing so can
+    turn a sampled attracting fixed point into a false repeller.
+    """
+    theta_initial = np.asarray(theta_initial, dtype=float)
+    theta_final = np.asarray(theta_final, dtype=float)
+    if (
+        theta_initial.ndim != 1
+        or theta_final.ndim != 1
+        or theta_initial.shape != theta_final.shape
+    ):
+        raise ValueError("endpoint-map angles must be matching 1D arrays")
+    if (
+        not np.isfinite(attractor_cluster_tolerance_rad)
+        or attractor_cluster_tolerance_rad <= 0.0
+    ):
+        raise ValueError("attractor_cluster_tolerance_rad must be positive")
+    if minimum_attractor_samples < 2:
+        raise ValueError("minimum_attractor_samples must be at least two")
+    finite = np.isfinite(theta_initial) & np.isfinite(theta_final)
+    if np.count_nonzero(finite) < 4:
+        return {
+            "fixed_point_theta": np.empty(0, dtype=float),
+            "fixed_point_stability": np.empty(0, dtype=np.int8),
+            "left_endpoint_displacement": np.empty(0, dtype=float),
+            "right_endpoint_displacement": np.empty(0, dtype=float),
+            "angular_resolution_rad": np.asarray(np.nan),
+            "repeated_endpoint_support_fraction": np.asarray(np.nan),
+        }
+
+    initial_phase = np.mod(
+        np.asarray(wrap_angle(theta_initial[finite]), dtype=float) + np.pi,
+        2.0 * np.pi,
+    )
+    endpoint_displacement = np.asarray(
+        circular_difference(theta_final[finite], theta_initial[finite]),
+        dtype=float,
+    )
+    order = np.argsort(initial_phase)
+    initial_phase = initial_phase[order]
+    endpoint_displacement = endpoint_displacement[order]
+    circular_gaps = np.diff(
+        np.concatenate([initial_phase, initial_phase[:1] + 2.0 * np.pi])
+    )
+    positive_gaps = circular_gaps[circular_gaps > 1e-12]
+    if positive_gaps.size == 0:
+        raise ValueError("endpoint-map starts must span more than one angle")
+    angular_resolution = float(np.median(positive_gaps))
+    if minimum_trend_rad is None:
+        minimum_trend_rad = max(1e-8, 0.1 * angular_resolution)
+    if not np.isfinite(minimum_trend_rad) or minimum_trend_rad < 0.0:
+        raise ValueError("minimum_trend_rad must be finite and non-negative")
+
+    # Keep endpoint-cluster membership in initial-cue order.  Basin-boundary
+    # inference below must compare truly adjacent probes, not merely adjacent
+    # non-zero displacement samples.
+    final_phase_by_initial = (
+        np.mod(
+            np.asarray(wrap_angle(theta_final[finite]), dtype=float) + np.pi,
+            2.0 * np.pi,
+        )
+    )[order]
+    final_order = np.argsort(final_phase_by_initial)
+    final_phase = final_phase_by_initial[final_order]
+    final_gaps = np.diff(
+        np.concatenate([final_phase, final_phase[:1] + 2.0 * np.pi])
+    )
+    largest_gap_index = int(np.argmax(final_gaps))
+    rotated_final_order = np.concatenate(
+        [
+            final_order[largest_gap_index + 1 :],
+            final_order[: largest_gap_index + 1],
+        ]
+    )
+    rotated_final_phase = np.concatenate(
+        [
+            final_phase[largest_gap_index + 1 :],
+            final_phase[: largest_gap_index + 1] + 2.0 * np.pi,
+        ]
+    )
+    split_index = np.flatnonzero(
+        np.diff(rotated_final_phase) > attractor_cluster_tolerance_rad
+    ) + 1
+    endpoint_clusters = np.split(rotated_final_phase, split_index)
+    endpoint_cluster_members = np.split(rotated_final_order, split_index)
+    cluster_id_by_initial = np.full(initial_phase.size, -1, dtype=int)
+    cluster_theta: list[float] = []
+    cluster_sample_count: list[int] = []
+    cluster_member_index: list[np.ndarray] = []
+    for endpoint_cluster, member_index in zip(
+        endpoint_clusters,
+        endpoint_cluster_members,
+        strict=True,
+    ):
+        cluster_complex_mean = np.mean(np.exp(1j * endpoint_cluster))
+        if abs(cluster_complex_mean) <= 1e-12:
+            continue
+        cluster_center_phase = float(
+            np.mod(np.angle(cluster_complex_mean), 2.0 * np.pi)
+        )
+        cluster_deviation = np.abs(
+            circular_difference(endpoint_cluster, cluster_center_phase)
+        )
+        if float(np.max(cluster_deviation)) > attractor_cluster_tolerance_rad:
+            continue
+        cluster_id = len(cluster_theta)
+        cluster_id_by_initial[member_index] = cluster_id
+        cluster_theta.append(float(wrap_angle(cluster_center_phase - np.pi)))
+        cluster_sample_count.append(int(member_index.size))
+        cluster_member_index.append(member_index)
+
+    cluster_sample_count_array = np.asarray(cluster_sample_count, dtype=int)
+    directly_supported_cluster = (
+        cluster_sample_count_array >= minimum_attractor_samples
+    )
+    directly_supported_sample_count = int(
+        np.sum(cluster_sample_count_array[directly_supported_cluster])
+    )
+    repeated_endpoint_support_fraction = (
+        directly_supported_sample_count / float(initial_phase.size)
+    )
+    accept_stationary_singletons = repeated_endpoint_support_fraction >= 0.5
+
+    stable_cluster_id: list[int] = []
+    for cluster_id, (sample_count, member_index) in enumerate(
+        zip(cluster_sample_count, cluster_member_index, strict=True)
+    ):
+        if sample_count >= minimum_attractor_samples:
+            stable_cluster_id.append(cluster_id)
+            continue
+        if (
+            sample_count == 1
+            and accept_stationary_singletons
+            and abs(float(endpoint_displacement[member_index[0]]))
+            <= float(minimum_trend_rad)
+        ):
+            stable_cluster_id.append(cluster_id)
+
+    stable_cluster_id_set = set(stable_cluster_id)
+    attracting_theta = [cluster_theta[index] for index in stable_cluster_id]
+
+    repelling_theta: list[float] = []
+    left_displacement: list[float] = []
+    right_displacement: list[float] = []
+    if len(stable_cluster_id) >= 2:
+        maximum_local_gap = max(1.5 * angular_resolution, np.deg2rad(2.0))
+        for left_index in range(initial_phase.size):
+            right_index = (left_index + 1) % initial_phase.size
+            left_cluster_id = int(cluster_id_by_initial[left_index])
+            right_cluster_id = int(cluster_id_by_initial[right_index])
+            if (
+                left_cluster_id == right_cluster_id
+                or left_cluster_id not in stable_cluster_id_set
+                or right_cluster_id not in stable_cluster_id_set
+            ):
+                continue
+            left_trend = float(endpoint_displacement[left_index])
+            right_trend = float(endpoint_displacement[right_index])
+            angular_gap = float(
+                np.mod(
+                    initial_phase[right_index] - initial_phase[left_index],
+                    2.0 * np.pi,
+                )
+            )
+            if angular_gap <= 0.0 or angular_gap > maximum_local_gap:
+                continue
+            directly_bracketed = (
+                left_trend < -float(minimum_trend_rad)
+                and right_trend > float(minimum_trend_rad)
+                and abs(left_trend - right_trend) < np.pi
+            )
+            if directly_bracketed:
+                interpolation_fraction = abs(left_trend) / (
+                    abs(left_trend) + abs(right_trend)
+                )
+            else:
+                interpolation_fraction = 0.5
+            root_phase = (
+                initial_phase[left_index]
+                + interpolation_fraction * angular_gap
+            ) % (2.0 * np.pi)
+            repelling_theta.append(float(wrap_angle(root_phase - np.pi)))
+            left_displacement.append(left_trend)
+            right_displacement.append(right_trend)
+
+    fixed_theta = np.asarray(attracting_theta + repelling_theta, dtype=float)
+    fixed_stability = np.concatenate(
+        [
+            np.full(len(attracting_theta), -1, dtype=np.int8),
+            np.full(len(repelling_theta), 1, dtype=np.int8),
+        ]
+    )
+    stable_padding = np.full(len(attracting_theta), np.nan, dtype=float)
+
+    return {
+        "fixed_point_theta": fixed_theta,
+        "fixed_point_stability": fixed_stability,
+        "left_endpoint_displacement": np.concatenate(
+            [stable_padding, np.asarray(left_displacement, dtype=float)]
+        ),
+        "right_endpoint_displacement": np.concatenate(
+            [stable_padding, np.asarray(right_displacement, dtype=float)]
+        ),
+        "angular_resolution_rad": np.asarray(angular_resolution),
+        "repeated_endpoint_support_fraction": np.asarray(
+            repeated_endpoint_support_fraction
+        ),
+    }
 
 
 def linear_fit_slope_intercept(x_values: np.ndarray, y_values: np.ndarray) -> tuple[float, float]:

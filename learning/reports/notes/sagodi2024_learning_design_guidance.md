@@ -98,3 +98,21 @@ finite_horizon_bound_pass_fraction
 
 论文使用全局 MSE、Adam 和 backprop 训练通用 RNN。该部分只作为“哪些 dynamical solutions 会出现”的证据，不移植到本项目 learning rule；本项目继续只允许局部变量驱动的 Vafidis-style plasticity。
 
+## 2026-07-27 implementation and first audit
+
+已实现：
+
+- canonical state `[r_hd_to_hr_lp, r_hr, i_hd_distal, v_hd_distal]`；
+- exact frozen map、Euler-equivalent flow 与 analytic Jacobian；
+- 逐轨迹 `10^-3 max ||f||` slow-point capture；
+- decoded-angle coverage gate 与 periodic cubic spline；
+- coordinate-correct `theta_dot`、flow reversal、basins/entropy；
+- leading Jacobian modes、normal margin、spectral gap 与 tangent alignment；
+- focused saved-run CLI 和 accepted/rejected 两种诊断图。
+
+首个正式 run `20260727-144656_vafidis_toy_42` 的 1024 个 slow candidates 只覆盖
+21/180 angular bins（11.7%），形成 21 个 disconnected low-speed angle clusters。
+因此 50% coverage gate 拒绝了 ring spline，并禁止输出该假想 spline 的 roots 和
+Jacobian。结果与“当前网络更像离散/pinned attractors”一致，但这些 clusters 仍只是
+slow-state evidence；确认 stable/saddle fixed points 需要下一步在各 cluster 之间增加
+中速过渡采样或直接做 local flow-reversal probes。

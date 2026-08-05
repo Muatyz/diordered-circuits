@@ -592,6 +592,7 @@ def plot_activity_heatmap(
     theta_hd_decoded_peak: np.ndarray | None = None,
     decode_theta_hd_pref: np.ndarray | None = None,
     phase_id: np.ndarray | None = None,
+    firing_rate_label: str = "normalized HD firing rate [a.u.]",
 ) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -680,7 +681,7 @@ def plot_activity_heatmap(
     axis.set_title(title)
     axis.set_xlabel("time [s]")
     axis.set_ylabel(y_label)
-    fig.colorbar(mesh, ax=axis, label="normalized HD firing rate [a.u.]")
+    fig.colorbar(mesh, ax=axis, label=firing_rate_label)
     fig.savefig(path, dpi=160)
     plt.close(fig)
 
@@ -810,6 +811,7 @@ def plot_activity_tuning_slices(
     title: str = "HD activity tuning slices",
     slice_times: np.ndarray | None = None,
     time_context: str = "source heatmap",
+    firing_rate_label: str = "normalized HD firing rate [a.u.]",
 ) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -862,7 +864,7 @@ def plot_activity_tuning_slices(
         f"{title}\n{time_context} t={source_start_time:.2f}-{source_end_time:.2f} s"
     )
     axis.set_xlabel("HD preferred direction theta_HD [rad]")
-    axis.set_ylabel("normalized HD firing rate [a.u.]")
+    axis.set_ylabel(firing_rate_label)
     axis.set_xlim(-np.pi, np.pi)
     _set_radian_ticks(axis, which="x")
     axis.legend(frameon=False, fontsize=7)

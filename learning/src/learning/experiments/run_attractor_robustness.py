@@ -2535,11 +2535,16 @@ def _perturb_state(
     state: VafidisToyState,
     rng: np.random.Generator,
     perturbation_scale: float,
+    max_rate: float,
 ) -> VafidisToyState:
     perturbed_state = state.copy()
     perturbation = rng.normal(loc=0.0, scale=perturbation_scale, size=state.r_hd.shape)
-    perturbed_state.r_hd = np.clip(state.r_hd + perturbation, 0.0, 1.0)
-    perturbed_state.r_hd_to_hr_lp = np.clip(state.r_hd_to_hr_lp + perturbation, 0.0, 1.0)
+    perturbed_state.r_hd = np.clip(state.r_hd + perturbation, 0.0, max_rate)
+    perturbed_state.r_hd_to_hr_lp = np.clip(
+        state.r_hd_to_hr_lp + perturbation,
+        0.0,
+        max_rate,
+    )
     return perturbed_state
 
 
@@ -2571,6 +2576,7 @@ def _simulate_perturbation_trajectories(
             state=manifold_states[int(anchor_index)],
             rng=rng,
             perturbation_scale=perturbation_scale,
+            max_rate=params.activation_max_rate,
         )
         trajectory_points = [_state_to_manifold_point(state)]
         distance_trace = [_nearest_manifold_distance(trajectory_points[-1], manifold_points)]

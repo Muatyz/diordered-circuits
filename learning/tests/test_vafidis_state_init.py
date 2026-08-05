@@ -16,4 +16,6 @@ def test_state_initialization_is_seed_reproducible() -> None:
     second_state = initialize_vafidis_toy_state(config=config, rng=make_rng(123))
     assert np.allclose(first_state.w_hd_to_hd, second_state.w_hd_to_hd)
     assert np.allclose(first_state.w_hr_to_hd, second_state.w_hr_to_hd)
-    assert np.allclose(np.diag(first_state.w_hd_to_hd), 0.0)
+    # Vafidis learns the full recurrent matrix; initialization therefore does
+    # not silently erase the diagonal when random jitter is enabled.
+    assert not np.allclose(np.diag(first_state.w_hd_to_hd), 0.0)

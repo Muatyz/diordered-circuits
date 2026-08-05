@@ -3,8 +3,15 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
 
-from learning.config.load_config import load_experiment_config
+from learning.config.diagnostics import DIAGNOSTIC_GROUPS, selected_diagnostics
+from learning.config.load_config import load_experiment_config, load_yaml, save_yaml
+from learning.config.schema import RETIRED_TEST_CONFIG_FIELDS
+from learning.dynamics.hd_dynamics import (
+    PROXIMAL_INTEGRATION_EXACT_LINEAR,
+    PROXIMAL_INTEGRATION_FORWARD_EULER,
+)
 from learning.experiments.run_attractor_robustness import (
     _retune_visual_width_for_neuron_count,
     _visual_sigma_from_kappa,
@@ -17,10 +24,159 @@ def test_default_training_protocol_has_positive_duration() -> None:
     assert config.simulation.train_duration > 0.0
 
 
-def test_all_single_mouse_configs_expose_configurable_attractor_landscape_protocol() -> None:
+def test_vafidis_baseline_matches_release_firing_rate_and_weight_units() -> None:
+    config_path = Path(__file__).resolve().parents[1] / "configs" / "experiments" / "vafidis_toy.yaml"
+    config = load_experiment_config(config_path)
+    release_fmax_khz = 0.15
+
+    assert config.experiment_name == "vafidis_release_parameter_baseline"
+    assert config.model.n_theta == 60
+    assert config.model.n_hr == 60
+    assert np.isclose(config.simulation.dt, 5e-4)
+    assert (
+        config.simulation.proximal_integration_method
+        == PROXIMAL_INTEGRATION_EXACT_LINEAR
+    )
+    assert np.isclose(config.simulation.train_duration, 8e4)
+    assert config.simulation.random_stream_mode == "component_split"
+    assert config.simulation.early_stopping.enabled is False
+    assert np.isclose(config.model.tau_s, 0.065)
+    assert np.isclose(config.model.tau_hd_to_hr, 0.065)
+    assert np.isclose(config.model.tau_l_hd, 0.01)
+    assert np.isclose(config.model.c_hd_proximal, 0.001)
+    assert np.isclose(config.model.g_l_hd_proximal, 1.0)
+    assert np.isclose(config.model.g_d_hd_to_proximal, 2.0)
+    assert np.isclose(config.model.p_distal_to_proximal, 2.0 / 3.0)
+    assert np.isclose(config.model.b_hd, 1.0)
+    assert np.isclose(config.model.b_hr, 1.5)
+    assert config.model.hd_distal_normalization == "raw_sum"
+    assert np.isclose(config.model.activation.max_rate, release_fmax_khz)
+    assert np.isclose(
+        config.model.w_hd_to_hr_strength,
+        2.0 / release_fmax_khz,
+    )
+    assert config.model.init.w_hd_to_hd_mode == "random_normal"
+    assert config.model.init.w_hr_to_hd_mode == "random_normal"
+    expected_weight_std = 1.0 / np.sqrt(120.0)
+    assert np.isclose(config.model.init.w_hd_to_hd_scale, expected_weight_std)
+    assert np.isclose(config.model.init.w_hr_to_hd_scale, expected_weight_std)
+    # The engine keeps seconds as its time unit, while release uses ms.
+    # Firing rates and weights themselves are no longer rescaled.
+    expected_eta = 0.05 * 1000.0
+    assert np.isclose(config.learning_rule.eta_hd_to_hd, expected_eta)
+    assert np.isclose(config.learning_rule.eta_hr_to_hd, expected_eta)
+    assert config.learning_rule.w_hd_to_hd_min is None
+    assert config.learning_rule.w_hd_to_hd_max is None
+    assert config.learning_rule.w_hr_to_hd_min is None
+    assert config.learning_rule.w_hr_to_hd_max is None
+    assert config.learning_rule.zero_hd_to_hd_diagonal is False
+    assert np.isclose(config.visual.amplitude, 4.0)
+    assert np.isclose(config.visual.baseline, 5.0)
+    assert np.isclose(config.visual.light_excitation, 4.0)
+    assert np.isclose(config.visual.proximal_scale, 1.0)
+    assert np.isclose(config.velocity.std, 225.0 * np.pi / 180.0)
+    assert config.velocity.clip is None
+
+
+def test_release_pilot_changes_only_training_budget_from_release_baseline() -> None:
+    experiment_dir = Path(__file__).resolve().parents[1] / "configs" / "experiments"
+    baseline = load_experiment_config(experiment_dir / "vafidis_toy.yaml")
+    pilot = load_experiment_config(experiment_dir / "vafidis_release_dt1ms_pilot.yaml")
+
+    assert pilot.experiment_name == "vafidis_release_dt1ms_pilot"
+    assert np.isclose(pilot.simulation.dt, 5e-4)
+    assert (
+        pilot.simulation.proximal_integration_method
+        == PROXIMAL_INTEGRATION_FORWARD_EULER
+    )
+    assert np.isclose(pilot.simulation.train_duration, 1e4)
+    assert int(round(pilot.simulation.train_duration / pilot.simulation.dt)) == 20_000_000
+    assert pilot.model == baseline.model
+    assert pilot.learning_rule == baseline.learning_rule
+    assert pilot.visual == baseline.visual
+    assert pilot.velocity == baseline.velocity
+    assert pilot.tests == baseline.tests
+    assert pilot.diagnostics == baseline.diagnostics
+
+
+def test_reusable_profile_and_cli_overrides_compose_in_order() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    config = load_experiment_config(
+        project_root / "configs" / "experiments" / "vafidis_toy.yaml",
+        profile_paths=[project_root / "configs" / "profiles" / "code_smoke.yaml"],
+        overrides=[
+            "simulation.train_duration=0.125",
+            "simulation.progress=true",
+            "tests.gain_velocities=[-1.0, 0.0, 1.0]",
+            "experiment_name=one_off_smoke",
+        ],
+    )
+
+    assert config.model.n_theta == 12
+    assert config.model.n_hr == 12
+    assert np.isclose(config.simulation.dt, 5e-4)
+    assert np.isclose(config.simulation.train_duration, 0.125)
+    assert config.simulation.progress is True
+    assert not any(
+        getattr(config.diagnostics, group_name)
+        for group_name in DIAGNOSTIC_GROUPS
+    )
+    assert config.tests.gain_velocities == [-1.0, 0.0, 1.0]
+    assert config.experiment_name == "one_off_smoke"
+    assert config.paths.runs_root == "runs/vafidis_code_smoke"
+
+
+@pytest.mark.parametrize(
+    ("override", "message"),
+    [
+        ("simulation.missing_field=1", "Unknown config override path"),
+        ("simulation.train_duration=fast", "must be numeric"),
+        ("simulation.progress=1", "must be a boolean"),
+        ("simulation.train_duration", "dotted.path=value"),
+    ],
+)
+def test_cli_config_overrides_reject_typos_and_wrong_types(
+    override: str,
+    message: str,
+) -> None:
+    config_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "experiments"
+        / "vafidis_toy.yaml"
+    )
+
+    with pytest.raises(ValueError, match=message):
+        load_experiment_config(config_path, overrides=[override])
+
+
+def test_multiple_profiles_are_ordered_and_reject_unknown_fields(
+    tmp_path: Path,
+) -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    config_path = project_root / "configs" / "experiments" / "vafidis_toy.yaml"
+    first_profile = tmp_path / "first.yaml"
+    second_profile = tmp_path / "second.yaml"
+    invalid_profile = tmp_path / "invalid.yaml"
+    save_yaml(first_profile, {"simulation": {"train_duration": 1.0}})
+    save_yaml(second_profile, {"simulation": {"train_duration": 2.0}})
+    save_yaml(invalid_profile, {"simulation": {"trian_duration": 3.0}})
+
+    config = load_experiment_config(
+        config_path,
+        profile_paths=[first_profile, second_profile],
+    )
+    assert np.isclose(config.simulation.train_duration, 2.0)
+
+    with pytest.raises(ValueError, match="simulation.trian_duration"):
+        load_experiment_config(config_path, profile_paths=[invalid_profile])
+
+
+def test_experiment_configs_do_not_embed_diagnostics() -> None:
     experiment_config_dir = Path(__file__).resolve().parents[1] / "configs" / "experiments"
     config_paths = sorted(experiment_config_dir.glob("*.yaml"))
     assert {config_path.name for config_path in config_paths} == {
+        "vafidis_release_dt1ms_pilot.yaml",
         "vafidis_toy.yaml",
         "vafidis_mammalian_heterogeneous.yaml",
         "vafidis_population_mean_heterogeneous.yaml",
@@ -28,58 +184,124 @@ def test_all_single_mouse_configs_expose_configurable_attractor_landscape_protoc
     }
 
     for config_path in config_paths:
+        authored_config = load_yaml(config_path)
+        assert "diagnostics_config" not in authored_config
+        assert "tests" not in authored_config
+        assert np.isclose(authored_config["model"]["activation"]["max_rate"], 0.15)
         config = load_experiment_config(config_path)
-        assert config.tests.bump_attractor_trajectory_enabled is True
-        assert config.tests.bump_attractor_initial_conditions > 0
-        assert config.tests.bump_attractor_duration > 0.0
-        assert config.tests.bump_attractor_cue_duration >= 0.0
-        assert config.tests.bump_attractor_sample_interval > 0.0
+        assert np.isclose(config.model.activation.max_rate, 0.15)
+        assert not selected_diagnostics(config)
 
-    von_mises_config = load_experiment_config(
-        experiment_config_dir / "vafidis_population_mean_von_mises.yaml"
+
+def test_historical_resolved_config_without_max_rate_keeps_unit_peak_semantics(
+    tmp_path: Path,
+) -> None:
+    old_resolved_path = tmp_path / "config_resolved.yaml"
+    save_yaml(
+        old_resolved_path,
+        {"model": {"activation": {"name": "sigmoid", "gain": 2.5, "bias": 1.0}}},
     )
-    assert von_mises_config.tests.timescale_separation_enabled is True
-    assert von_mises_config.tests.timescale_separation_initial_conditions == 12
-    assert np.isclose(
-        von_mises_config.tests.timescale_separation_ratio_threshold,
-        10.0,
-    )
-    assert von_mises_config.tests.velocity_trajectory_sweep_enabled is True
-    assert np.isclose(
-        von_mises_config.tests.velocity_trajectory_sweep_max_velocity,
-        2.0,
-    )
-    assert von_mises_config.tests.velocity_trajectory_sweep_count == 11
-    assert von_mises_config.tests.velocity_trajectory_sweep_ring_velocity_count == 4
-    assert np.isclose(
-        von_mises_config.tests.velocity_trajectory_sweep_zero_input_flow_window,
-        5.0,
-    )
-    assert von_mises_config.tests.velocity_phase_flow_probe_enabled is True
-    assert von_mises_config.tests.velocity_phase_flow_initial_conditions == 360
-    assert np.isclose(
-        von_mises_config.tests.velocity_phase_flow_fit_start_time,
-        0.0,
-    )
-    assert np.isclose(
-        von_mises_config.tests.velocity_phase_flow_fit_duration,
-        2.0,
-    )
-    assert np.isclose(
-        von_mises_config.tests.velocity_trajectory_sweep_initial_heading,
-        0.0,
-    )
-    assert von_mises_config.tests.velocity_trajectory_sweep_initial_conditions == 1
-    assert np.isclose(
-        von_mises_config.tests.velocity_trajectory_sweep_duration,
-        30.0,
+
+    config = load_experiment_config(old_resolved_path)
+
+    assert np.isclose(config.model.activation.max_rate, 1.0)
+    assert (
+        config.simulation.proximal_integration_method
+        == PROXIMAL_INTEGRATION_FORWARD_EULER
     )
 
 
-def test_default_pi_recue_is_long_enough_to_check_relocking() -> None:
-    config_path = Path(__file__).resolve().parents[1] / "configs" / "experiments" / "vafidis_toy.yaml"
+def test_diagnostics_hyper_config_requires_every_boolean_group(
+    tmp_path: Path,
+) -> None:
+    experiment_path = tmp_path / "experiment.yaml"
+    diagnostics_path = tmp_path / "diagnostics.yaml"
+    save_yaml(experiment_path, {"experiment_name": "composed"})
+    save_yaml(
+        diagnostics_path,
+        {
+            "diagnostics": {
+                group_name: group_name == "trajectory_and_fixed_points"
+                for group_name in DIAGNOSTIC_GROUPS
+            },
+            "simulation": {"darkness_test_duration": 12.0},
+            "tests": {"bump_attractor_initial_conditions": 360},
+        },
+    )
+
+    config = load_experiment_config(
+        experiment_path,
+        diagnostics_path=diagnostics_path,
+    )
+
+    assert np.isclose(config.simulation.darkness_test_duration, 12.0)
+    assert config.diagnostics.trajectory_and_fixed_points is True
+    assert selected_diagnostics(config) == {"bump_attractor_trajectories"}
+
+    invalid_path = tmp_path / "missing_group.yaml"
+    save_yaml(
+        invalid_path,
+        {"diagnostics": {"trajectory_and_fixed_points": True}},
+    )
+    with pytest.raises(ValueError, match="missing group switches"):
+        load_experiment_config(experiment_path, diagnostics_path=invalid_path)
+
+
+def test_single_hyper_config_selects_only_trajectories() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    config = load_experiment_config(
+        project_root / "configs" / "experiments" / "vafidis_toy.yaml",
+        diagnostics_path=(
+            project_root
+            / "configs"
+            / "diagnostics"
+            / "vafidis_diagnostics.yaml"
+        ),
+    )
+
+    assert selected_diagnostics(config) == {"bump_attractor_trajectories"}
+    assert config.tests.bump_attractor_initial_conditions == 360
+    assert np.isclose(config.tests.bump_attractor_duration, 10.0)
+    assert np.isclose(config.tests.bump_attractor_sample_interval, 0.1)
+
+
+def test_diagnostics_config_cannot_change_training_or_model_fields(
+    tmp_path: Path,
+) -> None:
+    diagnostics_path = tmp_path / "invalid_diagnostics.yaml"
+    save_yaml(
+        diagnostics_path,
+        {"model": {"n_theta": 999}},
+    )
+    experiment_path = tmp_path / "experiment.yaml"
+    save_yaml(experiment_path, {})
+
+    with pytest.raises(ValueError, match="simulation/tests"):
+        load_experiment_config(experiment_path, diagnostics_path=diagnostics_path)
+
+
+def test_retired_diagnostics_fields_are_ignored_for_old_resolved_configs(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "old_config_resolved.yaml"
+    save_yaml(
+        config_path,
+        {"tests": {field_name: 1.0 for field_name in RETIRED_TEST_CONFIG_FIELDS}},
+    )
+
     config = load_experiment_config(config_path)
-    assert config.tests.velocity_trajectory_sweep_enabled is True
+
+    for field_name in RETIRED_TEST_CONFIG_FIELDS:
+        assert not hasattr(config.tests, field_name)
+
+
+def test_single_hyper_config_contains_shared_extended_parameters() -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    config_path = project_root / "configs" / "experiments" / "vafidis_toy.yaml"
+    diagnostics_path = (
+        project_root / "configs" / "diagnostics" / "vafidis_diagnostics.yaml"
+    )
+    config = load_experiment_config(config_path, diagnostics_path=diagnostics_path)
     assert config.tests.velocity_trajectory_sweep_initial_conditions == 1
     assert config.tests.velocity_trajectory_sweep_ring_velocity_count == 4
     assert config.tests.velocity_trajectory_sweep_velocities[:5] == [
@@ -89,17 +311,12 @@ def test_default_pi_recue_is_long_enough_to_check_relocking() -> None:
         0.15,
         0.2,
     ]
-    assert np.isclose(
-        config.tests.velocity_trajectory_sweep_zero_input_flow_window,
-        5.0,
-    )
-    assert config.tests.velocity_phase_flow_probe_enabled is True
     assert config.tests.velocity_phase_flow_initial_conditions == 360
     assert config.tests.velocity_phase_flow_angular_bins == 360
     assert config.tests.velocity_phase_flow_smoothing_bins == 5
     assert config.tests.velocity_phase_flow_probe_velocities[-1] == 0.6
     assert np.isclose(config.tests.velocity_trajectory_sweep_duration, 30.0)
-    assert np.isclose(config.simulation.recue_duration, 8.0)
+    assert np.isclose(config.simulation.recue_duration, 10.0)
 
 
 def test_default_visual_noise_uses_ou_current_process() -> None:
@@ -161,15 +378,7 @@ def test_mammalian_heterogeneous_experiment_config() -> None:
     assert np.isclose(config.visual.amplitude, 4.0 * reference_mean)
     assert config.visual.heterogeneous_plot_sample_count == 16
     assert config.visual.heterogeneous_plot_seed_offset == 50_000
-    assert config.tests.bump_diffusion_trials == 300
-    assert config.tests.ou_pi_ensemble_trials > 1
-    assert config.tests.hd_tuning_curve_angles >= 60
-    assert config.tests.hd_tuning_curve_settle_duration >= 1.4
-    assert (
-        config.tests.hd_tuning_curve_max_settle_duration
-        > config.tests.hd_tuning_curve_settle_duration
-    )
-    assert config.tests.hd_tuning_curve_convergence_tolerance is not None
+    assert not selected_diagnostics(config)
 
 
 def test_population_mean_heterogeneous_experiment_config() -> None:
@@ -200,7 +409,6 @@ def test_population_mean_heterogeneous_experiment_config() -> None:
     assert config.visual.heterogeneous_population_sampling == "nested_master"
     assert config.visual.heterogeneous_master_n_hd_cells >= config.model.n_theta
     assert config.visual.heterogeneous_master_n_hd_cells % config.model.n_theta == 0
-    assert config.tests.bump_attractor_trajectory_enabled is True
     assert config.tests.bump_attractor_initial_conditions > 0
     assert config.tests.bump_attractor_duration > 0.0
     assert config.tests.bump_attractor_sample_interval > 0.0

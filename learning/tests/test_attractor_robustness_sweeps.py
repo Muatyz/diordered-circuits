@@ -224,41 +224,6 @@ def test_clark_figure4_summary_uses_unaligned_nested_tuning_subsets(
     assert Path(str(summary["com_uniformity_table_path"])).exists()
 
 
-def test_neuron_count_config_enables_neuron_count_only() -> None:
-    config_path = (
-        Path(__file__).resolve().parents[1]
-        / "configs"
-        / "analysis"
-        / "neuron_count_comparison.yaml"
-    )
-    config = load_yaml(config_path)
-
-    assert config["sweeps"]["visual_noise"]["enabled"] is False
-    assert config["sweeps"]["neuron_count"]["enabled"] is True
-    assert config["sweeps"]["noise_by_neuron_count"]["enabled"] is False
-    assert config["runtime"]["seed_offsets"] == [0]
-
-
-def test_heterogeneous_neuron_count_config_is_paired_and_single_factor() -> None:
-    project_root = Path(__file__).resolve().parents[1]
-    config_path = (
-        project_root
-        / "configs"
-        / "analysis"
-        / "heterogeneous_neuron_count_comparison.yaml"
-    )
-    config = load_yaml(config_path)
-    base_experiment = load_yaml(project_root / config["experiment"]["config"])
-
-    assert base_experiment["visual"]["profile"] == "heterogeneous_gaussian_process"
-    assert config["sweeps"]["visual_noise"]["enabled"] is False
-    assert config["sweeps"]["neuron_count"]["enabled"] is True
-    assert config["sweeps"]["noise_by_neuron_count"]["enabled"] is False
-    assert config["sweeps"]["neuron_count"]["min_visual_sigma_bins"] is None
-    assert config["sweeps"]["neuron_count"]["counts"] == [60, 120, 180, 240]
-    assert config["runtime"]["seed_offsets"] == [0, 1, 2, 3, 4]
-
-
 def test_noise_by_neuron_count_config_enables_joint_grid_only() -> None:
     config_path = (
         Path(__file__).resolve().parents[1]

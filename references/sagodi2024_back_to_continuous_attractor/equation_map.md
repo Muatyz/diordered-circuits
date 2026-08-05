@@ -15,8 +15,8 @@
 
 ### Code target
 
-- Planned file: `learning/src/learning/dynamics/autonomous.py`
-- Planned interfaces: `pack_autonomous_state`, `unpack_autonomous_state`, `autonomous_step`, `autonomous_flow`
+- Implemented file: `learning/src/learning/dynamics/autonomous.py`
+- Implemented interface: `FrozenAutonomousDynamics.pack_state/unpack_state/step/flow/flow_jacobian`
 - Existing source step: `learning/src/learning/models/vafidis_toy.py::step_vafidis_toy`
 
 ### Numerical risks
@@ -46,7 +46,7 @@
 
 ### Code target
 
-- Planned file: `learning/src/learning/analysis/slow_manifold.py`
+- Implemented file: `learning/src/learning/analysis/slow_manifold.py`
 - Existing partial probes: `run_bump_attractor_trajectory_test`, `run_timescale_separation_test`, `learning/analysis/phase_flow.py`
 
 ### Numerical risks
@@ -122,6 +122,5 @@ stable fixed point 的 basin 由沿一维 manifold 的 flow direction 决定；�
 
 ### Code target
 
-- Planned file: `learning/src/learning/analysis/jacobian.py`
+- Implemented in: `learning/src/learning/dynamics/autonomous.py::flow_jacobian` and `learning/src/learning/analysis/slow_manifold.py`
 - Do not substitute: `learning/src/learning/analysis/weights.py::compute_weight_eigenvalues`
-

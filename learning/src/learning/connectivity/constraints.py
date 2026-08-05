@@ -16,22 +16,29 @@ def remove_diagonal(weight_matrix: np.ndarray) -> np.ndarray:
 def constrain_w_hd_to_hd(
     w_hd_to_hd: np.ndarray,
     *,
-    lower_bound: float,
-    upper_bound: float,
+    lower_bound: float | None,
+    upper_bound: float | None,
     symmetry_mode: str = "none",
     balance_mode: str = "none",
+    zero_diagonal: bool = False,
 ) -> np.ndarray:
-    constrained_w_hd_to_hd = np.clip(w_hd_to_hd, lower_bound, upper_bound)
+    constrained_w_hd_to_hd = _apply_optional_bounds(
+        w_hd_to_hd,
+        lower_bound=lower_bound,
+        upper_bound=upper_bound,
+    )
     constrained_w_hd_to_hd = symmetrize_w_hd_to_hd(
         constrained_w_hd_to_hd,
         symmetry_mode=symmetry_mode,
     )
-    constrained_w_hd_to_hd = remove_diagonal(constrained_w_hd_to_hd)
+    if zero_diagonal:
+        constrained_w_hd_to_hd = remove_diagonal(constrained_w_hd_to_hd)
     constrained_w_hd_to_hd = balance_w_hd_to_hd_common_mode(
         constrained_w_hd_to_hd,
         balance_mode=balance_mode,
     )
-    constrained_w_hd_to_hd = remove_diagonal(constrained_w_hd_to_hd)
+    if zero_diagonal:
+        constrained_w_hd_to_hd = remove_diagonal(constrained_w_hd_to_hd)
     assert_finite(constrained_w_hd_to_hd, "w_hd_to_hd")
     return constrained_w_hd_to_hd
 
@@ -78,17 +85,34 @@ def balance_w_hd_to_hd_common_mode(
 def constrain_w_hr_to_hd(
     w_hr_to_hd: np.ndarray,
     *,
-    lower_bound: float,
-    upper_bound: float,
+    lower_bound: float | None,
+    upper_bound: float | None,
     balance_mode: str = "none",
 ) -> np.ndarray:
-    constrained_w_hr_to_hd = np.clip(w_hr_to_hd, lower_bound, upper_bound)
+    constrained_w_hr_to_hd = _apply_optional_bounds(
+        w_hr_to_hd,
+        lower_bound=lower_bound,
+        upper_bound=upper_bound,
+    )
     constrained_w_hr_to_hd = balance_w_hr_to_hd_common_mode(
         constrained_w_hr_to_hd,
         balance_mode=balance_mode,
     )
     assert_finite(constrained_w_hr_to_hd, "w_hr_to_hd")
     return constrained_w_hr_to_hd
+
+
+def _apply_optional_bounds(
+    weight_matrix: np.ndarray,
+    *,
+    lower_bound: float | None,
+    upper_bound: float | None,
+) -> np.ndarray:
+    """Copy a matrix and apply only the explicitly configured bounds."""
+
+    if lower_bound is None and upper_bound is None:
+        return np.asarray(weight_matrix, dtype=float).copy()
+    return np.clip(weight_matrix, lower_bound, upper_bound)
 
 
 def balance_w_hr_to_hd_common_mode(

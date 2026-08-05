@@ -30,3 +30,7 @@ __pycache__/
 /learning/reports/attractor_robustness/**
 
 /prospective/runs/**
+
+# 写作练习
+/paper/
+/paper/**

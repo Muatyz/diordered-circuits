@@ -20,7 +20,7 @@
 
 ### Status
 
-Partial：已有离散 phase flow、roots 和 basin boundaries；尚未形成 autonomous full-state slow-manifold identification，也未保存 basin entropy。
+Implemented conditionally：已有 full-state slow-point capture、coverage gate、periodic spline、reversal roots 和 basin entropy。首个 `N=120` run 因低速点仅覆盖 11.7% 环而正确拒绝 spline；因此该 run 尚不能给出 ring-flow roots。
 
 ## Figure 4E-F: eigenspectrum along the slow manifold
 
@@ -41,7 +41,7 @@ Partial：已有离散 phase flow、roots 和 basin boundaries；尚未形成 au
 
 ### Status
 
-Not implemented；这是 `learning/.todo/TODO.md` 中 Jacobian 条目的理论规范。
+Implemented conditionally：accepted ring 使用 exact analytic full-dynamics Jacobian（中心差分验证）并保存 leading modes/tangent alignment；coverage 失败的 run 不计算该谱。
 
 ## Figure 5A,C: finite-time error and tangential-flow bound
 
@@ -83,4 +83,3 @@ Not implemented as a bound；已有所需 phase-flow 与 angular-error primitive
 ### Status
 
 Partial：basin boundaries 已有，capacity/entropy 与独立终点核验尚缺。
-

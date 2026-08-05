@@ -12,12 +12,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 
 from learning.common.angles import circular_difference, wrap_angle
-from learning.analysis.metrics import summarize_velocity_gain
+from learning.analysis.metrics import (
+    classify_endpoint_map_fixed_points,
+    summarize_velocity_gain,
+)
 
 
 DARKNESS_PHASE_ID = 1.0
+
+
+def _shade_endpoint_angle_band(
+    axis: plt.Axes,
+    *,
+    angle_deg: float,
+    half_width_deg: float,
+    color: str,
+) -> None:
+    """Shade a periodic horizontal FP marker band without crossing bounds."""
+    lower = float(angle_deg - half_width_deg)
+    upper = float(angle_deg + half_width_deg)
+    intervals = [(lower, upper)]
+    if lower < -180.0:
+        intervals = [(-180.0, upper), (lower + 360.0, 180.0)]
+    elif upper > 180.0:
+        intervals = [(lower, 180.0), (-180.0, upper - 360.0)]
+    for interval_lower, interval_upper in intervals:
+        axis.axhspan(
+            interval_lower,
+            interval_upper,
+            color=color,
+            alpha=0.18,
+            linewidth=0.0,
+            zorder=0,
+        )
 
 
 def _plot_horizontal_reference(
@@ -169,367 +199,6 @@ def plot_true_vs_decoded_heading(
     axis.set_xlabel("time [s]")
     axis.set_ylabel("heading angle [rad]")
     axis.legend(frameon=False)
-    fig.savefig(path, dpi=160)
-    plt.close(fig)
-
-
-def _legacy_estimate_zero_input_phase_flow(
-    *,
-    time: np.ndarray,
-    theta_pva: np.ndarray,
-    flow_window: float,
-    angular_centers: np.ndarray,
-    angular_edges: np.ndarray,
-    derivative_threshold: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, float] | None:
-    """Estimate F_0(theta) from uniformly seeded darkness trajectories.
-
-    A single stationary trajectory has both velocity and acceleration close to
-    zero, so acceleration / velocity cannot identify its local stability.  The
-    dense zero-input assay instead provides samples of the spatial phase flow
-    F_0(theta) = dtheta/dt from many initial headings.
-    """
-    time = np.asarray(time, dtype=float)
-    theta_pva = np.asarray(theta_pva, dtype=float)
-    if (
-        time.ndim != 1
-        or time.size < 3
-        or theta_pva.ndim != 2
-        or theta_pva.shape[1] != time.size
-        or theta_pva.shape[0] < 3
-        or flow_window <= 0.0
-        or derivative_threshold < 0.0
-    ):
-        return None
-    fit_mask = (time >= 0.0) & (time <= min(float(time[-1]), flow_window))
-    if np.count_nonzero(fit_mask) < 3:
-        return None
-
-    unwrapped_theta = np.unwrap(theta_pva, axis=1)
-    phase_velocity = np.gradient(unwrapped_theta, time, axis=1, edge_order=2)
-    wrapped_samples = np.asarray(wrap_angle(theta_pva[:, fit_mask]), dtype=float).ravel()
-    velocity_samples = phase_velocity[:, fit_mask].ravel()
-    finite_mask = np.isfinite(wrapped_samples) & np.isfinite(velocity_samples)
-    wrapped_samples = wrapped_samples[finite_mask]
-    velocity_samples = velocity_samples[finite_mask]
-    if wrapped_samples.size == 0:
-        return None
-
-    angular_bin_count = angular_centers.size
-    angular_bin_index = np.floor(
-        (wrapped_samples + np.pi) / (2.0 * np.pi) * angular_bin_count
-    ).astype(int) % angular_bin_count
-    phase_flow = np.full(angular_bin_count, np.nan, dtype=float)
-    for bin_index in range(angular_bin_count):
-        bin_velocity = velocity_samples[angular_bin_index == bin_index]
-        if bin_velocity.size:
-            phase_flow[bin_index] = float(np.median(bin_velocity))
-    observed_mask = np.isfinite(phase_flow)
-    support_fraction = float(np.mean(observed_mask))
-    if np.count_nonzero(observed_mask) < max(12, angular_bin_count // 4):
-        return None
-
-    # Periodic interpolation only bridges the small gaps left by a finite
-    # number of uniformly spaced starting headings.  Circular smoothing then
-    # suppresses bin-edge jitter without changing radial color magnitude.
-    observed_centers = angular_centers[observed_mask]
-    observed_flow = phase_flow[observed_mask]
-    phase_flow = np.interp(
-        angular_centers,
-        np.concatenate(
-            [
-                observed_centers - 2.0 * np.pi,
-                observed_centers,
-                observed_centers + 2.0 * np.pi,
-            ]
-        ),
-        np.tile(observed_flow, 3),
-    )
-    smoothing_bin_count = 7
-    half_window = smoothing_bin_count // 2
-    phase_flow = np.convolve(
-        np.concatenate(
-            [phase_flow[-half_window:], phase_flow, phase_flow[:half_window]]
-        ),
-        np.full(smoothing_bin_count, 1.0 / smoothing_bin_count),
-        mode="valid",
-    )
-    angular_width = float(angular_edges[1] - angular_edges[0])
-    flow_derivative = (
-        np.roll(phase_flow, -1) - np.roll(phase_flow, 1)
-    ) / (2.0 * angular_width)
-    angular_regime = np.zeros(angular_bin_count, dtype=np.int8)
-    angular_regime[flow_derivative < -derivative_threshold] = -1
-    angular_regime[flow_derivative > derivative_threshold] = 1
-
-    fixed_point_angle: list[float] = []
-    fixed_point_stability: list[int] = []
-    for bin_index in range(angular_bin_count):
-        next_index = (bin_index + 1) % angular_bin_count
-        left_flow = float(phase_flow[bin_index])
-        right_flow = float(phase_flow[next_index])
-        if left_flow * right_flow >= 0.0:
-            continue
-        left_angle = float(angular_centers[bin_index])
-        right_angle = float(angular_centers[next_index])
-        if next_index == 0:
-            right_angle += 2.0 * np.pi
-        root_angle = left_angle - left_flow * (right_angle - left_angle) / (
-            right_flow - left_flow
-        )
-        fixed_point_angle.append(float(wrap_angle(root_angle)))
-        # Positive-to-negative crossings are stable; the reverse are unstable.
-        fixed_point_stability.append(-1 if left_flow > right_flow else 1)
-    return (
-        phase_flow,
-        angular_regime,
-        np.asarray(fixed_point_angle, dtype=float),
-        np.asarray(fixed_point_stability, dtype=np.int8),
-        support_fraction,
-    )
-
-
-def _plot_legacy_velocity_trajectory_local_acceleration_rings(
-    *,
-    time: np.ndarray,
-    commanded_velocity: np.ndarray,
-    theta_initial: np.ndarray,
-    pva_angular_displacement: np.ndarray,
-    local_acceleration_regime_label: np.ndarray,
-    ring_velocity_count: int,
-    path: str | Path,
-    zero_input_time: np.ndarray | None = None,
-    zero_input_theta_pva: np.ndarray | None = None,
-    zero_input_flow_window: float = 5.0,
-    regime_lambda_threshold: float = 0.02,
-) -> None:
-    """Retained only to read old runs; this diagnostic is no longer called."""
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    commanded_velocity = np.asarray(commanded_velocity, dtype=float)
-    time = np.asarray(time, dtype=float)
-    theta_initial = np.asarray(theta_initial, dtype=float)
-    displacement = np.asarray(pva_angular_displacement, dtype=float)
-    regime_label = np.asarray(local_acceleration_regime_label, dtype=np.int8)
-    expected_shape = (
-        commanded_velocity.size,
-        theta_initial.size,
-        displacement.shape[-1],
-    )
-    if (
-        commanded_velocity.ndim != 1
-        or time.ndim != 1
-        or time.size != displacement.shape[-1]
-        or theta_initial.ndim != 1
-        or theta_initial.size == 0
-        or displacement.ndim != 3
-        or displacement.shape != expected_shape
-        or regime_label.shape != expected_shape
-    ):
-        raise ValueError(
-            "FP regime rings require trajectories with shape (velocity, start, time)"
-        )
-    if ring_velocity_count <= 0:
-        raise ValueError("ring_velocity_count must be positive")
-
-    selected_count = min(int(ring_velocity_count), commanded_velocity.size)
-    selected_indices = np.unique(
-        np.rint(
-            np.linspace(0, commanded_velocity.size - 1, selected_count)
-        ).astype(int)
-    )
-    angular_bin_count = 180
-    angular_edges = np.linspace(-np.pi, np.pi, angular_bin_count + 1)
-    angular_centers = 0.5 * (angular_edges[:-1] + angular_edges[1:])
-    angular_width = float(angular_edges[1] - angular_edges[0])
-    regime_colors = {
-        -1: "#20a7a0",
-        0: "#a8a8a8",
-        1: "#ed8b2c",
-    }
-    legend_handles = [
-        Line2D([0], [0], color=regime_colors[-1], linewidth=2.0, label="stable-FP governed"),
-        Line2D([0], [0], color=regime_colors[1], linewidth=2.0, label="unstable-FP governed"),
-        Line2D([0], [0], color=regime_colors[0], linewidth=2.0, label="locally neutral / unresolved"),
-        Line2D(
-            [0],
-            [0],
-            color="black",
-            marker="o",
-            linestyle="none",
-            markersize=5,
-            label="stable FP",
-        ),
-        Line2D(
-            [0],
-            [0],
-            color="black",
-            marker="x",
-            linestyle="none",
-            markersize=5,
-            label="unstable FP",
-        ),
-    ]
-    zero_input_flow = None
-    if zero_input_time is not None and zero_input_theta_pva is not None:
-        zero_input_flow = _legacy_estimate_zero_input_phase_flow(
-            time=zero_input_time,
-            theta_pva=zero_input_theta_pva,
-            flow_window=zero_input_flow_window,
-            angular_centers=angular_centers,
-            angular_edges=angular_edges,
-            derivative_threshold=regime_lambda_threshold,
-        )
-    column_count = (
-        selected_indices.size
-        if selected_indices.size <= 3
-        else (2 if selected_indices.size <= 4 else 3)
-    )
-    row_count = int(np.ceil(selected_indices.size / column_count))
-    fig = plt.figure(figsize=(4.8 * column_count, 4.8 * row_count + 0.55))
-
-    for panel_index, velocity_index in enumerate(selected_indices):
-        ring_axis = fig.add_subplot(
-            row_count,
-            column_count,
-            panel_index + 1,
-            projection="polar",
-        )
-        trajectory = displacement[velocity_index, 0]
-        wrapped_angle = np.asarray(
-            wrap_angle(theta_initial[0] + trajectory),
-            dtype=float,
-        )
-        angular_bin_index = np.floor(
-            (wrapped_angle + np.pi) / (2.0 * np.pi) * angular_bin_count
-        ).astype(int) % angular_bin_count
-        labels = regime_label[velocity_index, 0]
-        stable_count = np.bincount(
-            angular_bin_index,
-            weights=(labels == -1).astype(float),
-            minlength=angular_bin_count,
-        )
-        unstable_count = np.bincount(
-            angular_bin_index,
-            weights=(labels == 1).astype(float),
-            minlength=angular_bin_count,
-        )
-        angular_regime = np.zeros(angular_bin_count, dtype=np.int8)
-        angular_regime[stable_count > unstable_count] = -1
-        angular_regime[unstable_count > stable_count] = 1
-        fixed_point_angle = np.empty(0, dtype=float)
-        fixed_point_stability = np.empty(0, dtype=np.int8)
-        phase_flow_support = float("nan")
-        if np.isclose(commanded_velocity[velocity_index], 0.0) and zero_input_flow is not None:
-            (
-                _phase_flow,
-                angular_regime,
-                fixed_point_angle,
-                fixed_point_stability,
-                phase_flow_support,
-            ) = zero_input_flow
-        elif time.size >= 3:
-            # A pinned driven trajectory only samples one basin.  Its
-            # stationary terminal phase is nevertheless direct evidence for
-            # the stable FP reached from that start; do not infer unseen
-            # unstable roots from a trajectory that never visited them.
-            driven_velocity = np.gradient(
-                displacement[velocity_index],
-                time,
-                axis=1,
-                edge_order=2,
-            )
-            tail_start = max(0, int(np.floor(0.9 * time.size)))
-            stationary_threshold = max(
-                0.05 * abs(float(commanded_velocity[velocity_index])),
-                0.01,
-            )
-            stationary_trial = np.nanmedian(
-                np.abs(driven_velocity[:, tail_start:]),
-                axis=1,
-            ) < stationary_threshold
-            if np.any(stationary_trial):
-                terminal_angle = np.asarray(
-                    wrap_angle(
-                        theta_initial[stationary_trial]
-                        + displacement[velocity_index, stationary_trial, -1]
-                    ),
-                    dtype=float,
-                )
-                terminal_bin = np.floor(
-                    (terminal_angle + np.pi)
-                    / (2.0 * np.pi)
-                    * angular_bin_count
-                ).astype(int) % angular_bin_count
-                fixed_point_angle = angular_centers[np.unique(terminal_bin)]
-                fixed_point_stability = np.full(
-                    fixed_point_angle.size,
-                    -1,
-                    dtype=np.int8,
-                )
-        ring_axis.bar(
-            angular_centers,
-            np.full(angular_bin_count, 0.28),
-            width=angular_width,
-            bottom=0.72,
-            color=[regime_colors[int(label)] for label in angular_regime],
-            edgecolor="none",
-            align="center",
-        )
-        stable_fixed_point = fixed_point_angle[fixed_point_stability == -1]
-        unstable_fixed_point = fixed_point_angle[fixed_point_stability == 1]
-        if stable_fixed_point.size:
-            ring_axis.scatter(
-                stable_fixed_point,
-                np.full(stable_fixed_point.size, 0.86),
-                c="black",
-                marker="o",
-                s=24,
-                zorder=5,
-            )
-        if unstable_fixed_point.size:
-            ring_axis.scatter(
-                unstable_fixed_point,
-                np.full(unstable_fixed_point.size, 0.86),
-                c="black",
-                marker="x",
-                s=30,
-                linewidths=1.2,
-                zorder=5,
-            )
-        coverage = float(np.ptp(trajectory))
-        ring_axis.set_ylim(0.0, 1.05)
-        ring_axis.set_yticks([])
-        ring_axis.set_xticks([0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi])
-        ring_axis.set_xticklabels([r"$0$", r"$\pi/2$", r"$\pm\pi$", r"$-\pi/2$"])
-        ring_axis.grid(color="black", alpha=0.14, linewidth=0.6)
-        if np.isfinite(phase_flow_support):
-            subtitle = (
-                f"phase-flow support={100.0 * phase_flow_support:.0f}%, "
-                f"FP={fixed_point_angle.size}"
-            )
-        else:
-            subtitle = f"coverage={coverage / np.pi:.2f}$\\pi$"
-            if fixed_point_angle.size:
-                subtitle += f", observed FP={fixed_point_angle.size}"
-        ring_axis.set_title(
-            f"v={commanded_velocity[velocity_index]:.1f} rad/s\n{subtitle}",
-            pad=13.0,
-        )
-
-    fig.suptitle(
-        "D  FP-governed angular regions across constant velocity inputs",
-        y=0.98,
-    )
-    fig.legend(
-        handles=legend_handles,
-        frameon=False,
-        fontsize=8,
-        ncol=5,
-        loc="lower center",
-        bbox_to_anchor=(0.5, 0.015),
-    )
-    fig.subplots_adjust(bottom=0.18, top=0.87, hspace=0.38, wspace=0.30)
     fig.savefig(path, dpi=160)
     plt.close(fig)
 
@@ -1418,7 +1087,6 @@ def plot_bump_attractor_decoder_trajectories(
         sharex="col",
         constrained_layout=True,
     )
-    initial_deg = np.rad2deg(theta_initial)
     for row_index, (decoder_label, theta_trace) in enumerate(decoder_traces):
         trajectory_axis = axes[row_index, 0]
         endpoint_axis = axes[row_index, 1]
@@ -1440,7 +1108,43 @@ def plot_bump_attractor_decoder_trajectories(
         trajectory_axis.set_ylabel(f"{decoder_label}\ndecoded angle [deg]")
         trajectory_axis.grid(alpha=0.18)
 
+        initial_deg = np.rad2deg(theta_initial)
         final_decoded_deg = np.rad2deg(wrap_angle(theta_trace[:, -1]))
+        endpoint_fixed_points = classify_endpoint_map_fixed_points(
+            theta_initial=theta_initial,
+            theta_final=theta_trace[:, -1],
+        )
+        fixed_point_theta = np.asarray(
+            endpoint_fixed_points["fixed_point_theta"],
+            dtype=float,
+        )
+        fixed_point_stability = np.asarray(
+            endpoint_fixed_points["fixed_point_stability"],
+            dtype=np.int8,
+        )
+        attracting_theta_deg = np.rad2deg(
+            fixed_point_theta[fixed_point_stability == -1]
+        )
+        repelling_theta_deg = np.rad2deg(
+            fixed_point_theta[fixed_point_stability == 1]
+        )
+        # A fixed 4-degree display band remains legible without encoding a
+        # basin/governing-region width or changing with probe density.
+        band_half_width_deg = 2.0
+        for attracting_angle_deg in attracting_theta_deg:
+            _shade_endpoint_angle_band(
+                endpoint_axis,
+                angle_deg=float(attracting_angle_deg),
+                half_width_deg=band_half_width_deg,
+                color="#17becf",
+            )
+        for repelling_angle_deg in repelling_theta_deg:
+            _shade_endpoint_angle_band(
+                endpoint_axis,
+                angle_deg=float(repelling_angle_deg),
+                half_width_deg=band_half_width_deg,
+                color="#f28e2b",
+            )
         endpoint_axis.scatter(
             initial_deg,
             final_decoded_deg,
@@ -1463,15 +1167,53 @@ def plot_bump_attractor_decoder_trajectories(
         endpoint_axis.set_ylim(-180.0, 180.0)
         endpoint_axis.set_ylabel("final decoded [deg]")
         endpoint_axis.grid(alpha=0.18)
+        endpoint_axis.text(
+            0.98,
+            0.03,
+            (
+                f"stable={attracting_theta_deg.size}, "
+                f"inferred unstable={repelling_theta_deg.size}"
+            ),
+            transform=endpoint_axis.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=7.5,
+            color="#333333",
+        )
         if row_index == 0:
-            endpoint_axis.legend(frameon=False, fontsize=8, loc="upper left")
+            endpoint_axis.legend(
+                handles=[
+                    Line2D(
+                        [0.0],
+                        [0.0],
+                        color="black",
+                        linewidth=0.8,
+                        linestyle="--",
+                        alpha=0.55,
+                        label="ideal identity",
+                    ),
+                    Patch(
+                        facecolor="#17becf",
+                        alpha=0.18,
+                        label="stable FP (display band)",
+                    ),
+                    Patch(
+                        facecolor="#f28e2b",
+                        alpha=0.18,
+                        label="unstable FP (display band, inferred)",
+                    ),
+                ],
+                frameon=False,
+                fontsize=8,
+                loc="upper left",
+            )
 
     axes[-1, 0].set_xlabel("time in darkness [s]")
     axes[-1, 1].set_xlabel("initial cue angle [deg]")
     axes[0, 0].set_title("all zero-input trajectories (ideal: horizontal)")
     axes[0, 1].set_title("endpoint map")
     fig.suptitle(
-        f"{title} (n={theta_initial.size} uniform starts, "
+        f"{title} (n={theta_initial.size} uniform cue starts, "
         f"T_dark={time[-1]:g} s)"
     )
     fig.savefig(path, dpi=160)

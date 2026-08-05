@@ -25,13 +25,14 @@ def update_predictive_local_weights(
     tau_delta: float,
     eta_hd_to_hd: float,
     eta_hr_to_hd: float,
-    w_hd_to_hd_min: float,
-    w_hd_to_hd_max: float,
-    w_hr_to_hd_min: float,
-    w_hr_to_hd_max: float,
+    w_hd_to_hd_min: float | None,
+    w_hd_to_hd_max: float | None,
+    w_hr_to_hd_min: float | None,
+    w_hr_to_hd_max: float | None,
     hd_to_hd_symmetry_mode: str = "none",
     hd_to_hd_balance_mode: str = "none",
     hr_to_hd_balance_mode: str = "none",
+    zero_hd_to_hd_diagonal: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Apply local predictive updates to HD-to-HD and HR-to-HD weights.
 
@@ -57,6 +58,7 @@ def update_predictive_local_weights(
         upper_bound=w_hd_to_hd_max,
         symmetry_mode=hd_to_hd_symmetry_mode,
         balance_mode=hd_to_hd_balance_mode,
+        zero_diagonal=zero_hd_to_hd_diagonal,
     )
     next_w_hr_to_hd = constrain_w_hr_to_hd(
         next_w_hr_to_hd,

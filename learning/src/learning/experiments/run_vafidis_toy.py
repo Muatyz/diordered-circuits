@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Callable
 
 import numpy as np
+import yaml
 
 try:
     from tqdm import tqdm, trange
@@ -36,6 +37,15 @@ except ImportError:  # pragma: no cover
         return range(*args)
 
 from learning.analysis.make_vafidis_figures import make_vafidis_figures_for_run
+from learning.analysis.slow_manifold import (
+    analyze_ramesan_firing_rate_geometry,
+    analyze_ramesan_phase_landscape,
+    analyze_slow_manifold_candidates,
+    candidate_angular_bin_counts,
+    empty_slow_manifold_result,
+    select_slow_candidate_indices,
+    summarize_candidate_angle_clusters,
+)
 from learning.analysis.metrics import (
     angular_first_passage_time,
     decode_heading_by_clark_overlap,
@@ -64,9 +74,14 @@ from learning.common.angles import (
 )
 from learning.common.arrays import l2_norm
 from learning.common.random import make_rng
+from learning.config.diagnostics import (
+    diagnostic_is_enabled,
+    selected_diagnostics,
+)
 from learning.config.load_config import find_project_root, load_experiment_config, save_yaml
 from learning.config.schema import ExperimentConfig
 from learning.dynamics.activation import apply_activation
+from learning.dynamics.autonomous import FrozenAutonomousDynamics
 from learning.dynamics.hd_dynamics import (
     compute_hd_distal_pathway_drives,
     effective_hd_distal_weight_matrices,
@@ -1320,17 +1335,22 @@ def run_bump_attractor_trajectory_test(
     config: ExperimentConfig,
     trained_state: VafidisToyState,
     hd_tuning_history: dict[str, np.ndarray] | None = None,
+    as_dependency: bool = False,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """Map deterministic zero-input bump trajectories from uniform headings.
 
     Each trial first settles under a stationary visual cue and then evolves
     with both visual and velocity inputs set to zero.  Only population-vector
-    PVA, peak-neuron, and Clark-overlap summaries are retained, so the test
-    does not allocate a full trial-by-time-by-neuron activity tensor. The
-    overlap template is the frozen network's post-training visual tuning
-    manifold measured by :func:`run_hd_tuning_curve_test`.
+    PVA, peak-neuron, and Clark-overlap summaries are retained. When the
+    Ságodi analysis is enabled, one trajectory at a time is buffered in the
+    canonical frozen Markov state and only low-speed candidate points are
+    retained. The overlap template is the frozen network's post-training
+    visual tuning manifold measured by :func:`run_hd_tuning_curve_test`.
     """
-    enabled = bool(config.tests.bump_attractor_trajectory_enabled)
+    enabled = as_dependency or diagnostic_is_enabled(
+        config,
+        "bump_attractor_trajectories",
+    )
     if not enabled:
         return {
             "time": np.empty(0, dtype=float),
@@ -1344,6 +1364,22 @@ def run_bump_attractor_trajectory_test(
             "pva_strength": np.empty((0, 0), dtype=float),
             "overlap_max": np.empty((0, 0), dtype=float),
             "bump_contrast": np.empty((0, 0), dtype=float),
+            "slow_candidate_theta": np.empty(0, dtype=float),
+            "slow_candidate_state": np.empty((0, 0), dtype=float),
+            "slow_candidate_speed": np.empty(0, dtype=float),
+            "autonomous_probe_phase": np.empty(0, dtype=float),
+            "autonomous_probe_decoded_theta": np.empty(0, dtype=float),
+            "autonomous_probe_state": np.empty((0, 0), dtype=float),
+            "slow_candidate_trajectory_index": np.empty(0, dtype=int),
+            "slow_candidate_time": np.empty(0, dtype=float),
+            "ramesan_trajectory_theta": np.empty(0, dtype=float),
+            "ramesan_trajectory_state": np.empty((0, 0), dtype=float),
+            "ramesan_trajectory_speed": np.empty(0, dtype=float),
+            "ramesan_trajectory_index": np.empty(0, dtype=int),
+            "ramesan_trajectory_time": np.empty(0, dtype=float),
+            "slow_trajectory_max_speed": np.empty(0, dtype=float),
+            "slow_trajectory_speed_threshold": np.empty(0, dtype=float),
+            "slow_trajectory_candidate_count": np.empty(0, dtype=int),
         }, {"bump_attractor_trajectory_enabled": 0.0}
 
     params = VafidisToyParams.from_config(config)
@@ -1397,6 +1433,52 @@ def run_bump_attractor_trajectory_test(
     pva_strength = np.empty_like(theta_pva)
     overlap_max = np.empty_like(theta_pva)
     bump_contrast = np.empty_like(theta_pva)
+    slow_manifold_enabled = diagnostic_is_enabled(config, "slow_manifold")
+    autonomous_dynamics = (
+        FrozenAutonomousDynamics.from_state(params=params, state=trained_state)
+        if slow_manifold_enabled
+        else None
+    )
+    autonomous_probe_state = (
+        np.empty(
+            (n_initial_conditions, autonomous_dynamics.state_dimension),
+            dtype=float,
+        )
+        if autonomous_dynamics is not None
+        else np.empty((n_initial_conditions, 0), dtype=float)
+    )
+    autonomous_probe_decoded_theta = np.full(n_initial_conditions, np.nan)
+    slow_candidate_target = int(config.tests.slow_manifold_candidate_count)
+    slow_speed_fraction = float(config.tests.slow_manifold_speed_fraction)
+    ramesan_trajectory_target = int(config.tests.ramesan_trajectory_sample_count)
+    if slow_manifold_enabled:
+        if slow_candidate_target < 4:
+            raise ValueError("tests.slow_manifold_candidate_count must be at least four")
+        if not 0.0 < slow_speed_fraction < 1.0:
+            raise ValueError(
+                "tests.slow_manifold_speed_fraction must lie between zero and one"
+            )
+        if ramesan_trajectory_target < 0:
+            raise ValueError(
+                "tests.ramesan_trajectory_sample_count must be non-negative"
+            )
+    candidate_points_per_trajectory = max(
+        1,
+        int(np.ceil(slow_candidate_target / n_initial_conditions)),
+    )
+    slow_candidate_theta_parts: list[np.ndarray] = []
+    slow_candidate_state_parts: list[np.ndarray] = []
+    slow_candidate_speed_parts: list[np.ndarray] = []
+    slow_candidate_trajectory_parts: list[np.ndarray] = []
+    slow_candidate_time_parts: list[np.ndarray] = []
+    ramesan_trajectory_theta_parts: list[np.ndarray] = []
+    ramesan_trajectory_state_parts: list[np.ndarray] = []
+    ramesan_trajectory_speed_parts: list[np.ndarray] = []
+    ramesan_trajectory_index_parts: list[np.ndarray] = []
+    ramesan_trajectory_time_parts: list[np.ndarray] = []
+    slow_trajectory_max_speed = np.full(n_initial_conditions, np.nan)
+    slow_trajectory_speed_threshold = np.full(n_initial_conditions, np.nan)
+    slow_trajectory_candidate_count = np.zeros(n_initial_conditions, dtype=int)
 
     total_dynamics_steps = n_initial_conditions * (cue_steps + darkness_steps)
     progress_update_interval_steps = max(1, int(round(1.0 / params.dt)))
@@ -1432,9 +1514,34 @@ def run_bump_attractor_trajectory_test(
                 )
                 if cue_step % progress_update_interval_steps == 0:
                     dynamics_progress.update(progress_update_interval_steps)
-            cue_remainder_steps = cue_steps % progress_update_interval_steps
+            cue_remainder_steps = (
+                cue_steps % progress_update_interval_steps
+            )
             if cue_remainder_steps:
                 dynamics_progress.update(cue_remainder_steps)
+
+            if autonomous_dynamics is not None:
+                release_state_vector = autonomous_dynamics.pack_state(state)
+                autonomous_probe_state[trial_index] = release_state_vector
+                autonomous_probe_decoded_theta[trial_index] = (
+                    autonomous_dynamics.decoded_heading(release_state_vector)
+                )
+
+            trajectory_autonomous_state = (
+                np.empty((time.size, autonomous_dynamics.state_dimension), dtype=float)
+                if autonomous_dynamics is not None
+                else None
+            )
+            trajectory_autonomous_theta = (
+                np.empty(time.size, dtype=float)
+                if autonomous_dynamics is not None
+                else None
+            )
+            trajectory_autonomous_speed = (
+                np.empty(time.size, dtype=float)
+                if autonomous_dynamics is not None
+                else None
+            )
 
             def record_sample(sample_index: int) -> None:
                 theta_pva[trial_index, sample_index] = float(state.theta_hd_decoded)
@@ -1453,6 +1560,15 @@ def run_bump_attractor_trajectory_test(
                 bump_contrast[trial_index, sample_index] = float(
                     np.max(state.r_hd) - np.min(state.r_hd)
                 )
+                if autonomous_dynamics is not None:
+                    autonomous_state = autonomous_dynamics.pack_state(state)
+                    trajectory_autonomous_state[sample_index] = autonomous_state
+                    trajectory_autonomous_theta[sample_index] = (
+                        autonomous_dynamics.decoded_heading(autonomous_state)
+                    )
+                    trajectory_autonomous_speed[sample_index] = np.linalg.norm(
+                        autonomous_dynamics.flow(autonomous_state)
+                    )
 
             record_sample(0)
             next_sample_index = 1
@@ -1482,6 +1598,60 @@ def run_bump_attractor_trajectory_test(
             darkness_remainder_steps = darkness_steps % progress_update_interval_steps
             if darkness_remainder_steps:
                 dynamics_progress.update(darkness_remainder_steps)
+            if autonomous_dynamics is not None:
+                if ramesan_trajectory_target > 0:
+                    points_per_trajectory = max(
+                        1,
+                        int(
+                            np.ceil(
+                                ramesan_trajectory_target
+                                / n_initial_conditions
+                            )
+                        ),
+                    )
+                    retained_count = min(points_per_trajectory, time.size)
+                    retained_index = np.unique(
+                        np.rint(
+                            np.linspace(0, time.size - 1, retained_count)
+                        ).astype(int)
+                    )
+                    ramesan_trajectory_theta_parts.append(
+                        trajectory_autonomous_theta[retained_index]
+                    )
+                    ramesan_trajectory_state_parts.append(
+                        trajectory_autonomous_state[retained_index]
+                    )
+                    ramesan_trajectory_speed_parts.append(
+                        trajectory_autonomous_speed[retained_index]
+                    )
+                    ramesan_trajectory_index_parts.append(
+                        np.full(retained_index.size, trial_index, dtype=int)
+                    )
+                    ramesan_trajectory_time_parts.append(time[retained_index])
+                selected_index, speed_threshold = select_slow_candidate_indices(
+                    speed=trajectory_autonomous_speed,
+                    speed_fraction=slow_speed_fraction,
+                    maximum_points=candidate_points_per_trajectory,
+                )
+                slow_trajectory_max_speed[trial_index] = float(
+                    np.max(trajectory_autonomous_speed)
+                )
+                slow_trajectory_speed_threshold[trial_index] = speed_threshold
+                slow_trajectory_candidate_count[trial_index] = selected_index.size
+                if selected_index.size:
+                    slow_candidate_theta_parts.append(
+                        trajectory_autonomous_theta[selected_index]
+                    )
+                    slow_candidate_state_parts.append(
+                        trajectory_autonomous_state[selected_index]
+                    )
+                    slow_candidate_speed_parts.append(
+                        trajectory_autonomous_speed[selected_index]
+                    )
+                    slow_candidate_trajectory_parts.append(
+                        np.full(selected_index.size, trial_index, dtype=int)
+                    )
+                    slow_candidate_time_parts.append(time[selected_index])
 
     pva_history, pva_metrics = _summarize_bump_attractor_decoder(
         decoder_name="pva",
@@ -1514,6 +1684,80 @@ def run_bump_attractor_trajectory_test(
             np.rad2deg(np.sqrt(np.mean(np.square(finite_disagreement))))
         )
 
+    if slow_candidate_state_parts:
+        slow_candidate_theta = np.concatenate(slow_candidate_theta_parts)
+        slow_candidate_state = np.concatenate(slow_candidate_state_parts, axis=0)
+        slow_candidate_speed = np.concatenate(slow_candidate_speed_parts)
+        slow_candidate_trajectory_index = np.concatenate(
+            slow_candidate_trajectory_parts
+        )
+        slow_candidate_time = np.concatenate(slow_candidate_time_parts)
+        if slow_candidate_speed.size > slow_candidate_target:
+            global_selection = np.rint(
+                np.linspace(0, slow_candidate_speed.size - 1, slow_candidate_target)
+            ).astype(int)
+            slow_candidate_theta = slow_candidate_theta[global_selection]
+            slow_candidate_state = slow_candidate_state[global_selection]
+            slow_candidate_speed = slow_candidate_speed[global_selection]
+            slow_candidate_trajectory_index = slow_candidate_trajectory_index[
+                global_selection
+            ]
+            slow_candidate_time = slow_candidate_time[global_selection]
+    else:
+        state_dimension = (
+            autonomous_dynamics.state_dimension
+            if autonomous_dynamics is not None
+            else 0
+        )
+        slow_candidate_theta = np.empty(0, dtype=float)
+        slow_candidate_state = np.empty((0, state_dimension), dtype=float)
+        slow_candidate_speed = np.empty(0, dtype=float)
+        slow_candidate_trajectory_index = np.empty(0, dtype=int)
+        slow_candidate_time = np.empty(0, dtype=float)
+
+    if ramesan_trajectory_state_parts:
+        ramesan_trajectory_theta = np.concatenate(ramesan_trajectory_theta_parts)
+        ramesan_trajectory_state = np.concatenate(
+            ramesan_trajectory_state_parts, axis=0
+        )
+        ramesan_trajectory_speed = np.concatenate(ramesan_trajectory_speed_parts)
+        ramesan_trajectory_index = np.concatenate(ramesan_trajectory_index_parts)
+        ramesan_trajectory_time = np.concatenate(ramesan_trajectory_time_parts)
+        if ramesan_trajectory_speed.size > ramesan_trajectory_target:
+            trajectory_selection = np.rint(
+                np.linspace(
+                    0,
+                    ramesan_trajectory_speed.size - 1,
+                    ramesan_trajectory_target,
+                )
+            ).astype(int)
+            ramesan_trajectory_theta = ramesan_trajectory_theta[
+                trajectory_selection
+            ]
+            ramesan_trajectory_state = ramesan_trajectory_state[
+                trajectory_selection
+            ]
+            ramesan_trajectory_speed = ramesan_trajectory_speed[
+                trajectory_selection
+            ]
+            ramesan_trajectory_index = ramesan_trajectory_index[
+                trajectory_selection
+            ]
+            ramesan_trajectory_time = ramesan_trajectory_time[
+                trajectory_selection
+            ]
+    else:
+        state_dimension = (
+            autonomous_dynamics.state_dimension
+            if autonomous_dynamics is not None
+            else 0
+        )
+        ramesan_trajectory_theta = np.empty(0, dtype=float)
+        ramesan_trajectory_state = np.empty((0, state_dimension), dtype=float)
+        ramesan_trajectory_speed = np.empty(0, dtype=float)
+        ramesan_trajectory_index = np.empty(0, dtype=int)
+        ramesan_trajectory_time = np.empty(0, dtype=float)
+
     history = {
         "time": time,
         "theta_initial": theta_initial,
@@ -1524,6 +1768,35 @@ def run_bump_attractor_trajectory_test(
         "pva_strength": pva_strength,
         "overlap_max": overlap_max,
         "bump_contrast": bump_contrast,
+        "slow_candidate_theta": np.asarray(
+            wrap_angle(slow_candidate_theta), dtype=float
+        ),
+        "slow_candidate_state": slow_candidate_state,
+        "slow_candidate_speed": slow_candidate_speed,
+        "autonomous_probe_phase": (
+            theta_initial.copy()
+            if autonomous_dynamics is not None
+            else np.empty(0, dtype=float)
+        ),
+        "autonomous_probe_decoded_theta": (
+            np.asarray(wrap_angle(autonomous_probe_decoded_theta), dtype=float)
+            if autonomous_dynamics is not None
+            else np.empty(0, dtype=float)
+        ),
+        "autonomous_probe_state": autonomous_probe_state,
+        "slow_candidate_trajectory_index": slow_candidate_trajectory_index,
+        "slow_candidate_time": slow_candidate_time,
+        "ramesan_trajectory_theta": np.asarray(
+            wrap_angle(ramesan_trajectory_theta), dtype=float
+        ),
+        "ramesan_trajectory_state": ramesan_trajectory_state,
+        "ramesan_trajectory_speed": ramesan_trajectory_speed,
+        "ramesan_trajectory_index": ramesan_trajectory_index,
+        "ramesan_trajectory_time": ramesan_trajectory_time,
+        "slow_trajectory_max_speed": slow_trajectory_max_speed,
+        "slow_trajectory_speed_threshold": slow_trajectory_speed_threshold,
+        "slow_trajectory_candidate_count": slow_trajectory_candidate_count,
+        "slow_speed_fraction": np.asarray(slow_speed_fraction),
         **pva_history,
         **peak_history,
         **overlap_history,
@@ -1532,7 +1805,7 @@ def run_bump_attractor_trajectory_test(
         "bump_attractor_trajectory_enabled": 1.0,
         "bump_attractor_initial_condition_count": float(n_initial_conditions),
         "bump_attractor_duration": duration,
-        "bump_attractor_cue_duration": cue_duration,
+        "bump_attractor_cue_duration": float(cue_steps * params.dt),
         "bump_attractor_sample_interval": float(sample_interval_steps * params.dt),
         "bump_attractor_overlap_template_heading_count": float(
             overlap_theta_template.size
@@ -1561,8 +1834,324 @@ def run_bump_attractor_trajectory_test(
         "bump_attractor_final_overlap_max_median": float(
             np.median(overlap_max[:, -1])
         ),
+        "slow_manifold_candidate_capture_enabled": float(slow_manifold_enabled),
+        "slow_manifold_captured_candidate_count": float(
+            slow_candidate_speed.size
+        ),
+        "ramesan_trajectory_sample_count": float(
+            ramesan_trajectory_speed.size
+        ),
+        "slow_manifold_trajectory_with_candidate_fraction": float(
+            np.mean(slow_trajectory_candidate_count > 0)
+            if slow_manifold_enabled
+            else 0.0
+        ),
     }
     return history, metrics
+
+
+def run_autonomous_probe_ring(
+    *,
+    config: ExperimentConfig,
+    trained_state: VafidisToyState,
+) -> dict[str, np.ndarray]:
+    """Sample only the cue-settled canonical ring for geometry diagnostics.
+
+    This is a lightweight backfill for saved darkness trajectories produced
+    before canonical release states were retained.  It freezes all weights,
+    settles each uniform visual cue, then packs the state on the zero-input
+    side of the release without integrating the long darkness interval.
+    """
+    params = VafidisToyParams.from_config(config)
+    n_probes = int(config.tests.bump_attractor_initial_conditions)
+    cue_duration = float(config.tests.bump_attractor_cue_duration)
+    if n_probes < 4:
+        raise ValueError("autonomous probe ring requires at least four cues")
+    if cue_duration < 0.0:
+        raise ValueError("bump_attractor_cue_duration must be non-negative")
+    probe_phase = np.linspace(-np.pi, np.pi, n_probes, endpoint=False)
+    dynamics = FrozenAutonomousDynamics.from_state(
+        params=params,
+        state=trained_state,
+    )
+    probe_state = np.empty((n_probes, dynamics.state_dimension), dtype=float)
+    probe_decoded_theta = np.empty(n_probes, dtype=float)
+    cue_steps = int(round(cue_duration / params.dt))
+    progress = tqdm(
+        total=n_probes * cue_steps,
+        disable=not config.simulation.progress,
+        desc="autonomous cue-ring probes",
+        unit="step",
+        unit_scale=True,
+        dynamic_ncols=True,
+    )
+    progress_interval = max(1, int(round(1.0 / params.dt)))
+    with progress:
+        for probe_index, current_phase in enumerate(probe_phase):
+            state = initialize_protocol_state(
+                config=config,
+                trained_state=trained_state,
+                theta_true=float(current_phase),
+            )
+            progress.set_postfix(
+                probe=f"{probe_index + 1}/{n_probes}",
+                angle=f"{np.rad2deg(current_phase):.1f} deg",
+                refresh=False,
+            )
+            for cue_step in range(1, cue_steps + 1):
+                state = step_vafidis_toy(
+                    state=state,
+                    params=params,
+                    angular_velocity=0.0,
+                    visual_teacher=True,
+                    training=False,
+                    visual_noise=None,
+                )
+                if cue_step % progress_interval == 0:
+                    progress.update(progress_interval)
+            remainder = cue_steps % progress_interval
+            if remainder:
+                progress.update(remainder)
+            state_vector = dynamics.pack_state(state)
+            probe_state[probe_index] = state_vector
+            probe_decoded_theta[probe_index] = dynamics.decoded_heading(
+                state_vector
+            )
+    return {
+        "autonomous_probe_phase": probe_phase,
+        "autonomous_probe_decoded_theta": np.asarray(
+            wrap_angle(probe_decoded_theta), dtype=float
+        ),
+        "autonomous_probe_state": probe_state,
+    }
+
+
+def run_slow_manifold_diagnostic(
+    *,
+    config: ExperimentConfig,
+    trained_state: VafidisToyState,
+    bump_attractor_trajectory_history: dict[str, np.ndarray],
+) -> tuple[dict[str, np.ndarray], dict[str, float]]:
+    """Fit and diagnose the autonomous slow ring from retained slow points."""
+    if not diagnostic_is_enabled(config, "slow_manifold"):
+        return empty_slow_manifold_result()
+    candidate_theta = np.asarray(
+        bump_attractor_trajectory_history.get("slow_candidate_theta", np.empty(0)),
+        dtype=float,
+    )
+    candidate_state = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "slow_candidate_state", np.empty((0, 0))
+        ),
+        dtype=float,
+    )
+    candidate_speed = np.asarray(
+        bump_attractor_trajectory_history.get("slow_candidate_speed", np.empty(0)),
+        dtype=float,
+    )
+    trajectory_theta = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "ramesan_trajectory_theta", np.empty(0)
+        ),
+        dtype=float,
+    )
+    trajectory_state = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "ramesan_trajectory_state", np.empty((0, 0))
+        ),
+        dtype=float,
+    )
+    trajectory_speed = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "ramesan_trajectory_speed", np.empty(0)
+        ),
+        dtype=float,
+    )
+    params = VafidisToyParams.from_config(config)
+    dynamics = FrozenAutonomousDynamics.from_state(
+        params=params,
+        state=trained_state,
+    )
+    probe_phase = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "autonomous_probe_phase", np.empty(0)
+        ),
+        dtype=float,
+    )
+    probe_state = np.asarray(
+        bump_attractor_trajectory_history.get(
+            "autonomous_probe_state", np.empty((0, 0))
+        ),
+        dtype=float,
+    )
+    if candidate_state.size == 0:
+        candidate_state = np.empty((0, dynamics.state_dimension), dtype=float)
+    ramesan_history: dict[str, np.ndarray] = {}
+    ramesan_metrics: dict[str, float] = {
+        "ramesan_diagnostic_succeeded": 0.0,
+        "ramesan_missing_probe_state": 1.0,
+    }
+    if probe_phase.size >= 4:
+        ramesan_history, ramesan_metrics = analyze_ramesan_firing_rate_geometry(
+            dynamics=dynamics,
+            probe_phase=probe_phase,
+            probe_state=probe_state,
+            candidate_theta=candidate_theta,
+            candidate_state=candidate_state,
+            candidate_speed=candidate_speed,
+            q_threshold=float(config.tests.ramesan_q_threshold),
+            jacobian_anchor_count=int(
+                config.tests.slow_manifold_jacobian_anchors
+            ),
+            jacobian_eigenvalue_count=int(
+                config.tests.slow_manifold_jacobian_eigenvalues
+            ),
+            jacobian_dense_dimension_limit=int(
+                config.tests.slow_manifold_jacobian_dense_dimension_limit
+            ),
+            show_progress=bool(config.simulation.progress),
+        )
+        if trajectory_theta.size >= 4:
+            phase_history, phase_metrics = analyze_ramesan_phase_landscape(
+                dynamics=dynamics,
+                probe_phase=probe_phase,
+                probe_state=probe_state,
+                trajectory_theta=trajectory_theta,
+                trajectory_state=trajectory_state,
+                trajectory_speed=trajectory_speed,
+                q_threshold=float(config.tests.ramesan_q_threshold),
+                angular_bin_count=int(config.tests.ramesan_phase_angular_bins),
+                smoothing_bins=int(config.tests.ramesan_phase_smoothing_bins),
+                ambient_enabled=bool(config.tests.ramesan_ambient_enabled),
+                ambient_sample_count=int(
+                    config.tests.ramesan_ambient_sample_count
+                ),
+                ambient_perturbation_scales=np.asarray(
+                    config.tests.ramesan_ambient_perturbation_scales,
+                    dtype=float,
+                ),
+                ambient_seed=(
+                    int(config.simulation.seed)
+                    + int(config.tests.ramesan_ambient_seed_offset)
+                ),
+                pca_center=ramesan_history["ramesan_pca_center"],
+                pca_components=ramesan_history["ramesan_pca_components"],
+                show_progress=bool(config.simulation.progress),
+            )
+            ramesan_history.update(phase_history)
+            ramesan_metrics.update(phase_metrics)
+
+    def merge_ramesan_diagnostic(
+        history: dict[str, np.ndarray],
+        metrics: dict[str, float],
+    ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
+        history.update(ramesan_history)
+        metrics.update(ramesan_metrics)
+        return history, metrics
+
+    angular_bin_count = int(config.tests.slow_manifold_angular_bins)
+    minimum_angular_support = float(
+        config.tests.slow_manifold_min_angular_support_fraction
+    )
+    if not 0.0 < minimum_angular_support <= 1.0:
+        raise ValueError(
+            "tests.slow_manifold_min_angular_support_fraction must lie in (0, 1]"
+        )
+    if candidate_theta.size < 4:
+        history, _metrics = empty_slow_manifold_result()
+        return merge_ramesan_diagnostic(
+            history,
+            {
+                "slow_manifold_enabled": 1.0,
+                "slow_manifold_fit_succeeded": 0.0,
+                "slow_manifold_candidate_count": float(candidate_theta.size),
+            },
+        )
+    angular_bin_sample_count = candidate_angular_bin_counts(
+        candidate_theta=candidate_theta,
+        angular_bin_count=angular_bin_count,
+    )
+    angular_support_fraction = float(np.mean(angular_bin_sample_count > 0))
+    if angular_support_fraction < minimum_angular_support:
+        angle_clusters = summarize_candidate_angle_clusters(
+            bin_sample_count=angular_bin_sample_count
+        )
+        history, _metrics = empty_slow_manifold_result()
+        history["candidate_theta"] = candidate_theta
+        history["candidate_state"] = candidate_state
+        history["candidate_speed"] = candidate_speed
+        history["angular_bin_sample_count"] = angular_bin_sample_count
+        history["low_speed_angle_cluster_theta"] = angle_clusters[
+            "cluster_theta"
+        ]
+        history["low_speed_angle_cluster_sample_count"] = angle_clusters[
+            "cluster_sample_count"
+        ]
+        history["low_speed_angle_cluster_bin_count"] = angle_clusters[
+            "cluster_bin_count"
+        ]
+        return merge_ramesan_diagnostic(
+            history,
+            {
+                "slow_manifold_enabled": 1.0,
+                "slow_manifold_fit_succeeded": 0.0,
+                "slow_manifold_candidate_count": float(candidate_theta.size),
+                "slow_manifold_angular_support_fraction": angular_support_fraction,
+                "slow_manifold_min_angular_support_fraction": minimum_angular_support,
+                "slow_manifold_fit_failure_is_insufficient_coverage": 1.0,
+                "slow_manifold_occupied_angular_bin_count": float(
+                    np.count_nonzero(angular_bin_sample_count)
+                ),
+                "slow_manifold_low_speed_angle_cluster_count": float(
+                    angle_clusters["cluster_theta"].size
+                ),
+                "slow_manifold_candidate_speed_median": float(
+                    np.median(candidate_speed)
+                ),
+                "slow_manifold_candidate_speed_max": float(
+                    np.max(candidate_speed)
+                ),
+                "slow_manifold_speed_fraction": float(
+                    config.tests.slow_manifold_speed_fraction
+                ),
+            },
+        )
+    try:
+        history, metrics = analyze_slow_manifold_candidates(
+            dynamics=dynamics,
+            candidate_theta=candidate_theta,
+            candidate_state=candidate_state,
+            candidate_speed=candidate_speed,
+            angular_bin_count=angular_bin_count,
+            jacobian_anchor_count=int(
+                config.tests.slow_manifold_jacobian_anchors
+            ),
+            jacobian_eigenvalue_count=int(
+                config.tests.slow_manifold_jacobian_eigenvalues
+            ),
+            jacobian_dense_dimension_limit=int(
+                config.tests.slow_manifold_jacobian_dense_dimension_limit
+            ),
+            minimum_angular_support_fraction=minimum_angular_support,
+        )
+    except ValueError as error:
+        history, _metrics = empty_slow_manifold_result()
+        return merge_ramesan_diagnostic(
+            history,
+            {
+                "slow_manifold_enabled": 1.0,
+                "slow_manifold_fit_succeeded": 0.0,
+                "slow_manifold_candidate_count": float(candidate_theta.size),
+                "slow_manifold_fit_failure_is_insufficient_coverage": float(
+                    "angular bin" in str(error) or "candidate" in str(error)
+                ),
+            },
+        )
+    metrics["slow_manifold_fit_succeeded"] = 1.0
+    metrics["slow_manifold_speed_fraction"] = float(
+        config.tests.slow_manifold_speed_fraction
+    )
+    return merge_ramesan_diagnostic(history, metrics)
 
 
 def _release_visual_teacher_from_state(
@@ -1570,20 +2159,26 @@ def _release_visual_teacher_from_state(
     state: VafidisToyState,
     params: VafidisToyParams,
 ) -> VafidisToyState:
-    """Remove the visual current instantaneously without advancing time."""
+    """Remove visual current without collapsing the dynamic proximal voltage."""
     released_state = state.copy()
     released_state.i_vis_to_hd = np.zeros(params.n_theta, dtype=float)
     released_state.v_hd_ss = (
         params.p_distal_to_proximal * released_state.v_hd_distal
     )
-    released_state.v_hd_proximal = released_state.v_hd_ss.copy()
     released_state.r_hd = apply_activation(
         released_state.v_hd_proximal,
         activation_name=params.activation_name,
         gain=params.activation_gain,
         bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
     )
-    released_state.e_hd = np.zeros(params.n_theta, dtype=float)
+    released_state.e_hd = released_state.r_hd - apply_activation(
+        released_state.v_hd_ss,
+        activation_name=params.activation_name,
+        gain=params.activation_gain,
+        bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
+    )
     validate_vafidis_toy_state(released_state, params)
     return released_state
 
@@ -1596,7 +2191,7 @@ def _normally_perturb_hd_current_state(
     perturbation_rms: float,
     rng: np.random.Generator,
 ) -> VafidisToyState:
-    """Perturb both HD current filters in a direction normal to the ring."""
+    """Perturb the distal cascade in a direction normal to the ring."""
     tangent = np.asarray(manifold_tangent, dtype=float)
     if tangent.shape != (params.n_theta,):
         raise ValueError("manifold_tangent must contain one value per HD neuron")
@@ -1612,21 +2207,29 @@ def _normally_perturb_hd_current_state(
     perturbation = perturbation * (perturbation_rms / perturbation_unit_rms)
 
     perturbed_state = state.copy()
-    # Perturbing both cascaded current variables avoids an artificial one-step
-    # reset by the fastest filter and mirrors Clark's current-space protocol.
+    # Perturbing both distal cascade variables avoids an artificial one-step
+    # reset by the faster filter and mirrors Clark's current-space protocol.
+    # The proximal voltage remains continuous and subsequently responds through
+    # Eq. (4), rather than being projected onto a steady-state manifold.
     perturbed_state.i_hd_distal = perturbed_state.i_hd_distal + perturbation
     perturbed_state.v_hd_distal = perturbed_state.v_hd_distal + perturbation
     perturbed_state.v_hd_ss = (
         params.p_distal_to_proximal * perturbed_state.v_hd_distal
     )
-    perturbed_state.v_hd_proximal = perturbed_state.v_hd_ss.copy()
     perturbed_state.r_hd = apply_activation(
         perturbed_state.v_hd_proximal,
         activation_name=params.activation_name,
         gain=params.activation_gain,
         bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
     )
-    perturbed_state.e_hd = np.zeros(params.n_theta, dtype=float)
+    perturbed_state.e_hd = perturbed_state.r_hd - apply_activation(
+        perturbed_state.v_hd_ss,
+        activation_name=params.activation_name,
+        gain=params.activation_gain,
+        bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
+    )
     validate_vafidis_toy_state(perturbed_state, params)
     return perturbed_state
 
@@ -1647,7 +2250,7 @@ def run_timescale_separation_test(
     90th percentile normal relaxation time and the 10th percentile tangential
     first-passage time.
     """
-    enabled = bool(config.tests.timescale_separation_enabled)
+    enabled = diagnostic_is_enabled(config, "timescale_separation")
     if not enabled:
         return {
             "normal_time": np.empty(0, dtype=float),
@@ -2047,7 +2650,7 @@ def run_velocity_trajectory_sweep_test(
     is applied.  Retaining the full decoded trajectories exposes stationary
     pinning and stick--slip motion that an endpoint-only gain fit can hide.
     """
-    enabled = bool(config.tests.velocity_trajectory_sweep_enabled)
+    enabled = diagnostic_is_enabled(config, "velocity_trajectory_sweep")
     if not enabled:
         return {
             "time": np.empty(0, dtype=float),
@@ -2099,9 +2702,7 @@ def run_velocity_trajectory_sweep_test(
     ring_velocity_count = int(
         config.tests.velocity_trajectory_sweep_ring_velocity_count
     )
-    phase_flow_probe_enabled = bool(
-        config.tests.velocity_phase_flow_probe_enabled
-    )
+    phase_flow_probe_enabled = True
     phase_flow_initial_condition_count = int(
         config.tests.velocity_phase_flow_initial_conditions
     )
@@ -3028,6 +3629,7 @@ def summarize_zero_velocity_drive(
         activation_name=params.activation_name,
         gain=params.activation_gain,
         bias=params.activation_bias,
+        max_rate=params.activation_max_rate,
     )
     hd_drive, lhr_drive, rhr_drive = compute_hd_distal_pathway_drives(
         w_hd_to_hd=trained_state.w_hd_to_hd,
@@ -3593,7 +4195,9 @@ def run_all_tests(
     *,
     config: ExperimentConfig,
     trained_state: VafidisToyState,
+    cached_histories: dict[str, dict[str, np.ndarray]] | None = None,
 ) -> tuple[
+    dict[str, np.ndarray],
     dict[str, np.ndarray],
     dict[str, np.ndarray],
     dict[str, np.ndarray],
@@ -3606,17 +4210,99 @@ def run_all_tests(
     dict[str, np.ndarray],
     dict[str, float],
 ]:
-    hd_tuning_history, hd_tuning_metrics = run_hd_tuning_curve_test(
-        config=config,
-        trained_state=trained_state,
+    enabled = selected_diagnostics(config)
+    cached_histories = cached_histories or {}
+
+    hd_tuning_dependents = {
+        "bump_attractor_trajectories",
+        "timescale_separation",
+        "velocity_trajectory_sweep",
+    }
+    hd_tuning_required = bool(enabled & hd_tuning_dependents)
+    cached_hd_tuning = cached_histories.get("hd_tuning", {})
+    cached_hd_tuning_is_usable = all(
+        key in cached_hd_tuning for key in ("theta_true", "r_hd")
     )
-    bump_history, bump_metrics = run_bump_maintenance_test(config=config, trained_state=trained_state)
-    bump_attractor_trajectory_history, bump_attractor_trajectory_metrics = (
-        run_bump_attractor_trajectory_test(
+    if "hd_tuning" in enabled:
+        hd_tuning_history, hd_tuning_metrics = run_hd_tuning_curve_test(
+            config=config,
+            trained_state=trained_state,
+        )
+    elif (
+        hd_tuning_required
+        and config.diagnostics.reuse_cached_dependencies
+        and cached_hd_tuning_is_usable
+    ):
+        hd_tuning_history = cached_hd_tuning
+        hd_tuning_metrics = {
+            "hd_tuning_diagnostic_enabled": 0.0,
+            "hd_tuning_dependency_reused": 1.0,
+        }
+    elif hd_tuning_required:
+        hd_tuning_history, hd_tuning_metrics = run_hd_tuning_curve_test(
+            config=config,
+            trained_state=trained_state,
+        )
+        hd_tuning_metrics["hd_tuning_dependency_computed"] = 1.0
+    else:
+        hd_tuning_history = {}
+        hd_tuning_metrics = {"hd_tuning_diagnostic_enabled": 0.0}
+
+    if "bump_maintenance" in enabled:
+        bump_history, bump_metrics = run_bump_maintenance_test(
+            config=config,
+            trained_state=trained_state,
+        )
+    else:
+        bump_history = {}
+        bump_metrics = {"bump_maintenance_diagnostic_enabled": 0.0}
+
+    trajectory_dependency_required = bool(
+        enabled & {"slow_manifold", "timescale_separation"}
+    )
+    cached_trajectory_history = cached_histories.get(
+        "bump_attractor_trajectories",
+        {},
+    )
+    cached_trajectory_is_usable = np.asarray(
+        cached_trajectory_history.get("time", np.empty(0)),
+        dtype=float,
+    ).size > 0
+    reuse_cached_trajectory = (
+        "bump_attractor_trajectories" not in enabled
+        and trajectory_dependency_required
+        and config.diagnostics.reuse_cached_dependencies
+        and cached_trajectory_is_usable
+    )
+    if reuse_cached_trajectory:
+        bump_attractor_trajectory_history = cached_trajectory_history
+        bump_attractor_trajectory_metrics = {
+            "bump_attractor_dependency_reused": 1.0
+        }
+    else:
+        (
+            bump_attractor_trajectory_history,
+            bump_attractor_trajectory_metrics,
+        ) = run_bump_attractor_trajectory_test(
             config=config,
             trained_state=trained_state,
             hd_tuning_history=hd_tuning_history,
+            as_dependency=(
+                trajectory_dependency_required
+                and "bump_attractor_trajectories" not in enabled
+            ),
         )
+        if (
+            trajectory_dependency_required
+            and "bump_attractor_trajectories" not in enabled
+        ):
+            bump_attractor_trajectory_metrics[
+                "bump_attractor_dependency_computed"
+            ] = 1.0
+    slow_manifold_history, slow_manifold_metrics = run_slow_manifold_diagnostic(
+        config=config,
+        trained_state=trained_state,
+        bump_attractor_trajectory_history=bump_attractor_trajectory_history,
     )
     timescale_separation_history, timescale_separation_metrics = (
         run_timescale_separation_test(
@@ -3633,40 +4319,75 @@ def run_all_tests(
             hd_tuning_history=hd_tuning_history,
         )
     )
-    bump_diffusion_history, bump_ensemble_diffusion_metrics = run_bump_diffusion_ensemble_test(
-        config=config,
-        trained_state=trained_state,
+    if "bump_diffusion" in enabled:
+        bump_diffusion_history, bump_ensemble_diffusion_metrics = (
+            run_bump_diffusion_ensemble_test(
+                config=config,
+                trained_state=trained_state,
+            )
+        )
+    else:
+        bump_diffusion_history = {}
+        bump_ensemble_diffusion_metrics = {
+            "bump_diffusion_diagnostic_enabled": 0.0
+        }
+    if "darkness_path_integration" in enabled:
+        darkness_history, darkness_metrics = run_darkness_path_integration_test(
+            config=config,
+            trained_state=trained_state,
+            angular_velocity=config.tests.darkness_angular_velocity,
+        )
+    else:
+        darkness_history = {}
+        darkness_metrics = {"darkness_path_integration_diagnostic_enabled": 0.0}
+    if "ou_path_integration" in enabled:
+        ou_darkness_history, ou_darkness_metrics = run_ou_path_integration_test(
+            config=config,
+            trained_state=trained_state,
+        )
+    else:
+        ou_darkness_history = {}
+        ou_darkness_metrics = {"ou_path_integration_diagnostic_enabled": 0.0}
+    if "ou_pi_ensemble" in enabled:
+        ou_pi_ensemble_history, ou_pi_ensemble_metrics = (
+            run_ou_path_integration_ensemble_test(
+                config=config,
+                trained_state=trained_state,
+            )
+        )
+    else:
+        ou_pi_ensemble_history = {}
+        ou_pi_ensemble_metrics = {"ou_pi_ensemble_diagnostic_enabled": 0.0}
+    if "velocity_gain" in enabled:
+        velocity_gain_history, velocity_gain_metrics = run_velocity_gain_test(
+            config=config,
+            trained_state=trained_state,
+        )
+    else:
+        velocity_gain_history = {}
+        velocity_gain_metrics = {"velocity_gain_diagnostic_enabled": 0.0}
+    weight_metrics = (
+        summarize_weight_structure(
+            trained_state.w_hd_to_hd,
+            trained_state.w_hr_to_hd,
+        )
+        if "weight_structure" in enabled
+        else {"weight_structure_diagnostic_enabled": 0.0}
     )
-    darkness_history, darkness_metrics = run_darkness_path_integration_test(
-        config=config,
-        trained_state=trained_state,
-        angular_velocity=config.tests.darkness_angular_velocity,
-    )
-    ou_darkness_history, ou_darkness_metrics = run_ou_path_integration_test(
-        config=config,
-        trained_state=trained_state,
-    )
-    ou_pi_ensemble_history, ou_pi_ensemble_metrics = run_ou_path_integration_ensemble_test(
-        config=config,
-        trained_state=trained_state,
-    )
-    velocity_gain_history, velocity_gain_metrics = run_velocity_gain_test(
-        config=config,
-        trained_state=trained_state,
-    )
-    weight_metrics = summarize_weight_structure(
-        trained_state.w_hd_to_hd,
-        trained_state.w_hr_to_hd,
-    )
-    zero_velocity_drive_metrics = summarize_zero_velocity_drive(
-        config=config,
-        trained_state=trained_state,
-        bump_history=bump_history,
+    zero_velocity_drive_metrics = (
+        summarize_zero_velocity_drive(
+            config=config,
+            trained_state=trained_state,
+            bump_history=bump_history,
+        )
+        if "bump_maintenance" in enabled
+        else {}
     )
     metrics = {
         **hd_tuning_metrics,
         **bump_metrics,
         **bump_attractor_trajectory_metrics,
+        **slow_manifold_metrics,
         **timescale_separation_metrics,
         **velocity_trajectory_sweep_metrics,
         **bump_ensemble_diffusion_metrics,
@@ -3681,6 +4402,7 @@ def run_all_tests(
         hd_tuning_history,
         bump_history,
         bump_attractor_trajectory_history,
+        slow_manifold_history,
         timescale_separation_history,
         velocity_trajectory_sweep_history,
         bump_diffusion_history,
@@ -3703,6 +4425,7 @@ def save_run_outputs(
     hd_tuning_history: dict[str, np.ndarray],
     bump_history: dict[str, np.ndarray],
     bump_attractor_trajectory_history: dict[str, np.ndarray],
+    slow_manifold_history: dict[str, np.ndarray],
     timescale_separation_history: dict[str, np.ndarray],
     velocity_trajectory_sweep_history: dict[str, np.ndarray],
     bump_diffusion_history: dict[str, np.ndarray],
@@ -3737,25 +4460,37 @@ def save_run_outputs(
     )
     save_npz(run_dir / "training_history.npz", **training_history)
     save_npz(run_dir / "weight_history.npz", **weight_history)
-    save_npz(run_dir / "hd_tuning_history.npz", **hd_tuning_history)
-    save_npz(run_dir / "bump_history.npz", **bump_history)
-    save_npz(
-        run_dir / "bump_attractor_trajectory_history.npz",
-        **bump_attractor_trajectory_history,
-    )
-    save_npz(
-        run_dir / "timescale_separation_history.npz",
-        **timescale_separation_history,
-    )
-    save_npz(
-        run_dir / "velocity_trajectory_sweep_history.npz",
-        **velocity_trajectory_sweep_history,
-    )
-    save_npz(run_dir / "bump_diffusion_history.npz", **bump_diffusion_history)
-    save_npz(run_dir / "darkness_history.npz", **darkness_history)
-    save_npz(run_dir / "ou_darkness_history.npz", **ou_darkness_history)
-    save_npz(run_dir / "ou_pi_ensemble_history.npz", **ou_pi_ensemble_history)
-    save_npz(run_dir / "velocity_gain_history.npz", **velocity_gain_history)
+    enabled = selected_diagnostics(config)
+    histories_to_save = {
+        "hd_tuning": ("hd_tuning_history.npz", hd_tuning_history),
+        "bump_maintenance": ("bump_history.npz", bump_history),
+        "bump_attractor_trajectories": (
+            "bump_attractor_trajectory_history.npz",
+            bump_attractor_trajectory_history,
+        ),
+        "slow_manifold": ("slow_manifold_diagnostics.npz", slow_manifold_history),
+        "timescale_separation": (
+            "timescale_separation_history.npz",
+            timescale_separation_history,
+        ),
+        "velocity_trajectory_sweep": (
+            "velocity_trajectory_sweep_history.npz",
+            velocity_trajectory_sweep_history,
+        ),
+        "bump_diffusion": ("bump_diffusion_history.npz", bump_diffusion_history),
+        "darkness_path_integration": ("darkness_history.npz", darkness_history),
+        "ou_path_integration": ("ou_darkness_history.npz", ou_darkness_history),
+        "ou_pi_ensemble": ("ou_pi_ensemble_history.npz", ou_pi_ensemble_history),
+        "velocity_gain": ("velocity_gain_history.npz", velocity_gain_history),
+    }
+    dependency_outputs = set()
+    if "hd_tuning_dependency_computed" in test_metrics:
+        dependency_outputs.add("hd_tuning")
+    if "bump_attractor_dependency_computed" in test_metrics:
+        dependency_outputs.add("bump_attractor_trajectories")
+    for diagnostic_name, (filename, history) in histories_to_save.items():
+        if diagnostic_name in enabled or diagnostic_name in dependency_outputs:
+            save_npz(run_dir / filename, **history)
     save_json(run_dir / "test_metrics.json", test_metrics)
 
 
@@ -3785,6 +4520,7 @@ def run_experiment(
         hd_tuning_history,
         bump_history,
         bump_attractor_trajectory_history,
+        slow_manifold_history,
         timescale_separation_history,
         velocity_trajectory_sweep_history,
         bump_diffusion_history,
@@ -3807,6 +4543,7 @@ def run_experiment(
         hd_tuning_history=hd_tuning_history,
         bump_history=bump_history,
         bump_attractor_trajectory_history=bump_attractor_trajectory_history,
+        slow_manifold_history=slow_manifold_history,
         timescale_separation_history=timescale_separation_history,
         velocity_trajectory_sweep_history=velocity_trajectory_sweep_history,
         bump_diffusion_history=bump_diffusion_history,
@@ -3816,7 +4553,7 @@ def run_experiment(
         velocity_gain_history=velocity_gain_history,
         test_metrics=test_metrics,
     )
-    if make_figures:
+    if make_figures and selected_diagnostics(config):
         make_vafidis_figures_for_run(run_dir=run_dir)
     return run_dir
 
@@ -3824,13 +4561,64 @@ def run_experiment(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True, help="Path to YAML experiment config.")
+    parser.add_argument(
+        "--diagnostics-config",
+        default=None,
+        help=(
+            "Optional grouped diagnostics hyper config to run after training; "
+            "omit it for training only."
+        ),
+    )
+    parser.add_argument(
+        "--profile",
+        action="append",
+        default=[],
+        metavar="PATH",
+        help=(
+            "Reusable partial config YAML. Repeat to compose profiles in order; "
+            "later profiles win."
+        ),
+    )
+    parser.add_argument(
+        "--set",
+        dest="config_overrides",
+        action="append",
+        default=[],
+        metavar="PATH=VALUE",
+        help=(
+            "Override one resolved config field using a dotted path and YAML value. "
+            "Repeat as needed; later assignments win."
+        ),
+    )
     parser.add_argument("--run-id", default=None, help="Optional explicit run id.")
     parser.add_argument("--no-figures", action="store_true", help="Skip figure generation.")
+    parser.add_argument(
+        "--print-config",
+        action="store_true",
+        help="Print the fully composed config and exit without creating a run.",
+    )
     args = parser.parse_args()
 
     config_path = resolve_config_path(args.config)
     project_root = find_project_root(config_path)
-    config = load_experiment_config(config_path)
+    diagnostics_path = (
+        None
+        if args.diagnostics_config is None
+        else resolve_config_path(args.diagnostics_config)
+    )
+    profile_paths = [resolve_config_path(profile_path) for profile_path in args.profile]
+    config = load_experiment_config(
+        config_path,
+        diagnostics_path=diagnostics_path,
+        profile_paths=profile_paths,
+        overrides=args.config_overrides,
+    )
+    # Parameter construction performs cross-field and Euler-stability checks,
+    # which makes --print-config a useful zero-cost validation command.
+    VafidisToyParams.from_config(config)
+    if args.print_config:
+        print(yaml.safe_dump(config.to_dict(), sort_keys=False, allow_unicode=True))
+        return
     run_dir = run_experiment(
         config=config,
         project_root=project_root,

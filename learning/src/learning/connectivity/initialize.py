@@ -27,10 +27,11 @@ def initialize_w_hd_to_hd(
     local_sigma: float,
     random_jitter: float,
     rng: np.random.Generator,
-    lower_bound: float,
-    upper_bound: float,
+    lower_bound: float | None,
+    upper_bound: float | None,
     symmetry_mode: str = "none",
     balance_mode: str = "none",
+    zero_diagonal: bool = False,
 ) -> np.ndarray:
     theta_hd_pref = make_vafidis_paired_theta_hd_pref(n_theta)
     if mode == "zeros":
@@ -56,6 +57,7 @@ def initialize_w_hd_to_hd(
         upper_bound=upper_bound,
         symmetry_mode=symmetry_mode,
         balance_mode=balance_mode,
+        zero_diagonal=zero_diagonal,
     )
 
 
@@ -68,8 +70,8 @@ def initialize_w_hr_to_hd(
     local_sigma: float,
     random_jitter: float,
     rng: np.random.Generator,
-    lower_bound: float,
-    upper_bound: float,
+    lower_bound: float | None,
+    upper_bound: float | None,
     balance_mode: str = "none",
 ) -> np.ndarray:
     if n_hr != n_theta:

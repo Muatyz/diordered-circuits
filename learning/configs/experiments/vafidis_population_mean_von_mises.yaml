@@ -17,54 +17,56 @@ model:
   tau_hd_to_hr: 0.04
   tau_l_hd: 0.01
   p_distal_to_proximal: 0.6666666667
+  c_hd_proximal: 0.001
+  g_l_hd_proximal: 1.0
+  g_d_hd_to_proximal: 2.0
   b_hd: 0.6
   b_hr: 1.5
   # This sparse one-to-one pathway has fixed fan-in and is not divided by N.
-  w_hd_to_hr_strength: 2.0
+  w_hd_to_hr_strength: 13.333333333333334
   activation:
     name: sigmoid
     gain: 2.5
     bias: 1.0
+    max_rate: 0.15
   init:
     # Learn both intensive kernels from zero rather than seeding a target form.
     w_hd_to_hd_mode: zeros
     w_hr_to_hd_mode: zeros
-    w_hd_to_hd_scale: 1.0
-    w_hr_to_hd_scale: 1.0
+    w_hd_to_hd_scale: 6.666666666666667
+    w_hr_to_hd_scale: 6.666666666666667
     local_sigma: 0.45
     random_jitter: 0.0
 
 simulation:
   seed: 42
-  dt: 0.01
+  dt: 0.0005
   train_duration: 20000.0
   plasticity_enabled: true
   random_stream_mode: component_split
   initialization_seed_offset: 0
   velocity_seed_offset: 10000
-  bump_test_duration: 10.0
-  darkness_test_duration: 10.0
-  cue_duration: 1.0
-  pi_cue_duration: 4.0
-  recue_duration: 8.0
-  save_interval_steps: 20
-  weight_snapshot_interval_steps: 1000
+  save_interval_steps: 400
+  weight_snapshot_interval_steps: 20000
   theta0: 0.0
   progress: true
 
 learning_rule:
   # Intensive parameters are held fixed when N changes.  The enlarged bounds
   # cover the successful frozen-kernel scales but do not prescribe structure.
-  eta_hd_to_hd: 3.0
-  eta_hr_to_hd: 20.0
+  # Restoring the 0.15 kHz release rate scale while retaining the former
+  # intensive-kernel trajectories requires eta_release=eta_old/0.15^3.
+  eta_hd_to_hd: 888.8888888888889
+  eta_hr_to_hd: 5925.925925925926
   tau_delta: 0.10
-  w_hd_to_hd_min: -30.0
-  w_hd_to_hd_max: 70.0
-  w_hr_to_hd_min: -80.0
-  w_hr_to_hd_max: 80.0
+  w_hd_to_hd_min: -200.0
+  w_hd_to_hd_max: 466.6666666666667
+  w_hr_to_hd_min: -533.3333333333334
+  w_hr_to_hd_max: 533.3333333333334
   hd_to_hd_symmetry_mode: none
   hd_to_hd_balance_mode: none
   hr_to_hd_balance_mode: none
+  zero_hd_to_hd_diagonal: false
 
 visual:
   # Translation-equivalent clean teacher used by the frozen Phase-1 controls.
@@ -74,7 +76,7 @@ visual:
   baseline: 5.0
   normalize_peak: true
   light_excitation: 4.0
-  proximal_scale: 0.3333333333
+  proximal_scale: 1.0
   noise_std: 0.0
   noise_process: ou_additive
   noise_correlation_time: 0.065
@@ -102,107 +104,6 @@ velocity:
   tau: 0.50
   clip: 12.566370614359172
   k_vel: 0.15915494309189535
-
-tests:
-  darkness_angular_velocity: 1.3089969389957472
-  hd_tuning_curve_angles: 240
-  hd_tuning_curve_settle_duration: 4.0
-  hd_tuning_curve_max_settle_duration: 6.0
-  hd_tuning_curve_convergence_window: 0.2
-  hd_tuning_curve_convergence_tolerance: 0.002
-  hd_tuning_curve_sample_count: 8
-  ou_pi_ensemble_trials: 24
-  ou_pi_ensemble_seed_offset: 60000
-  ou_pi_ensemble_fit_start_time: 0.5
-  bump_diffusion_duration: 10.0
-  bump_diffusion_trials: 120
-  bump_diffusion_test_noise_std: 0.1
-  bump_diffusion_seed_offset: 30000
-  bump_diffusion_fit_start_time: 1.0
-  bump_diffusion_fit_end_time: null
-  # Frozen-weight attractor-landscape screening protocol. Uniform cue starts
-  # are released into zero-velocity darkness and decoded by PVA, peak neuron,
-  # and Clark Eq. 6 overlap. Increase the per-model duration when endpoints
-  # have not yet reached their basin centers.
-  bump_attractor_trajectory_enabled: true
-  bump_attractor_initial_conditions: 36
-  bump_attractor_duration: 60.0
-  bump_attractor_cue_duration: 4.0
-  bump_attractor_sample_interval: 0.25
-  # Clark-style operational separation-of-timescales assay. Normal recovery
-  # is probed in HD distal-current space; tangential first passage reuses the
-  # the configured zero-input overlap trajectories above.
-  timescale_separation_enabled: true
-  timescale_separation_initial_conditions: 12
-  timescale_separation_normal_duration: 5.0
-  timescale_separation_sample_interval: 0.02
-  timescale_separation_perturbation_scales: [0.025, 0.05, 0.1]
-  timescale_separation_perturbations_per_condition: 3
-  timescale_separation_seed_offset: 90000
-  timescale_separation_tangential_threshold_deg: 10.0
-  timescale_separation_ratio_threshold: 10.0
-  # Low-speed-focused frozen-weight sweep. Every trajectory starts from the
-  # same cue angle; the denser 0--0.6 grid resolves the depinning transition.
-  velocity_trajectory_sweep_enabled: true
-  velocity_trajectory_sweep_velocities:
-    - 0.0
-    - 0.05
-    - 0.1
-    - 0.15
-    - 0.2
-    - 0.3
-    - 0.4
-    - 0.5
-    - 0.6
-    - 0.8
-    - 1.0
-    - 1.4
-    - 2.0
-  velocity_trajectory_sweep_max_velocity: 2.0
-  velocity_trajectory_sweep_count: 11
-  velocity_trajectory_sweep_ring_velocity_count: 4
-  velocity_trajectory_sweep_zero_input_flow_window: 5.0
-  velocity_phase_flow_probe_enabled: true
-  velocity_phase_flow_initial_conditions: 360
-  velocity_phase_flow_duration: 2.0
-  velocity_phase_flow_sample_interval: 0.02
-  velocity_phase_flow_fit_start_time: 0.0
-  velocity_phase_flow_fit_duration: 2.0
-  velocity_phase_flow_angular_bins: 360
-  velocity_phase_flow_smoothing_bins: 5
-  velocity_phase_flow_empirical_lambda_speed_floor: 0.02
-  velocity_phase_flow_probe_velocities:
-    - 0.0
-    - 0.05
-    - 0.1
-    - 0.15
-    - 0.2
-    - 0.3
-    - 0.4
-    - 0.5
-    - 0.6
-  velocity_trajectory_sweep_initial_heading: 0.0
-  velocity_trajectory_sweep_initial_conditions: 1
-  velocity_trajectory_sweep_duration: 30.0
-  velocity_trajectory_sweep_cue_duration: 4.0
-  velocity_trajectory_sweep_sample_interval: 0.05
-  velocity_trajectory_sweep_fit_start_time: 2.0
-  # Retained for the numerical depinning metrics, not for FP-region coloring.
-  velocity_trajectory_sweep_depinning_gain_threshold: 0.5
-  velocity_trajectory_sweep_depinning_max_stall_fraction: 0.2
-  velocity_trajectory_sweep_depinning_success_fraction: 0.9
-  gain_velocities:
-    - -8.726646259971648
-    - -6.981317007977318
-    - -5.235987755982989
-    - -3.490658503988659
-    - -1.7453292519943295
-    - 0.0
-    - 1.7453292519943295
-    - 3.490658503988659
-    - 5.235987755982989
-    - 6.981317007977318
-    - 8.726646259971648
 
 paths:
   runs_root: runs/vafidis_population_mean_von_mises

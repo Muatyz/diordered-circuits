@@ -1,0 +1,42 @@
+# Reusable end-to-end code-functionality profile.
+#
+# Compose this partial YAML on top of any compatible experiment with
+# ``--profile configs/profiles/code_smoke.yaml``. It preserves the model family
+# and Eq. (4) timestep while reducing population size, simulated durations,
+# sampling density, and optional diagnostics. It is not a scientific result.
+
+experiment_name: vafidis_code_smoke
+
+model:
+  n_theta: 12
+  n_hr: 12
+
+simulation:
+  train_duration: 0.05
+  bump_test_duration: 0.03
+  darkness_test_duration: 0.03
+  cue_duration: 0.02
+  pi_cue_duration: 0.04
+  recue_duration: 0.02
+  save_interval_steps: 20
+  weight_snapshot_interval_steps: 40
+  progress: false
+
+tests:
+  darkness_angular_velocity: 0.5
+  hd_tuning_curve_angles: 8
+  hd_tuning_curve_settle_duration: 0.01
+  hd_tuning_curve_max_settle_duration: null
+  hd_tuning_curve_convergence_tolerance: null
+  hd_tuning_curve_sample_count: 2
+  ou_pi_ensemble_trials: 2
+  ou_pi_ensemble_fit_start_time: 0.0
+  bump_diffusion_duration: 0.03
+  bump_diffusion_trials: 4
+  bump_diffusion_fit_start_time: 0.0
+  gain_velocities:
+    - -0.5
+    - 0.5
+
+paths:
+  runs_root: runs/vafidis_code_smoke
