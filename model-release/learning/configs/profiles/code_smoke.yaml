@@ -1,0 +1,73 @@
+# Reusable end-to-end code-functionality profile.
+#
+# Compose this partial YAML on top of any compatible experiment with
+# ``--profile configs/profiles/code_smoke.yaml``. It preserves the model family
+# and Eq. (4) timestep while reducing population size, simulated durations,
+# sampling density, and optional diagnostics. It is not a scientific result.
+
+experiment_name: vafidis_code_smoke
+
+model:
+  n_theta: 12
+  n_hr: 12
+
+simulation:
+  train_duration: 0.05
+  bump_test_duration: 0.03
+  darkness_test_duration: 0.03
+  cue_duration: 0.02
+  pi_cue_duration: 0.04
+  recue_duration: 0.02
+  save_interval_duration: 0.005
+  weight_snapshot_interval_duration: 0.01
+  progress: false
+
+diagnostics:
+  weight_source: best
+  weight_snapshot_index: null
+  bump_maintenance: false
+  path_integration_and_pi_error: false
+  pva_spectrum_and_visualization: false
+  velocity_gain: false
+  training_convergence: true
+  trajectory_and_fixed_points: false
+  weight_snapshots_and_development: false
+  bump_diffusion: false
+  timescale_separation: false
+  velocity_dynamics_and_phase_flow: false
+  numerical_convergence: false
+  reuse_cached_dependencies: true
+
+tests:
+  darkness_angular_velocity: 0.5
+  constant_pi_velocities: [-0.5, -0.2, 0.2, 0.5]
+  weight_snapshot_pi_velocities: [-0.5, 0.5]
+  weight_snapshot_pi_initial_headings: []
+  weight_snapshot_pi_initial_heading: 0.0
+  weight_snapshot_pi_interval_fraction: 0.01
+  weight_snapshot_pi_cue_duration: 0.001
+  weight_snapshot_pi_duration: 0.003
+  weight_snapshot_pi_average_start_time: 0.0
+  hd_tuning_curve_angles: 8
+  hd_tuning_curve_settle_duration: 0.01
+  hd_tuning_curve_max_settle_duration: null
+  hd_tuning_curve_convergence_tolerance: null
+  hd_tuning_curve_sample_count: 2
+  ou_pi_ensemble_trials: 2
+  ou_pi_ensemble_fit_start_time: 0.0
+  bump_diffusion_duration: 0.03
+  bump_diffusion_cue_duration: 0.01
+  bump_diffusion_cue_amplitude: 16.0
+  bump_diffusion_cue_sigma: 0.25
+  bump_diffusion_release_skip_steps: 1
+  bump_diffusion_integration_method: forward_euler
+  bump_diffusion_trials: 4
+  bump_diffusion_test_noise_stds: [0.1]
+  bump_diffusion_test_noise_std: 0.1
+  bump_diffusion_fit_start_time: 0.0
+  gain_velocities:
+    - -0.5
+    - 0.5
+
+paths:
+  runs_root: runs/vafidis_code_smoke

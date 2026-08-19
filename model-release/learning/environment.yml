@@ -1,0 +1,14 @@
+name: pro
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - matplotlib
+  - numpy
+  - pip
+  - pyyaml
+  - pytest
+  - scipy
+  - tqdm

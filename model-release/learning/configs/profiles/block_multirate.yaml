@@ -1,0 +1,5 @@
+# Opt-in slow-fast training integrator. Neural states still use simulation.dt;
+# only local plasticity is accumulated over a short physical-time block.
+simulation:
+  training_integration_method: block_multirate
+  plasticity_update_interval_duration: 0.01

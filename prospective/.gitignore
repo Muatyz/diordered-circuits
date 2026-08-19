@@ -1,7 +1,0 @@
-runs/
-reports/figures/
-reports/tables/
-*.egg-info/
-__pycache__/
-.pytest_cache/
-

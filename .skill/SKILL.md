@@ -22,7 +22,7 @@ Codex 在写代码前，必须先明确当前任务属于以下哪一类：
 4. literature：整理新论文、建立文献与代码之间的映射。
 5. diagnostics：诊断数值稳定性、Jacobian、activation inverse、smoothing、regularization、simulation dynamics 等问题。
 
-不要把“论文阅读”和“代码实现”混成一次性聊天内容。每个重要解释都应该落盘到 `references/` 或对应任务目录下的 markdown 文件中。
+不要把“论文阅读”和“代码实现”混成一次性聊天内容。日常阅读、推导和研究想法可先落盘到根目录 `notebooks/`；已经影响代码或实验结论的内容还必须整理到 `references/`、resolved config、run 目录或对应任务的正式报告中，不能只依赖可变的 notebook。
 
 ## 0. Agent 约束
 
@@ -34,9 +34,10 @@ Codex 在写代码前，必须先明确当前任务属于以下哪一类：
 
 ```text
 .
-├── .skills/
-│   └── literature/
-│       └── SKILL.md
+├── .skill/
+│   ├── AGENT.md
+│   └── SKILL.md
+├── notebooks/                     # dev/release 共享的阅读笔记与研究知识库
 ├── references/
 │   ├── index.md
 │   ├── index.yml
@@ -62,21 +63,25 @@ Codex 在写代码前，必须先明确当前任务属于以下哪一类：
 │   ├── raw/
 │   ├── interim/
 │   └── processed/
-├── reproduction/
-│   ├── src/
-│   ├── config/
-│   ├── reports/
-│   ├── reports/figures/
-│   ├── tests/
-│   └── .skills/
-├── learning/
-│   ├── src/
-│   ├── experiments/
-│   ├── reports/
-│   └── .todo/
-└── reports/
-    └── figures/
+├── model-dev/                     # 唯一的日常代码开发树
+│   ├── reproduction/
+│   │   ├── src/
+│   │   ├── config/
+│   │   ├── reports/
+│   │   ├── tests/
+│   │   └── .skills/
+│   └── learning/
+│       ├── src/learning/
+│       ├── configs/
+│       ├── reports/
+│       ├── runs/
+│       └── .todo/
+├── model-release/                 # 从 dev 发布的长训练冻结快照
+├── work/                          # 可直接阅读和修改的 BAT 快捷命令
+└── paper/
 ```
+
+根目录 `notebooks/` 不随 dev-to-release 发布而复制，也不得成为训练入口、配置来源或运行时依赖。`model-dev/reproduction/notebooks/` 若存在，则属于 reproduction 子项目的可执行教学或复现材料，不等同于根目录共享文献知识库。
 
 如果暂时不想移动 PDF，也可以保留 `references/*.pdf` 的扁平结构，但至少要为每篇论文建立一个同名 `.md` 文件。例如：
 
@@ -123,36 +128,44 @@ oreilly2026_neocortex_learning
 
 1. 当前任务目录下的 Skill 文件，例如：
 
-   * `.skills/literature/SKILL.md`
-   * `reproduction/.skills/SKILL.md`
-   * `learning/.SKILL.md`
+   * `.skill/SKILL.md`
+   * `model-dev/reproduction/.skills/SKILL.md`
+   * `model-dev/learning/.SKILL.md`
 
-2. 文献索引：
+2. 与当前问题直接相关的共享阅读笔记；只按需读取，不要遍历整个目录：
+
+   * `notebooks/*.md`
+   * `notebooks/*.ipynb`
+
+3. 文献索引：
 
    * `references/index.md`
    * `references/index.yml`
 
-3. 与任务相关的文献卡片：
+4. 与任务相关的文献卡片：
 
    * `references/<paper_id>/card.md`
    * `references/<paper_id>/equation_map.md`
    * `references/<paper_id>/figure_map.md`
    * `references/<paper_id>/code_map.md`
 
-4. 与任务相关的代码：
+5. 与任务相关的代码；默认读取和修改 dev，不把 release 当作开发树：
 
-   * `reproduction/src/*.py`
-   * `learning/src/*.py`
-   * `reproduction/config/*.json`
-   * `tests/*.py`
+   * `model-dev/reproduction/src/*.py`
+   * `model-dev/learning/src/learning/*.py`
+   * `model-dev/reproduction/config/*.json`
+   * `model-dev/learning/configs/*.yaml`
+   * `model-dev/*/tests/*.py`
 
-5. 与任务相关的数据产物和诊断报告：
+6. 与任务相关的数据产物和诊断报告：
 
    * `data/processed/*.npz`
    * `data/processed/*.json`
-   * `reproduction/reports/*.json`
-   * `reproduction/reports/*.csv`
-   * `reproduction/reports/figures/*.png`
+   * `model-dev/reproduction/reports/*.json`
+   * `model-dev/reproduction/reports/*.csv`
+   * `model-dev/reproduction/reports/figures/*.png`
+   * `model-dev/learning/reports/*`
+   * `model-dev/learning/runs/*`
 
 如果文献卡片和代码冲突，以论文原文为最高优先级；如果论文原文、文献卡片和已有代码三者不一致，必须先报告冲突，再修改代码。
 
@@ -172,12 +185,12 @@ oreilly2026_neocortex_learning
 - Local path: references/clark2025_symmetries/
 - Role in project: 核心理论与复现对象；定义 data-derived RNN、optimized weight matrix、Gaussian process generative process、large-N / DMFT 分析。
 - Current implementation:
-  - reproduction/src/compute_hd_tuning.py
-  - reproduction/src/gaussian_generative_process.py
-  - reproduction/src/generate_synthetic_hd_dataset.py
-  - reproduction/src/plot_figure3_abcd.py
-  - reproduction/src/plot_figure5_abc.py
-  - reproduction/src/plot_figure6_*.py
+  - model-dev/reproduction/src/compute_hd_tuning.py
+  - model-dev/reproduction/src/gaussian_generative_process.py
+  - model-dev/reproduction/src/generate_synthetic_hd_dataset.py
+  - model-dev/reproduction/src/plot_figure3_abcd.py
+  - model-dev/reproduction/src/plot_figure5_abc.py
+  - model-dev/reproduction/src/plot_figure6_*.py
 - Status: Figure 2 到 Figure 6 基本复现；后续重点是 synthetic data、learning rule、local update。
 
 ### mainali2025_placefields
@@ -185,7 +198,7 @@ oreilly2026_neocortex_learning
 - Local path: references/mainali2025_placefields/
 - Role in project: 提供 place cell 的 Gaussian process 生成模型；用于考虑将 Clark 框架从 ring/head direction 推广到 place fields。
 - Current implementation:
-  - reproduction/src/compute_place_cell_optimized_weights.py
+  - model-dev/reproduction/src/compute_place_cell_optimized_weights.py
 - Status: 初步 toy implementation；需要明确是否值得纳入 learning rule 主线。
 
 ### bell2024_plasticity_rules
@@ -414,10 +427,10 @@ Fig. 6A-F: synthetic data statistics
 
 | Paper concept | Code file | Function / class | Data output | Test / diagnostic |
 |---|---|---|---|---|
-| HD tuning curve | reproduction/src/compute_hd_tuning.py | ... | data/processed/*hd_tuning*.npz | tests/test_hd_tuning_pipeline.py |
-| GP generator | reproduction/src/gaussian_generative_process.py | ... | figure5_abc_generative_process.npz | tests/test_gaussian_generative_process.py |
-| optimal J | reproduction/src/... | ... | figure3_abcd_weight_matrices.npz | diagnose_weight_stability.py |
-| Jacobian stability | reproduction/src/diagnostics/... | ... | figure3_jacobian_*.json | diagnostics |
+| HD tuning curve | model-dev/reproduction/src/compute_hd_tuning.py | ... | data/processed/*hd_tuning*.npz | tests/test_hd_tuning_pipeline.py |
+| GP generator | model-dev/reproduction/src/gaussian_generative_process.py | ... | figure5_abc_generative_process.npz | tests/test_gaussian_generative_process.py |
+| optimal J | model-dev/reproduction/src/... | ... | figure3_abcd_weight_matrices.npz | diagnose_weight_stability.py |
+| Jacobian stability | model-dev/reproduction/src/diagnostics/... | ... | figure3_jacobian_*.json | diagnostics |
 
 ## File ownership rules
 - 不要把文献解析代码、数据处理代码、图表绘制代码混在一个脚本里。
@@ -656,8 +669,8 @@ metadata = {
 任何修改 floor、smoothing、activation 参数的实验，都应该写入：
 
 ```text
-reproduction/reports/figure3_rate_floor_stability.json
-reproduction/reports/figure3_jacobian_*.json
+model-dev/reproduction/reports/figure3_rate_floor_stability.json
+model-dev/reproduction/reports/figure3_jacobian_*.json
 ```
 
 ### 14.2 lambda 与 c inhibition
@@ -735,7 +748,7 @@ teacher-student regression baseline
 每个 learning 实验应建立：
 
 ```text
-learning/experiments/<date>_<short_name>/
+model-dev/learning/experiments/<date>_<short_name>/
 ├── config.yml
 ├── hypothesis.md
 ├── results.md
@@ -789,15 +802,15 @@ learning/experiments/<date>_<short_name>/
 ```text
 references/<paper_id>/card.md
 references/<paper_id>/open_questions.md
-reproduction/reports/*.json
-learning/experiments/*/results.md
-reports/figures/*.png
+model-dev/reproduction/reports/*.json
+model-dev/learning/experiments/*/results.md
+model-dev/*/reports/figures/*.png
 ```
 
 每次 meeting 后，建议新增：
 
 ```text
-reports/meetings/YYYY-MM-DD.md
+notebooks/meetings/YYYY-MM-DD.md
 ```
 
 模板：
