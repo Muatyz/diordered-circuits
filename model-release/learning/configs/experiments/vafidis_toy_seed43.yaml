@@ -1,0 +1,262 @@
+# Multi-seed replication: seed = 43.
+# Identical to vafidis_toy.yaml except simulation.seed. Use together with
+# vafidis_diagnostics.yaml (see its header for the trimmed diagnostic set).
+#
+# Run (from model-release/learning):
+#   conda activate pro
+#   python -m learning.experiments.run_vafidis_toy \
+#     --config configs\experiments\vafidis_toy_seed43.yaml \
+#     --diagnostics-config configs\diagnostics\vafidis_diagnostics.yaml \
+#     --profile configs\profiles\block_multirate.yaml
+#
+# NOTE: if the 80 ks hard cap is too slow for a first pass, set
+# simulation.train_duration to 10800 (3 h): the W_HR sign flip happens at
+# ~0.89 h and the pattern is stable well before 3 h, so the multi-stable
+# conclusion is unchanged; weight_history.npz already records the evolution.
+
+experiment_name: vafidis_toy
+
+model:
+  # Table 1: 60 HD and 60 HR cells; paired HD cells give 30 unique headings.
+  n_theta: 60
+  n_hr: 60
+  tau_s: 0.065
+  # The released code updates the HD->HR delayed copy with
+  # ``x += (f - x) / tau_s`` — it omits the ``dt`` factor, so with the
+  # release dt_ms = 0.5 the *effective* time constant is tau_s * dt_ms
+  # = 32.5 ms, not the 65 ms stated in paper Eq. 9. To reproduce the
+  # released loop's actual behavior we use 32.5 ms here.
+  tau_hd_to_hr: 0.065  # 按照论文应该和 tau_s 一样是 0.065, 按照代码应该是 0.065 * 0.5
+  tau_l_hd: 0.01
+  p_distal_to_proximal: 0.6666666666666666
+  # Paper Eq. (4) and Table 1: dynamic proximal voltage, C=1 ms,
+  # g_L=1 and g_D=2. The implied darkness steady-state fraction is 2/3.
+  c_hd_proximal: 0.001
+  g_l_hd_proximal: 1.0
+  g_d_hd_to_proximal: 2.0
+  b_hd: 1.0
+  b_hr: 1.5
+  # The release code sums presynaptic inputs; population-mean scaling is a
+  # separate scientific intervention and is deliberately not used here.
+  hd_distal_normalization: raw_sum
+  # Release wHD = 2 / fmax = 13.33 ms for rates stored in kHz (ms^-1).
+  w_hd_to_hr_strength: 13.333333333333334
+  activation:
+    name: sigmoid
+    gain: 2.5
+    bias: 1.0
+    # Release firing-rate ceiling: 0.15 kHz = 150 spikes/s.
+    max_rate: 0.15
+  init:
+    # Release W ~ N(0, 1/(N_HD+N_HR)); std = 1/sqrt(120) ms.
+    w_hd_to_hd_mode: random_normal
+    w_hr_to_hd_mode: random_normal
+    w_hd_to_hd_scale: 0.09128709291752768
+    w_hr_to_hd_scale: 0.09128709291752768
+    local_sigma: 0.45
+    random_jitter: 0.0
+
+simulation:
+  seed: 43
+  # Table 1 and release code use a 0.5 ms global step. The other differential
+  # states remain ordered Euler updates at this same fixed timestep.
+  dt: 0.000125
+  proximal_integration_method: exact_linear # `exact_linear` or `forward_euler`
+  # Keep the release-aligned one-clock update as the scientific baseline.
+  # Select `block_multirate` (or apply the reusable profile) to update the
+  # slow plasticity state from buffered local samples every 10 ms.
+  training_integration_method: single_clock
+  plasticity_update_interval_duration: 0.01
+  # Release sim_run="2Enough" trains for 80,000 s of model time.
+  train_duration: 80000.0
+  # Save every 1% of the 80,000 s training duration. Both values are seconds;
+  # the engine converts them to the nearest integer number of steps using dt.
+  save_interval_duration: 800.0
+  weight_snapshot_interval_duration: 800.0
+  # The same run also performs long frozen-weight validation after training.
+  # These durations do not affect plasticity or the training stimulus.
+  bump_test_duration: 5.0
+  darkness_test_duration: 60.0
+  cue_duration: 2.0
+  pi_cue_duration: 20.0
+  recue_duration: 10.0
+  theta0: 0.0
+  progress: true
+  plasticity_enabled: true
+  # Reproducible component streams are stricter than the unseeded release run
+  # and keep the OU trajectory independent of initialization draw counts.
+  random_stream_mode: component_split
+  initialization_seed_offset: 0
+  velocity_seed_offset: 10000
+  early_stopping:
+    enabled: false
+  # Behavioral checkpoint selection is intentionally separate from convergence
+  # stopping. Keep it disabled for the release-parameter baseline until the
+  # paper/release discrete-time parity audit is complete. When enabled it runs
+  # short frozen-weight PI probes and restores the best eligible checkpoint;
+  # train_duration remains the hard cap.
+  checkpoint_selection:
+    # Keep training independent of behavioral thresholds. Snapshot ranking is
+    # performed offline after the 80 ks hard cap; final and best weights are
+    # both saved, and no PI/fixed-point result can stop or update training.
+    enabled: false
+    min_duration: 8000.0
+    check_interval: 800.0
+    patience_checks: 8
+    success_checks: 3
+    restore_best: true
+    minimum_improvement: 0.0001
+    cue_duration: 1.0
+    probe_duration: 2.0
+    fit_start_time: 0.5
+    velocities:
+      - -1.3089969389957472
+      - -0.5235987755982988
+      - 0.0
+      - 0.5235987755982988
+      - 1.3089969389957472
+    initial_headings:
+      - -3.141592653589793
+      - -1.5707963267948966
+      - 0.0
+      - 1.5707963267948966
+    maximum_rms_velocity_bias: 0.01
+    maximum_abs_velocity_bias: 0.02
+    maximum_abs_zero_velocity_drift: 0.01
+    minimum_pva_strength: 0.5
+    minimum_bump_contrast: 0.05
+
+learning_rule:
+  # Rates, PSP/error and weights use the release numerical scale. The only
+  # conversion is dt_ms = 1000*dt_s, hence eta_s = 1000*0.05 = 50.
+  eta_hd_to_hd: 50.0
+  eta_hr_to_hd: 50.0
+  tau_delta: 0.10
+  # The released online rule has no clipping and learns the full recurrent
+  # matrix, including its diagonal.
+  w_hd_to_hd_min: null
+  w_hd_to_hd_max: null
+  w_hr_to_hd_min: null
+  w_hr_to_hd_max: null
+  hd_to_hd_symmetry_mode: none
+  hd_to_hd_balance_mode: none
+  hr_to_hd_balance_mode: none
+  zero_hd_to_hd_diagonal: false
+
+visual:
+  profile: von_mises
+  amplitude: 4.0
+  # sigma=0.15 in the paper corresponds to kappa=1/(4*sigma^2).
+  kappa: 11.11111111111111
+  baseline: 5.0
+  normalize_peak: true
+  light_excitation: 4.0
+  # The raw current enters paper Eq. (4); conductances, not this field, set its
+  # steady-state voltage gain. Keep one for the Vafidis baseline.
+  proximal_scale: 1.0
+  noise_std: 0.0
+  noise_process: ou_additive
+  noise_correlation_time: 0.065
+  apply_noise_during_training: true
+  apply_noise_during_visual_test: true
+  noise_seed_offset: 20000
+
+velocity:
+  process: ou
+  mean: 0.0
+  # The release OU function receives its stationary std: 225 deg/s.  Its
+  # diffusion amplitude is 225*sqrt(2/0.5)=450 deg/s/sqrt(s), as in Table 1.
+  std: 3.9269908169872414
+  tau: 0.50
+  # run_simulation.py calls the unbounded OU process (bound_vel=False).
+  clip: null
+  # (1/360 s/deg) * (180/pi deg/rad) = 1/(2*pi) s/rad.
+  k_vel: 0.15915494309189535
+
+diagnostics:
+  # Run the purpose-specific frozen-weight diagnostics automatically after
+  # training. They use the offline-ranked snapshot while final_weights.npz
+  # retains the true 80 ks endpoint for an honest comparison.
+  weight_source: best
+  weight_snapshot_index: null
+  bump_maintenance: false
+  path_integration_and_pi_error: true
+  pva_spectrum_and_visualization: false
+  velocity_gain: true
+  training_convergence: true
+  trajectory_and_fixed_points: true
+  weight_snapshots_and_development: false
+  bump_diffusion: false
+  timescale_separation: false
+  velocity_dynamics_and_phase_flow: false
+  numerical_convergence: false
+  reuse_cached_dependencies: true
+
+tests:
+  darkness_angular_velocity: 1.3089969389957472
+  # Balanced constant commands include low speeds and zero velocity so
+  # pinning/drift cannot be hidden by the high-speed gain fit.
+  constant_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+
+  learning_error_window_duration: 10.0
+  learning_error_interval_fraction: 0.01
+  learning_error_rate_scale_to_spikes_per_second: 1000.0
+
+  # Offline rank-only checkpoint selection. Four off-grid release headings
+  # prevent one unusually favorable basin from determining the chosen state.
+  # One evaluation per 2% keeps the post-training cost manageable while the
+  # underlying weights remain saved every 500 s.
+  weight_snapshot_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+  weight_snapshot_pi_initial_headings:
+    - -2.356194490192345
+    - -0.7853981633974483
+    - 0.7853981633974483
+    - 2.356194490192345
+  weight_snapshot_pi_interval_fraction: 0.02
+  weight_snapshot_pi_cue_duration: 1.0
+  weight_snapshot_pi_duration: 5.0
+  weight_snapshot_pi_average_start_time: 0.5
+  weight_snapshot_pi_selection_metric: rms_velocity_bias
+
+  ou_pi_ensemble_trials: 12
+  ou_pi_ensemble_seed_offset: 60000
+  ou_pi_ensemble_fit_start_time: 0.5
+
+  # Diagnostic-only strong cue: it initializes every phase without changing
+  # the paper-matched training teacher (visual.amplitude remains 4).
+  # bisection depth 3 (nominal ~1.5 deg bracket) is ample for basin-boundary
+  # figures; the dev baseline used depth 3 and produced 12 smooth probes.
+  bump_attractor_initial_conditions: 360
+  bump_attractor_boundary_bisection_depth: 3
+  bump_attractor_duration: 5.0
+  bump_attractor_cue_duration: 1.0
+  bump_attractor_cue_amplitude: 24.0
+  bump_attractor_sample_interval: 0.1
+
+  numerical_convergence_dt_values: [0.001, 0.0005, 0.00025, 0.000125]
+  numerical_convergence_methods: [forward_euler, exact_linear]
+  numerical_convergence_reference_dt: 0.0000625
+  numerical_convergence_cue_duration: 0.5
+  numerical_convergence_duration: 2.0
+  numerical_convergence_sample_interval: 0.01
+  numerical_convergence_angular_velocity: 1.3089969389957472
+  numerical_convergence_max_heading_error_deg: 1.0
+  numerical_convergence_max_rate_rms_error: 0.002
+
+paths:
+  runs_root: runs/vafidis_baseline
+  reports_root: reports

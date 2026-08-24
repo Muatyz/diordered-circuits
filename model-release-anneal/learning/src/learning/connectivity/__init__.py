@@ -1,0 +1,2 @@
+"""Connectivity initialization and constraints."""
+

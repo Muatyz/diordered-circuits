@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "panels_ab": {
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260621,
+    "mean_ylim": [0.0, 6.2],
+    "std_ylim": [0.0, 6.2]
+  },
+  "panel_c": {
+    "z_thresholds": [1.0, 0.5, 0.0],
+    "max_peak_count": 5,
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260622
+  },
+  "panel_d": {
+    "z_threshold": 1.0,
+    "n_peak_ranks": 3,
+    "peak_height_min": 0.0,
+    "peak_height_max": 15.0,
+    "n_histogram_bins": 60,
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260622
+  },
+  "panel_e": {
+    "rho_min": -1.0,
+    "rho_max": 1.0,
+    "n_histogram_bins": 80,
+    "tail_fraction_threshold": 0.9,
+    "expanded_y_max": 1.0,
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260622
+  },
+  "panel_f": {
+    "information_min": 0.0,
+    "information_max": 3.0,
+    "n_histogram_bins": 60,
+    "high_information_threshold": 2.0,
+    "n_generated_neurons": 100000,
+    "batch_size": 5000,
+    "seed": 20260622
+  }
+}

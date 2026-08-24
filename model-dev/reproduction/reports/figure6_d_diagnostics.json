@@ -1,0 +1,36 @@
+{
+  "sigma": 1.4,
+  "beta": 2.6057585657926885,
+  "bias": 2.0814271322479385,
+  "n_fourier_modes": 30,
+  "z_threshold": 1.0,
+  "n_experimental_neurons": 1533,
+  "n_mice": 31,
+  "n_generated_neurons": 100000,
+  "seed": 20260622,
+  "experimental_rank_counts": [
+    1533,
+    408,
+    49
+  ],
+  "generated_rank_counts": [
+    100000,
+    23431,
+    954
+  ],
+  "experimental_outside_counts": [
+    0,
+    0,
+    0
+  ],
+  "generated_outside_counts": [
+    0,
+    0,
+    0
+  ],
+  "total_variation_distance": [
+    0.07985584474885846,
+    0.11658145610683349,
+    0.26288880332007014
+  ]
+}

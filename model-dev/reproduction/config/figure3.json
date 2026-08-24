@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "notes": {
+    "paper_regularization": "Clark et al. report lambda=1e-6. This local reproduction uses lambda=1e-4 consistently across Figure 3A-L because the extracted finite-N inverse-softplus target is unstable at 1e-6.",
+    "parameter_policy": "Figure 3 scripts must read defaults from this file. Any experimental override must be explicit and is recorded in the output cache.",
+    "velocity_binning": "For the shared lambda=1e-4 network, 1 s is the smallest tested A3707 angular-velocity bin that remains stable; 0.1, 0.2, and 0.5 s bins contain 3-6 rad/s measurement-scale peaks and destabilize panel K. Panel L independently retains the paper-specified 100 ms spike-count bins."
+  },
+  "network": {
+    "regularization": 0.0001,
+    "paper_regularization_reference": 0.000001,
+    "activation_beta": 2.0,
+    "alpha_floor": 0.0001,
+    "do_double_normalize": true,
+    "inhibition_c": 1.0,
+    "tau_s": 0.05,
+    "dt_s": 0.001,
+    "circulant_gain": 1.275
+  },
+  "panels_abcd": {
+    "seed": 20260126
+  },
+  "panels_ef": {
+    "n_initial": 24,
+    "duration_s": 30.0,
+    "record_every_s": 0.1,
+    "simulation_manifold_bins": 500,
+    "noise_std": 0.5,
+    "state_stop_abs": 1000000000000.0,
+    "seed": 20260531
+  },
+  "panels_ghi": {
+    "n_initial": 20,
+    "duration_s": 30.0,
+    "noise_std": 0.5,
+    "seed": 20260618
+  },
+  "panels_jkl": {
+    "subject_id": "A3707",
+    "duration_s": 90.0,
+    "record_every_s": 0.1,
+    "constant_omega_rad_s": 0.8,
+    "behavior_offset_s": 0.0,
+    "velocity_bin_s": 1.0,
+    "neural_spike_bin_s": 0.1,
+    "display_start_angle_pi": 1.9
+  }
+}

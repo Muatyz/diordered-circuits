@@ -1,0 +1,12 @@
+{
+  "sigma": 1.4,
+  "beta": 2.6057585657926885,
+  "bias": 2.0814271322479385,
+  "n_fourier_modes": 30,
+  "n_experimental_neurons": 1533,
+  "n_mice": 31,
+  "n_generated_neurons": 100000,
+  "seed": 20260621,
+  "mean_rmse": 0.10210450915504714,
+  "std_rmse": 0.09082111865889624
+}

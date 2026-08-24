@@ -1,0 +1,11 @@
+# Optional finite-size control for the Vafidis PI-robust profile.
+# Compose after pi_robust_vafidis.yaml.  No symmetry constraint or additional
+# learning mechanism is introduced; this only doubles the sampled ring.
+
+model:
+  n_theta: 120
+  n_hr: 120
+  init:
+    # Release initialization scales as 1/sqrt(N_HD + N_HR).
+    w_hd_to_hd_scale: 0.06454972243679027
+    w_hr_to_hd_scale: 0.06454972243679027

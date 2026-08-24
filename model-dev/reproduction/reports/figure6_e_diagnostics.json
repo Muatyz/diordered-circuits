@@ -1,0 +1,20 @@
+{
+  "sigma": 1.4,
+  "beta": 2.6057585657926885,
+  "bias": 2.0814271322479385,
+  "n_fourier_modes": 30,
+  "n_experimental_neurons": 1533,
+  "n_mice": 31,
+  "n_generated_neurons": 100000,
+  "n_experimental_valid": 1533,
+  "n_generated_valid": 100000,
+  "experimental_outside_count": 0,
+  "generated_outside_count": 0,
+  "total_variation_distance": 0.1692315264187867,
+  "tail_fraction_threshold": 0.9,
+  "expanded_y_max": 1.0,
+  "experimental_tail_fraction": 0.4546640574037834,
+  "generated_tail_fraction": 0.57398,
+  "reflection_interpolation": "periodic_linear",
+  "seed": 20260622
+}

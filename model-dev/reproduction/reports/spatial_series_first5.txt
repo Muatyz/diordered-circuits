@@ -1,0 +1,215 @@
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1808\sub-A1808_behavior+ecephys+ogen.nwb
+
+[CompassDirection] spatial_series keys:
+['head-direction']
+
+  spatial_series key: head-direction
+    name: head-direction
+    type: SpatialSeries
+    unit: radians
+    description: Horizontal angle of the head (yaw)
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (360867,)
+    data dtype: float64
+    timestamps shape: (360867,)
+    timestamps dtype: float64
+
+[Position] spatial_series keys:
+['position']
+
+  spatial_series key: position
+    name: position
+    type: SpatialSeries
+    unit: centimeters
+    description: (x,y) position in the open field
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (360867, 2)
+    data dtype: float64
+    timestamps shape: (360867,)
+    timestamps dtype: float64
+
+[epochs]
+    start_time  stop_time           tags
+id                                      
+0      0.00005   2735.856    [home_cage]
+1   2735.85600   3648.348  [wake_square]
+2   3648.34800   7489.656    [home_cage]
+3   7489.65600  10198.690    [wake_opto]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1813\sub-A1813_behavior+ecephys+ogen.nwb
+
+[CompassDirection] spatial_series keys:
+['head-direction']
+
+  spatial_series key: head-direction
+    name: head-direction
+    type: SpatialSeries
+    unit: radians
+    description: Horizontal angle of the head (yaw)
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (378842,)
+    data dtype: float64
+    timestamps shape: (378842,)
+    timestamps dtype: float64
+
+[Position] spatial_series keys:
+['position']
+
+  spatial_series key: position
+    name: position
+    type: SpatialSeries
+    unit: centimeters
+    description: (x,y) position in the open field
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (378842, 2)
+    data dtype: float64
+    timestamps shape: (378842,)
+    timestamps dtype: float64
+
+[epochs]
+    start_time  stop_time           tags
+id                                      
+0      0.00005   3966.804    [home_cage]
+1   3966.80400   5008.896  [wake_square]
+2   5008.89600   8908.416    [home_cage]
+3   8908.41600  11667.100    [wake_opto]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1815\sub-A1815_behavior+ecephys+ogen.nwb
+
+[CompassDirection] spatial_series keys:
+['head-direction']
+
+  spatial_series key: head-direction
+    name: head-direction
+    type: SpatialSeries
+    unit: radians
+    description: Horizontal angle of the head (yaw)
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (360402,)
+    data dtype: float64
+    timestamps shape: (360402,)
+    timestamps dtype: float64
+
+[Position] spatial_series keys:
+['position']
+
+  spatial_series key: position
+    name: position
+    type: SpatialSeries
+    unit: centimeters
+    description: (x,y) position in the open field
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (360402, 2)
+    data dtype: float64
+    timestamps shape: (360402,)
+    timestamps dtype: float64
+
+[epochs]
+    start_time  stop_time           tags
+id                                      
+0      0.00005   3560.976    [home_cage]
+1   3560.97600   4468.392  [wake_square]
+2   4468.39200   6915.168    [home_cage]
+3   6915.16800   9622.872    [wake_opto]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1821\sub-A1821_behavior+ecephys+ogen.nwb
+
+[CompassDirection] spatial_series keys:
+['head-direction']
+
+  spatial_series key: head-direction
+    name: head-direction
+    type: SpatialSeries
+    unit: radians
+    description: Horizontal angle of the head (yaw)
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (541496,)
+    data dtype: float64
+    timestamps shape: (541496,)
+    timestamps dtype: float64
+
+[Position] spatial_series keys:
+['position']
+
+  spatial_series key: position
+    name: position
+    type: SpatialSeries
+    unit: centimeters
+    description: (x,y) position in the open field
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (541496, 2)
+    data dtype: float64
+    timestamps shape: (541496,)
+    timestamps dtype: float64
+
+[epochs]
+    start_time  stop_time           tags
+id                                      
+0      0.00005   3042.648    [home_cage]
+1   3042.64800   5749.632  [wake_square]
+2   5749.63200   8831.772    [home_cage]
+3   8831.77200  11551.820    [wake_opto]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1824\sub-A1824_behavior+ecephys+ogen.nwb
+
+[CompassDirection] spatial_series keys:
+['head-direction']
+
+  spatial_series key: head-direction
+    name: head-direction
+    type: SpatialSeries
+    unit: radians
+    description: Horizontal angle of the head (yaw)
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (390772,)
+    data dtype: float64
+    timestamps shape: (390772,)
+    timestamps dtype: float64
+
+[Position] spatial_series keys:
+['position']
+
+  spatial_series key: position
+    name: position
+    type: SpatialSeries
+    unit: centimeters
+    description: (x,y) position in the open field
+    comments: no comments
+    conversion: 1.0
+    offset: 0.0
+    data shape: (390772, 2)
+    data dtype: float64
+    timestamps shape: (390772,)
+    timestamps dtype: float64
+
+[epochs]
+    start_time  stop_time           tags
+id                                      
+0      0.00005   2762.496    [home_cage]
+1   2762.49600   3970.260  [wake_square]
+2   3970.26000   6393.132    [home_cage]
+3   6393.13200   9105.480    [wake_opto]

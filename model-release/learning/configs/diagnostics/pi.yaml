@@ -1,0 +1,213 @@
+# Single hyper config for every frozen-weight diagnostic run.
+# Change only these booleans to select diagnostic groups. Parameters for all
+# groups remain below, so selecting a different group never requires another
+# YAML file.
+
+diagnostics:
+  weight_source: best
+  weight_snapshot_index: null
+  bump_maintenance: false
+  path_integration_and_pi_error: true
+  pva_spectrum_and_visualization: false # 待重构
+  velocity_gain: false
+  training_convergence: false
+  trajectory_and_fixed_points: false
+  weight_snapshots_and_development: false
+  bump_diffusion: false
+  timescale_separation: false # 待重构
+  velocity_dynamics_and_phase_flow: false # 待重构
+  numerical_convergence: false
+  reuse_cached_dependencies: true
+
+simulation:
+  bump_test_duration: 5.0
+  darkness_test_duration: 30.0
+  cue_duration: 2.0
+  pi_cue_duration: 10.0
+  recue_duration: 10.0
+
+tests:
+  numerical_convergence_dt_values: [0.001, 0.0005, 0.00025, 0.000125]
+  numerical_convergence_methods: [forward_euler, exact_linear]
+  numerical_convergence_reference_dt: 0.0000625
+  numerical_convergence_cue_duration: 0.5
+  numerical_convergence_duration: 2.0
+  numerical_convergence_sample_interval: 0.01
+  numerical_convergence_angular_velocity: 1.3089969389957472
+  numerical_convergence_max_heading_error_deg: 1.0
+  numerical_convergence_max_rate_rms_error: 0.002
+
+  # Vafidis Eq. (19): 10 s forward averages, evaluated every 1% of training.
+  learning_error_window_duration: 10.0
+  learning_error_interval_fraction: 0.01
+  learning_error_rate_scale_to_spikes_per_second: 1000.0
+  darkness_angular_velocity: 1.3089969389957472
+  # Balanced probes include low-speed pinning and zero-velocity drift.
+  constant_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+
+  # Frozen snapshot PI development uses deterministic commands so different
+  # training times are compared on exactly the same intervention.
+  weight_snapshot_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+  weight_snapshot_pi_initial_headings:
+    - -2.356194490192345
+    - -0.7853981633974483
+    - 0.7853981633974483
+    - 2.356194490192345
+  weight_snapshot_pi_initial_heading: 0.0
+  # Multi-heading probes are more expensive, so rank one point per 2% while
+  # retaining the denser raw weight history.
+  weight_snapshot_pi_interval_fraction: 0.02
+  weight_snapshot_pi_cue_duration: 1.0
+  weight_snapshot_pi_duration: 5.0
+  weight_snapshot_pi_average_start_time: 0.5
+  weight_snapshot_pi_selection_metric: rms_velocity_bias
+
+  hd_tuning_curve_angles: 60
+  hd_tuning_curve_settle_duration: 2.0
+  hd_tuning_curve_max_settle_duration: 5.0
+  hd_tuning_curve_convergence_window: 0.5
+  hd_tuning_curve_convergence_tolerance: 0.0003
+  hd_tuning_curve_sample_count: 8
+
+  ou_pi_ensemble_trials: 24
+  ou_pi_ensemble_seed_offset: 60000
+  ou_pi_ensemble_fit_start_time: 0.5
+
+  # Match original/stability.py: 10 s total, with 2 s of stronger/wider cue
+  # (M=16, sigma=0.25) followed by 8 s of zero-velocity darkness.
+  bump_diffusion_duration: 10.0
+  bump_diffusion_cue_duration: 2.0  # visual cue 的持续时间
+  bump_diffusion_cue_amplitude: 16.0 # visual cue 的幅值
+  bump_diffusion_cue_sigma: 0.25      # visual cue 的宽度
+  bump_diffusion_release_skip_steps: 5
+  bump_diffusion_integration_method: forward_euler
+  bump_diffusion_trials: 500
+  bump_diffusion_test_noise_stds: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+  # Selects the sweep row used by legacy scalar metrics and the time-resolved plot.
+  bump_diffusion_test_noise_std: 0.2
+  bump_diffusion_seed_offset: 30000
+  bump_diffusion_fit_start_time: 1.0
+  bump_diffusion_fit_end_time: null
+
+  # One-degree probe spacing. The observed release-baseline trajectories
+  # settle in under 0.5 s; 5 s retains ample separatrix margin.
+  bump_attractor_initial_conditions: 360  # 1-degree coarse probe grid
+  bump_attractor_boundary_bisection_depth: 6  # 0.015625-degree nominal brackets
+  bump_attractor_duration: 5.0 # 黑暗中 bump 的弛豫时间
+  bump_attractor_cue_duration: 1.0 # visual cue 持续时间
+  bump_attractor_sample_interval: 0.1
+  # Frozen-weight basin initialization uses a stronger cue than training.
+  # A 360-angle sweep found 24 to be the smallest tested amplitude without
+  # near-zero PVA cue-release local-gain intervals; visual.amplitude remains 4.
+  bump_attractor_cue_amplitude: 24.0 # visual cue 的调制幅值
+
+  slow_manifold_speed_fraction: 0.001
+  slow_manifold_candidate_count: 4096
+  slow_manifold_angular_bins: 120
+  slow_manifold_min_angular_support_fraction: 0.5
+  slow_manifold_jacobian_anchors: 30
+  slow_manifold_jacobian_eigenvalues: 6
+  slow_manifold_jacobian_dense_dimension_limit: 256
+  ramesan_q_threshold: 1.0e-4
+  ramesan_trajectory_sample_count: 16384
+  # 30 unique paired-HD headings are 12 deg apart. To resolve the
+  # stable(unstable) fixed points at headings(midpoints), the angular grid
+  # must be finer than the heading spacing and the smoothing window must be
+  # much narrower than 12 deg.  The previous smoothing_bins=7 on a 180-bin
+  # grid (14 deg window) smeared neighbouring fixed points together and only
+  # ~22 roots survived; 360 bins with a single-bin smoothing keeps the 12 deg
+  # alternation intact.
+  ramesan_phase_angular_bins: 360
+  ramesan_phase_smoothing_bins: 1
+  ramesan_ambient_enabled: true
+  ramesan_ambient_sample_count: 16384
+  ramesan_ambient_perturbation_scales: [0.01, 0.03, 0.1, 0.3]
+  ramesan_ambient_seed_offset: 110000
+
+  timescale_separation_initial_conditions: 12
+  timescale_separation_normal_duration: 5.0
+  timescale_separation_sample_interval: 0.02
+  timescale_separation_perturbation_scales: [0.025, 0.05, 0.1]
+  timescale_separation_perturbations_per_condition: 3
+  timescale_separation_seed_offset: 90000
+  timescale_separation_tangential_threshold_deg: 10.0
+  timescale_separation_ratio_threshold: 10.0
+
+  velocity_trajectory_sweep_velocities:
+    - 0.0
+    - 0.05
+    - 0.1
+    - 0.15
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+    - 0.8
+    - 1.0
+    - 1.4
+    - 2.0
+  velocity_trajectory_sweep_max_velocity: 2.0
+  velocity_trajectory_sweep_count: 11
+  velocity_trajectory_sweep_ring_velocity_count: 4
+  velocity_trajectory_sweep_initial_heading: 0.0
+  velocity_trajectory_sweep_initial_conditions: 1
+  velocity_trajectory_sweep_duration: 30.0
+  velocity_trajectory_sweep_cue_duration: 4.0
+  velocity_trajectory_sweep_sample_interval: 0.05
+  velocity_trajectory_sweep_fit_start_time: 2.0
+  velocity_trajectory_sweep_depinning_gain_threshold: 0.5
+  velocity_trajectory_sweep_depinning_max_stall_fraction: 0.2
+  velocity_trajectory_sweep_depinning_success_fraction: 0.9
+
+  velocity_phase_flow_initial_conditions: 360
+  velocity_phase_flow_duration: 2.0
+  velocity_phase_flow_sample_interval: 0.02
+  velocity_phase_flow_fit_start_time: 0.0
+  velocity_phase_flow_fit_duration: 2.0
+  velocity_phase_flow_angular_bins: 360
+  velocity_phase_flow_smoothing_bins: 5
+  velocity_phase_flow_empirical_lambda_speed_floor: 0.02
+  velocity_phase_flow_probe_velocities:
+    - 0.0
+    - 0.05
+    - 0.1
+    - 0.15
+    - 0.2
+    - 0.3
+    - 0.4
+    - 0.5
+    - 0.6
+
+  gain_velocities:
+    - -8.726646259971648
+    - -6.981317007977318
+    - -5.235987755982989
+    - -3.490658503988659
+    - -1.7453292519943295
+    - -1.0471975511965976
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.0471975511965976
+    - 1.7453292519943295
+    - 3.490658503988659
+    - 5.235987755982989
+    - 6.981317007977318
+    - 8.726646259971648

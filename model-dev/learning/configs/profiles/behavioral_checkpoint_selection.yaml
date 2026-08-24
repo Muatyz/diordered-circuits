@@ -1,0 +1,7 @@
+# Opt-in engineering profile for selecting a frozen-weight PI checkpoint.
+# The release-parameter baseline keeps this disabled so behavioral selection
+# cannot conceal paper/release parity differences.
+
+simulation:
+  checkpoint_selection:
+    enabled: true

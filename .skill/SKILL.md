@@ -28,6 +28,48 @@ Codex 在写代码前，必须先明确当前任务属于以下哪一类：
 
 参照 [AGENT.md](./AGENT.md)
 
+## 0.1 运行环境与 matplotlib 约定（必读）
+
+本机 Windows + conda 存在一个 pre-existing 环境问题，必须遵守以下约定，否则
+agent 运行任意涉及 numpy 矩阵运算 / matplotlib 绘图的代码会以进程级崩溃
+（`Windows fatal exception: code 0xc06d007f` = STATUS_DLL_NOT_FOUND，无
+Python traceback）失败。
+
+根因：numpy 2.4.6 + MKL 2026.1.0（conda-forge）在线程化 MKL 层（Intel OpenMP）
+加载失败时崩溃，崩溃点常见于 `np.dot` 与 matplotlib `transform.get_affine`。
+
+约定：
+
+1. **所有终端命令默认已带 `MKL_THREADING_LAYER=SEQUENTIAL`**：
+   - `.vscode/settings.json` 已通过 `terminal.integrated.env.windows` 为全部
+     新终端注入该变量（需重启 VS Code 终端生效）。
+   - `dev` 环境的 `etc/conda/activate.d/mkl-sequential_activate.*` 已保证
+     `conda activate dev` 自动设置。
+   - 若在终端中观察到 matplotlib/numpy 崩溃，首先检查并手动设置：
+     ```powershell
+     $env:MKL_THREADING_LAYER = 'SEQUENTIAL'
+     ```
+     （cmd 下：`set MKL_THREADING_LAYER=SEQUENTIAL`）
+
+2. **绘图脚本必须使用 Agg 无头后端**，禁止依赖 GUI 后端（qtagg 默认后端）：
+   ```python
+   import matplotlib
+   matplotlib.use("Agg")
+   import matplotlib.pyplot as plt
+   ```
+   禁止调用 `plt.show()`；保存用 `fig.savefig(path)`。
+
+3. 若遇到 matplotlib 的 `axvline`/`axhline` 崩溃，使用数据坐标线替代：
+   ```python
+   ax.plot([x0, x0], [ymin, ymax], ...)   # 等价于 axvline
+   ax.plot([xmin, xmax], [y0, y0], ...)   # 等价于 axhline
+   ```
+
+4. 在终端中运行 Python 一律用环境 Python 的绝对路径，不依赖 `conda activate`
+   后的 `python` 命令解析，例如：
+   - dev: `D:/miniconda/envs/dev/python.exe`
+   - pro: `D:/miniconda/envs/pro/python.exe`
+
 ## 1. 推荐目录结构
 
 在当前项目基础上，建议逐步整理为：

@@ -1,0 +1,30 @@
+{
+  "sigma": 1.4,
+  "beta": 2.6057585657926885,
+  "bias": 2.0814271322479385,
+  "n_fourier_modes": 30,
+  "z_thresholds": [
+    1.0,
+    0.5,
+    0.0
+  ],
+  "n_experimental_neurons": 1533,
+  "n_mice": 31,
+  "n_generated_neurons": 100000,
+  "experimental_overflow_counts": [
+    0,
+    1,
+    4
+  ],
+  "generated_overflow_counts": [
+    0,
+    0,
+    0
+  ],
+  "total_variation_distance": [
+    0.03183481409001955,
+    0.03679083496412262,
+    0.10231056099151987
+  ],
+  "seed": 20260622
+}

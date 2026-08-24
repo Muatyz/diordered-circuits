@@ -1,0 +1,88 @@
+# Joint visual-current-noise-std x neuron-count robustness comparison.
+#
+# Run from learning/:
+# python -m learning.experiments.run_attractor_robustness --robustness-config configs/analysis/noise_by_neuron_count_comparison.yaml
+#
+# This preset writes:
+# - noise_by_neuron_count_sweep_summary.csv
+# - noise_by_neuron_count_sweep_aggregate_summary.csv
+# - figures/noise_by_neuron_count_metric_meshgrid.png
+
+experiment:
+  config: configs/experiments/vafidis_toy.yaml
+  run_dir: null
+
+output:
+  # Parent directory. Each invocation writes a timestamped child report under
+  # this directory so previous comparisons are preserved.
+  directory: reports/attractor_robustness/noise_by_neuron_count_comparison
+  run_id_prefix: attractor_noise_by_neuron_count
+
+runtime:
+  # null keeps the train_duration from experiment.config.
+  # Use a small value such as 160.0 for smoke tests before launching the full grid.
+  train_duration: null
+  save_interval_duration: 0.02
+  progress: true
+  training_progress: true
+  skip_existing_runs: true
+  seed_offsets:
+    - 0
+
+probes:
+  extended_recue:
+    enabled: false
+    duration: 8.0
+
+  manifold_perturbation:
+    enabled: false
+    manifold_points: 180
+    settle_duration: 1.0
+    perturbation_count: 6
+    perturbation_duration: 2.0
+    perturbation_scale: 0.05
+
+sweeps:
+  visual_noise:
+    enabled: false
+    stds:
+      - 0.0
+
+  neuron_count:
+    enabled: false
+    counts:
+      - 60
+
+  noise_by_neuron_count:
+    enabled: true
+    # OU additive current noise is added after proximal scaling, in effective
+    # HD-current units. The OU tau is set by visual.noise_correlation_time in
+    # the base experiment config.
+    stds:
+      - 0.0
+      - 0.02
+      - 0.05
+      - 0.1
+      - 0.15
+      - 0.2
+      - 0.3
+      - 0.4
+      - 0.5
+      - 0.6
+      - 0.8
+      - 1.0
+      - 1.25
+      - 1.5
+      - 2.0
+      - 3.0
+    # Values must be positive even integers because the toy uses paired HD
+    # preferences and equal left/right HR wings.
+    counts:
+      - 16
+      - 24
+      - 32
+      - 48
+      - 60
+    # Keep the visual teacher resolvable on coarse paired-HD grids without
+    # adding a new model mechanism.
+    min_visual_sigma_bins: 0.70

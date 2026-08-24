@@ -1,0 +1,117 @@
+# Opt-in Vafidis-only PI robustness profile.
+#
+# This keeps the published predictive local learning rule unchanged.  It
+# changes only the OU training distribution and frozen-weight model selection:
+# broad motion first, then progressively more low-speed samples, followed by a
+# phase/velocity grid that explicitly rejects pinning and worst-case bias.
+
+velocity:
+  training_ou_std_schedule:
+    - end_fraction: 0.50
+      std: 3.9269908169872414  # 225 deg/s
+    - end_fraction: 0.75
+      std: 1.3089969389957472  # 75 deg/s
+    - end_fraction: 1.00
+      std: 0.4363323129985824  # 25 deg/s
+
+simulation:
+  checkpoint_selection:
+    enabled: true
+    min_duration: 10000.0
+    check_interval: 5000.0
+    # Both limits exceed the 11 checks in the 60 ks baseline: finish the full
+    # three-stage OU schedule, then restore the accepted-first best checkpoint.
+    patience_checks: 100
+    success_checks: 100
+    restore_best: true
+    minimum_improvement: 0.0001
+    cue_duration: 1.0
+    probe_duration: 5.0
+    fit_start_time: 1.0
+    velocity_during_cue: true
+    selection_metric: maximum_abs_velocity_bias
+    minimum_moving_gain: 0.5
+    velocities:
+      - -1.3089969389957472
+      - -0.5235987755982988
+      - -0.2617993877991494
+      - -0.17453292519943295
+      - -0.08726646259971647
+      - 0.0
+      - 0.08726646259971647
+      - 0.17453292519943295
+      - 0.2617993877991494
+      - 0.5235987755982988
+      - 1.3089969389957472
+    initial_headings:
+      - 0.0
+      - 0.5711986642890533
+      - 1.1423973285781066
+      - 1.7135959928671598
+      - 2.284794657156213
+      - 2.8559933214452666
+      - -2.8559933214452666
+      - -2.284794657156213
+      - -1.7135959928671598
+      - -1.1423973285781066
+      - -0.5711986642890533
+    maximum_rms_velocity_bias: 0.02
+    maximum_abs_velocity_bias: 0.035
+    maximum_abs_zero_velocity_drift: 0.002
+    maximum_depinning_velocity: 0.08726646259971647
+    minimum_pva_strength: 0.8
+    minimum_bump_contrast: 0.1
+
+diagnostics:
+  weight_source: best
+
+tests:
+  constant_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - -0.17453292519943295
+    - -0.08726646259971647
+    - 0.0
+    - 0.08726646259971647
+    - 0.17453292519943295
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+  weight_snapshot_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - -0.17453292519943295
+    - -0.08726646259971647
+    - 0.0
+    - 0.08726646259971647
+    - 0.17453292519943295
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+  weight_snapshot_pi_initial_headings:
+    - 0.0
+    - 0.5711986642890533
+    - 1.1423973285781066
+    - 1.7135959928671598
+    - 2.284794657156213
+    - 2.8559933214452666
+    - -2.8559933214452666
+    - -2.284794657156213
+    - -1.7135959928671598
+    - -1.1423973285781066
+    - -0.5711986642890533
+  weight_snapshot_pi_interval_fraction: 0.05
+  weight_snapshot_pi_cue_duration: 1.0
+  weight_snapshot_pi_duration: 5.0
+  weight_snapshot_pi_average_start_time: 1.0
+  weight_snapshot_pi_velocity_during_cue: true
+  weight_snapshot_pi_minimum_moving_gain: 0.5
+  weight_snapshot_pi_selection_metric: maximum_abs_velocity_bias
+  weight_snapshot_pi_maximum_rms_velocity_bias: 0.02
+  weight_snapshot_pi_maximum_abs_velocity_bias: 0.035
+  weight_snapshot_pi_maximum_abs_zero_velocity_drift: 0.002
+  weight_snapshot_pi_maximum_depinning_velocity: 0.08726646259971647
+  weight_snapshot_pi_minimum_pva_strength: 0.8
+  weight_snapshot_pi_minimum_bump_contrast: 0.1

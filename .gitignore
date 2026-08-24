@@ -1,11 +1,14 @@
 # 练习稿件
 /paper/
 
-# development model
-/model-dev/
-
 # data from dandi000939
 /data/
 
 # references
 /references/
+
+# Vafidis 源代码
+/Vafidis
+# shared runtime artifacts (repo:runs shared tree)
+/runs/
+/reports/

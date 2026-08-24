@@ -1,0 +1,35 @@
+PATH                         SPECIES   INSTIT... EXPERI... NWB   SUBJEC... SESSIO... EXPERI... SESSIO... SESSIO... SEX #UNITS ND_TYPES  AGE   RELATE... IDENTI... #ELECT... KEYWORDS  LAB       SIZE    
+data\raw\dandi_000939                                                                                                                                                                                   
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A1808     190807    Duszki... 2019-0... Open f... M   101    Compas... P12W/ doi: 1... A1808     64        head-d... Peyrac... 1.6 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A1813     190408    Duszki... 2019-0... Open f... M   70     Compas... P12W/ doi: 1... A1813     64        head-d... Peyrac... 1.9 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A1815     190523    Duszki... 2019-0... Open f... M   65     Compas... P12W/ doi: 1... A1815     64        head-d... Peyrac... 1.6 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A1821     190910    Duszki... 2019-0... Open f... M   74     Compas... P12W/ doi: 1... A1821     64        head-d... Peyrac... 1.8 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A1824     190827    Duszki... 2019-0... Open f... M   70     Compas... P12W/ doi: 1... A1824     64        head-d... Peyrac... 1.5 GB  
+...3701_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3701     191119    Duszki... 2019-1... Open f... M   102    Compas... P12W/ doi: 1... A3701     64        head-d... Peyrac... 2.3 GB  
+...3702_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3702     191126    Duszki... 2019-1... Open f... M   90     Compas... P12W/ doi: 1... A3702     64        head-d... Peyrac... 2.0 GB  
+...3703_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3703     191215    Duszki... 2019-1... Open f... M   103    Compas... P12W/ doi: 1... A3703     64        head-d... Peyrac... 1.1 GB  
+...3705_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3705     200306    Duszki... 2020-0... Open f... M   117    Compas... P12W/ doi: 1... A3705     64        head-d... Peyrac... 1.9 GB  
+...3706_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3706     200313    Duszki... 2020-0... Open f... M   126    Compas... P12W/ doi: 1... A3706     64        head-d... Peyrac... 1.8 GB  
+...3707_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3707     200317    Duszki... 2020-0... Open f... M   185    Compas... P12W/ doi: 1... A3707     64        head-d... Peyrac... 1.8 GB  
+...3708_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3708     200317b   Duszki... 2020-0... Open f... M   78     Compas... P12W/ doi: 1... A3708     64        head-d... Peyrac... 2.2 GB  
+...3709_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3709     200601    Duszki... 2020-0... Open f... M   64     Compas... P12W/ doi: 1... A3709     64        head-d... Peyrac... 2.1 GB  
+...3710_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3710     200609    Duszki... 2020-0... Open f... M   107    Compas... P12W/ doi: 1... A3710     64        head-d... Peyrac... 2.0 GB  
+...3711_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3711     200810b   Duszki... 2020-0... Open f... M   142    Compas... P12W/ doi: 1... A3711     64        head-d... Peyrac... 1.7 GB  
+...3712_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3712     200903a   Duszki... 2020-0... Open f... M   126    Compas... P12W/ doi: 1... A3712     64        head-d... Peyrac... 1.8 GB  
+...3713_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3713     200909a   Duszki... 2020-0... Open f... M   88     Compas... P12W/ doi: 1... A3713     64        head-d... Peyrac... 1.8 GB  
+...3716_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3716     201015b   Duszki... 2020-1... Open f... M   147    Compas... P12W/ doi: 1... A3716     64        head-d... Peyrac... 2.0 GB  
+...3717_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3717     201021    Duszki... 2020-1... Open f... M   98     Compas... P12W/ doi: 1... A3717     64        head-d... Peyrac... 1.9 GB  
+...3723_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3723     201115    Duszki... 2020-1... Open f... M   68     Compas... P12W/ doi: 1... A3723     64        head-d... Peyrac... 1.9 GB  
+...3728_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3728     210309b   Duszki... 2021-0... Open f... M   42     Compas... P12W/ doi: 1... A3728     64        head-d... Peyrac... 1.4 GB  
+...3730_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A3730     210323b   Duszki... 2021-0... Open f... M   77     Compas... P12W/ doi: 1... A3730     64        head-d... Peyrac... 1.7 GB  
+...5505_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A5505     200831    Duszki... 2020-0... Open f... M   55     Compas... P12W/ doi: 1... A5505     64        head-d... Peyrac... 1.7 GB  
+...5506_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A5506     200914a   Duszki... 2020-0... Open f... M   49     Compas... P12W/ doi: 1... A5506     64        head-d... Peyrac... 1.8 GB  
+...5507_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A5507     200920    Duszki... 2020-0... Open f... M   96     Compas... P12W/ doi: 1... A5507     64        head-d... Peyrac... 1.9 GB  
+...5508_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A5508     200930    Duszki... 2020-0... Open f... M   52     Compas... P12W/ doi: 1... A5508     64        head-d... Peyrac... 1.8 GB  
+...5801_behavior+ecephys.nwb Mus mu... McGill... high-d... 2.6.0 A5801     200924    Duszki... 2020-0... Open f... M   46     Compas... P12W/ doi: 1... A5801     64        head-d... Peyrac... 965.4 MB
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A6211     210407    Duszki... 2021-0... Open f... M   61     Compas... P12W/ doi: 1... A6211     64        head-d... Peyrac... 1.8 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A6215     210610    Duszki... 2021-0... Open f... M   56     Compas... P12W/ doi: 1... A6215     64        head-d... Peyrac... 1.7 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A6216     210623    Duszki... 2021-0... Open f... M   75     Compas... P12W/ doi: 1... A6216     64        head-d... Peyrac... 1.8 GB  
+...behavior+ecephys+ogen.nwb Mus mu... McGill... high-d... 2.6.0 A9701     210805    Duszki... 2021-0... Open f... M   61     Compas... P12W/ doi: 1... A9701     64        head-d... Peyrac... 1.5 GB  
+Summary:                                                                                       2019-0...                                                                                        54.8 GB 
+                                                                                               2021-0...                                                                                                

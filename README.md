@@ -6,6 +6,8 @@
 
 - `model-dev/`：唯一的日常开发目录；代码、配置和测试默认只在这里修改。
 - `model-release/`：从已验证的开发版本生成的冻结快照，用于长时间训练。除非用户明确要求发布新快照，否则不要修改，也不要让它导入 `model-dev` 中的代码。
+- `model-release-<系列名>/`（如 `model-release-anneal/`）：可选的其他冻结快照，用于在默认 release 被占用时并行跑长训练。每个快照有独立的 `.release-manifest.json` 与训练锁，通过 `promote_release.py --release-root` 创建/更新。
+- `runs/`：**所有分支共享的 run 目录**（仓库根下）。`paths.runs_root` 相对仓库根解析，因此 `model-dev` / `model-release` / `model-release-anneal` 三棵树的训练与诊断读写同一份 run 文件；根 `.gitignore` 已忽略该目录。旧 run 可按需用 `--run-dir` 显式指定路径读取。
 - `notebooks/`：dev 与 release 共用的文献阅读笔记和研究知识库；它可以在长训练期间继续更新，但不属于任何冻结版本，也不能成为训练代码的运行时依赖。
 - `data/`：两套代码共用的数据目录；reproduction 代码通过 `workspace_paths.py` 定位它，不依赖当前工作目录。
 - `references/`：共享参考资料。
@@ -18,8 +20,10 @@
 - learning 任务：`model-dev/learning/.SKILL.md`
 - reproduction 任务：`model-dev/reproduction/.skills/SKILL.md`
 - 文献背景：按当前任务读取 `notebooks/` 中相关笔记，不需要每次遍历整个知识库。
+- **研究现状与下一步方向**：`notebooks/toy_model_status.md`（阶段性总结，随实验进展更新）
+- 慢流形诊断原理：`notebooks/slow_manifold_diagnostics.md`
 
-默认只检查和编辑 `model-dev/`。不要改动正在运行的 `model-release/`、训练输出或权重文件。开发版本通过测试后，再由用户明确决定是否更新冻结快照。
+默认只检查和编辑 `model-dev/`。不要改动正在运行的 `model-release/`、`model-release-anneal/`、训练输出或权重文件。开发版本通过测试后，再由用户明确决定是否更新冻结快照。
 
 ## 更新冻结版本
 
@@ -39,6 +43,27 @@ python model-dev\scripts\promote_release.py --lock-training
 # 在 model-release 中运行训练
 python model-dev\scripts\promote_release.py --unlock-training
 ```
+
+### 多 release-root（并行长训练）
+
+当默认 `model-release` 被正在运行的实验占用、而 dev 又需要保持可编辑时，可以用
+`--release-root` 创建另一个冻结快照（独立 manifest 与训练锁）：
+
+```powershell
+# 预览 → 应用（dev 有未提交修改时需 --allow-dirty）
+python model-dev\scripts\promote_release.py --release-root model-release-anneal
+python model-dev\scripts\promote_release.py --release-root model-release-anneal --apply --allow-dirty
+
+# 独立 conda 环境（与 dev/pro 隔离）
+conda env create -n pro-anneal -f model-release-anneal\learning\environment.yml
+cd model-release-anneal\learning && python -m pip install -e .
+
+# 训练前锁住该快照
+python model-dev\scripts\promote_release.py --release-root model-release-anneal --lock-training
+```
+
+之后在该快照目录、对应环境（如 `pro-anneal`）下按标准流程跑长训练。实验结束后
+`--unlock-training --release-root ...` 再更新快照。
 
 ## 环境与运行
 

@@ -1,4 +1,37 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:conda",
-    "python-envs.defaultPackageManager": "ms-python.python:conda"
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "chat.sessionSync.enabled": true,
+    "python.terminal.activateEnvironment": false,
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell"
+        },
+        "dev": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "env": {
+                "PATH": "D:\\miniconda\\envs\\dev\\Library\\bin;${env:PATH}"
+            }
+        },
+        "pro": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "env": {
+                "PATH": "D:\\miniconda\\envs\\pro\\Library\\bin;${env:PATH}"
+            }
+        },
+        "origin": {
+            "source": "PowerShell",
+            "icon": "terminal-powershell",
+            "env": {
+                "PATH": "D:\\miniconda\\envs\\origin\\Library\\bin;${env:PATH}"
+            }
+        }
+    },
+    "terminal.integrated.env.windows": {
+        "MKL_THREADING_LAYER": "SEQUENTIAL"
+    }
 }

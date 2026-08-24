@@ -1,0 +1,217 @@
+{
+  "status": "diagnostic_only_no_pipeline_change",
+  "question": "Why does the B2/B3/A2 data-derived target still have positive real-part modes at lambda=1e-6, c=1?",
+  "paper_scope": {
+    "kept": [
+      "B2 wake-square HD tuning with Gaussian smoothing and unit-mean normalization",
+      "B4.1 double normalization by Sinkhorn-Knopp",
+      "Setting 1 softplus inverse for the input-current target",
+      "A2 constrained minimum-norm weights with J_ii=0",
+      "B4.2 uniform inhibition c=1"
+    ],
+    "not_used_as_fix": [
+      "target-point feedback",
+      "state clipping",
+      "relaxing the target manifold before measuring distance",
+      "changing lambda away from the paper value"
+    ]
+  },
+  "session_selection": {
+    "available": true,
+    "sessions_ok": 31,
+    "sessions_total": 31,
+    "included_initial": 1533,
+    "included_qc": 1533,
+    "extraction_epoch": "wake_square"
+  },
+  "tuning_tail": {
+    "n_neurons": 1533,
+    "n_angles": 100,
+    "metadata_rows": 1533,
+    "angle_bins_rad_first_last": [
+      0.031415926535897934,
+      6.2517693806436885
+    ],
+    "single_neuron_normalized_tuning": {
+      "percentiles": {
+        "p0": 6.653150272788e-127,
+        "p0.1": 2.6489142989657835e-58,
+        "p1": 1.2954920410590274e-11,
+        "p5": 0.0027177787343079926,
+        "p50": 0.28773437815020464,
+        "p95": 4.757602233902512,
+        "p99": 7.408002871173777,
+        "p99.9": 9.511314437215075,
+        "p100": 11.913068984293833
+      },
+      "threshold_counts": {
+        "lt_1e-12": {
+          "count": 1405,
+          "fraction": 0.009165035877364645
+        },
+        "lt_1e-10": {
+          "count": 1678,
+          "fraction": 0.010945857795172863
+        },
+        "lt_1e-08": {
+          "count": 2079,
+          "fraction": 0.013561643835616439
+        },
+        "lt_1e-06": {
+          "count": 2772,
+          "fraction": 0.01808219178082192
+        },
+        "lt_0.0001": {
+          "count": 4182,
+          "fraction": 0.027279843444227007
+        }
+      }
+    },
+    "doubly_normalized_tuning": {
+      "percentiles": {
+        "p0": 8.628354296878156e-13,
+        "p0.1": 9.235449624567588e-13,
+        "p1": 1.276820580117572e-11,
+        "p5": 0.0027300360965303006,
+        "p50": 0.2880106975290949,
+        "p95": 4.763829300083298,
+        "p99": 7.409452233551811,
+        "p99.9": 9.520413666025485,
+        "p100": 11.741239521996258
+      },
+      "threshold_counts": {
+        "lt_1e-12": {
+          "count": 773,
+          "fraction": 0.005042400521852577
+        },
+        "lt_1e-10": {
+          "count": 1677,
+          "fraction": 0.010939334637964775
+        },
+        "lt_1e-08": {
+          "count": 2078,
+          "fraction": 0.013555120678408349
+        },
+        "lt_1e-06": {
+          "count": 2772,
+          "fraction": 0.01808219178082192
+        },
+        "lt_0.0001": {
+          "count": 4191,
+          "fraction": 0.027338551859099804
+        }
+      },
+      "neuron_mean": {
+        "p0": 0.99999999994851,
+        "p50": 0.9999999999987778,
+        "p100": 1.0000000000557143
+      },
+      "angle_mean": {
+        "p0": 0.999999999999995,
+        "p50": 0.9999999999999998,
+        "p100": 1.0000000000000038
+      }
+    }
+  },
+  "local_stability": {
+    "matrix_path": "D:\\codefiles\\python\\diordered-circuits\\data\\processed\\figure3_abcd_weight_matrices.npz",
+    "activation_beta": 2.0,
+    "regularization": 1e-06,
+    "uniform_inhibition_c": 1.0,
+    "weight_formula_version": "paper_a2_discrete_kernel_b2_preprocessing_v10",
+    "inverse_floor_cases": [
+      {
+        "eps": 1e-12,
+        "target_current_percentiles": {
+          "p0": -13.4689369676838,
+          "p0.1": -13.4689369676838,
+          "p1": -12.195457888736675,
+          "p5": -2.6037809991706538,
+          "p50": -0.12490638831485927,
+          "p95": 4.7637928938070795,
+          "p99": 7.409452050235273,
+          "p99.9": 9.520413663336154,
+          "p100": 11.741239521996258
+        },
+        "factor_a_abs_percentiles": {
+          "p0": 0.0010868563858750235,
+          "p1": 7.022230498788429,
+          "p50": 1019.9515797948525,
+          "p95": 70072.50991892237,
+          "p99": 424181.19151939184,
+          "p100": 2716375.725213447
+        },
+        "flow_residual_l2_div_sqrt_n": {
+          "p0": 0.0033923665769124978,
+          "p1": 0.0037745838833642535,
+          "p50": 0.007040915224696874,
+          "p95": 0.009169151362918015,
+          "p99": 0.009658091438840437,
+          "p100": 0.009898733236859442
+        },
+        "sample_bins": [
+          0,
+          25,
+          50,
+          75
+        ],
+        "jacobian_max_real_c1": [
+          0.41986001471649015,
+          0.6372399340956958,
+          0.4499962507040568,
+          0.7960947228016896
+        ],
+        "jacobian_has_positive_sampled_mode": true
+      },
+      {
+        "eps": 1e-06,
+        "target_current_percentiles": {
+          "p0": -6.561181188702081,
+          "p0.1": -6.561181188702081,
+          "p1": -6.561181188702081,
+          "p5": -2.6037809991706538,
+          "p50": -0.12490638831485927,
+          "p95": 4.7637928938070795,
+          "p99": 7.409452050235273,
+          "p99.9": 9.520413663336154,
+          "p100": 11.741239521996258
+        },
+        "factor_a_abs_percentiles": {
+          "p0": 0.0010868563858750235,
+          "p1": 6.981661617123659,
+          "p50": 1014.7443010634995,
+          "p95": 67532.8052171679,
+          "p99": 408253.39664846286,
+          "p100": 2342209.66425187
+        },
+        "flow_residual_l2_div_sqrt_n": {
+          "p0": 0.003454099549862195,
+          "p1": 0.0035226613673348247,
+          "p50": 0.005560247656814492,
+          "p95": 0.006853865334780628,
+          "p99": 0.007867527830567954,
+          "p100": 0.008321106777090505
+        },
+        "sample_bins": [
+          0,
+          25,
+          50,
+          75
+        ],
+        "jacobian_max_real_c1": [
+          0.9771155014306245,
+          0.20282875436315217,
+          0.7159157259914705,
+          0.5482722454659246
+        ],
+        "jacobian_has_positive_sampled_mode": true
+      }
+    ]
+  },
+  "interpretation": [
+    "The reconstructed target has an extremely small firing-rate tail before the softplus inverse.",
+    "Raising only the inverse numerical floor to 1e-6 reduces the negative current tail but does not remove sampled positive Jacobian modes.",
+    "The instability is therefore not explained by transpose or low-rank implementation differences; it remains tied to target support or an unreproduced original preprocessing/numerical-support detail.",
+    "The paper text reviewed so far states B2/B3/A2/B4 operations but does not explicitly specify a firing-rate floor, current clipping, or target relaxation step."
+  ]
+}

@@ -1,0 +1,222 @@
+# Matched heterogeneous-cue counterpart to vafidis_von_mises.yaml.
+#
+# The two experiments intentionally share every model, initialization,
+# numerical-integration, training, velocity, learning-rule and diagnostics
+# setting. Only the experiment/output names and visual-teacher statistics
+# differ, so their results form a controlled cue-profile comparison.
+
+experiment_name: vafidis_heterogeneous
+
+model:
+  # Match the paired N_HD=N_HR=120 von-Mises control exactly.
+  n_theta: 120
+  n_hr: 120
+  tau_s: 0.065
+  tau_hd_to_hr: 0.065
+  tau_l_hd: 0.01
+  p_distal_to_proximal: 0.6666666666666666
+  c_hd_proximal: 0.001
+  g_l_hd_proximal: 1.0
+  g_d_hd_to_proximal: 2.0
+  b_hd: 1.0
+  b_hr: 1.5
+  hd_distal_normalization: raw_sum
+  w_hd_to_hr_strength: 13.333333333333334
+  activation:
+    name: sigmoid
+    gain: 2.5
+    bias: 1.0
+    max_rate: 0.15
+  init:
+    w_hd_to_hd_mode: random_normal
+    w_hr_to_hd_mode: random_normal
+    w_hd_to_hd_scale: 0.09128709291752768
+    w_hr_to_hd_scale: 0.09128709291752768
+    local_sigma: 0.45
+    random_jitter: 0.0
+
+simulation:
+  seed: 42
+  dt: 0.00025
+  proximal_integration_method: exact_linear
+  train_duration: 50000.0
+  # One record and frozen-weight snapshot per 1% of training.
+  save_interval_duration: 500.0
+  weight_snapshot_interval_duration: 500.0
+  # Frozen-weight validation durations; these do not affect plasticity.
+  bump_test_duration: 5.0
+  darkness_test_duration: 60.0
+  cue_duration: 2.0
+  pi_cue_duration: 20.0
+  recue_duration: 10.0
+  theta0: 0.0
+  progress: true
+  plasticity_enabled: true
+  # Component-split streams keep the OU training path and initial weights
+  # matched to the von-Mises control despite the additional cue-generator RNG.
+  random_stream_mode: component_split
+  initialization_seed_offset: 0
+  velocity_seed_offset: 10000
+  early_stopping:
+    enabled: false
+  checkpoint_selection:
+    # Keep training independent of behavioral thresholds. Snapshot ranking is
+    # performed offline after the hard cap, and final/best weights are both kept.
+    enabled: false
+    min_duration: 8000.0
+    check_interval: 800.0
+    patience_checks: 8
+    success_checks: 3
+    restore_best: true
+    minimum_improvement: 0.0001
+    cue_duration: 1.0
+    probe_duration: 2.0
+    fit_start_time: 0.5
+    velocities:
+      - -1.3089969389957472
+      - -0.5235987755982988
+      - 0.0
+      - 0.5235987755982988
+      - 1.3089969389957472
+    initial_headings:
+      - -3.141592653589793
+      - -1.5707963267948966
+      - 0.0
+      - 1.5707963267948966
+    maximum_rms_velocity_bias: 0.01
+    maximum_abs_velocity_bias: 0.02
+    maximum_abs_zero_velocity_drift: 0.01
+    minimum_pva_strength: 0.5
+    minimum_bump_contrast: 0.05
+
+learning_rule:
+  eta_hd_to_hd: 50.0
+  eta_hr_to_hd: 50.0
+  tau_delta: 0.10
+  w_hd_to_hd_min: null
+  w_hd_to_hd_max: null
+  w_hr_to_hd_min: null
+  w_hr_to_hd_max: null
+  hd_to_hd_symmetry_mode: none
+  hd_to_hd_balance_mode: none
+  hr_to_hd_balance_mode: none
+  zero_hd_to_hd_diagonal: false
+
+visual:
+  profile: heterogeneous_gaussian_process
+  # Each generated curve has angular mean one. This shared amplitude equals
+  # the angular-mean excitation of the control cue
+  # 4 * exp(-kappa) * I0(kappa), preserving mean per-neuron cue excitation
+  # while retaining heterogeneous peak heights and shapes.
+  amplitude: 0.484419041134548
+  # Unused by the heterogeneous generator; retained for calibration against
+  # the matched von-Mises control.
+  kappa: 11.11111111111111
+  baseline: 5.0
+  normalize_peak: true
+  light_excitation: 4.0
+  proximal_scale: 1.0
+  noise_std: 0.0
+  noise_process: ou_additive
+  noise_correlation_time: 0.065
+  apply_noise_during_training: true
+  apply_noise_during_visual_test: true
+  noise_seed_offset: 20000
+
+  # Clark-style Gaussian-process cue generator. Profiles are sampled once from
+  # their own deterministic stream, COM-aligned to HD preferences, and then
+  # held fixed throughout training and frozen-weight diagnostics.
+  heterogeneous_sigma: 1.4
+  heterogeneous_beta: 2.6057585657926885
+  heterogeneous_bias: 2.0814271322479385
+  heterogeneous_n_angles: 360
+  heterogeneous_seed_offset: 40000
+  heterogeneous_alignment: center_of_mass
+  heterogeneous_normalization: unit_angular_mean
+  heterogeneous_population_sampling: independent
+  heterogeneous_master_n_hd_cells: null
+  heterogeneous_plot_sample_count: 16
+  heterogeneous_plot_seed_offset: 50000
+
+velocity:
+  process: ou
+  mean: 0.0
+  std: 3.9269908169872414
+  tau: 0.50
+  clip: null
+  k_vel: 0.15915494309189535
+
+diagnostics:
+  weight_source: best
+  weight_snapshot_index: null
+  bump_maintenance: true
+  path_integration_and_pi_error: true
+  pva_spectrum_and_visualization: false
+  velocity_gain: true
+  training_convergence: true
+  trajectory_and_fixed_points: true
+  weight_snapshots_and_development: true
+  bump_diffusion: false
+  timescale_separation: false
+  velocity_dynamics_and_phase_flow: false
+  numerical_convergence: true
+  reuse_cached_dependencies: true
+
+tests:
+  darkness_angular_velocity: 1.3089969389957472
+  constant_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+
+  learning_error_window_duration: 10.0
+  learning_error_interval_fraction: 0.01
+  learning_error_rate_scale_to_spikes_per_second: 1000.0
+
+  weight_snapshot_pi_velocities:
+    - -1.3089969389957472
+    - -0.5235987755982988
+    - -0.2617993877991494
+    - 0.0
+    - 0.2617993877991494
+    - 0.5235987755982988
+    - 1.3089969389957472
+  weight_snapshot_pi_initial_headings:
+    - -2.356194490192345
+    - -0.7853981633974483
+    - 0.7853981633974483
+    - 2.356194490192345
+  weight_snapshot_pi_interval_fraction: 0.02
+  weight_snapshot_pi_cue_duration: 1.0
+  weight_snapshot_pi_duration: 5.0
+  weight_snapshot_pi_average_start_time: 0.5
+  weight_snapshot_pi_selection_metric: rms_velocity_bias
+
+  ou_pi_ensemble_trials: 24
+  ou_pi_ensemble_seed_offset: 60000
+  ou_pi_ensemble_fit_start_time: 0.5
+
+  bump_attractor_initial_conditions: 360
+  bump_attractor_boundary_bisection_depth: 6
+  bump_attractor_duration: 5.0
+  bump_attractor_cue_duration: 1.0
+  bump_attractor_cue_amplitude: 24.0
+  bump_attractor_sample_interval: 0.1
+
+  numerical_convergence_dt_values: [0.001, 0.0005, 0.00025, 0.000125]
+  numerical_convergence_methods: [forward_euler, exact_linear]
+  numerical_convergence_reference_dt: 0.0000625
+  numerical_convergence_cue_duration: 0.5
+  numerical_convergence_duration: 2.0
+  numerical_convergence_sample_interval: 0.01
+  numerical_convergence_angular_velocity: 1.3089969389957472
+  numerical_convergence_max_heading_error_deg: 1.0
+  numerical_convergence_max_rate_rms_error: 0.002
+
+paths:
+  runs_root: runs/vafidis_heterogeneous
+  reports_root: reports

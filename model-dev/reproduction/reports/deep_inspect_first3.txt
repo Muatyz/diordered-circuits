@@ -1,0 +1,315 @@
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1808\sub-A1808_behavior+ecephys+ogen.nwb
+
+PROCESSING MODULES
+
+[behavior]
+ProcessingModule: behavior
+- data_interface: CompassDirection (CompassDirection)
+  CompassDirection: CompassDirection
+  - field: spatial_series (LabelledDict)
+- data_interface: Position (Position)
+  Position: Position
+  - field: spatial_series (LabelledDict)
+- data_interface: accelerometer (TimeSeries)
+  TimeSeries: accelerometer
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(203973840, 3)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ecephys]
+ProcessingModule: ecephys
+- data_interface: LFP (LFP)
+  LFP: LFP
+  - field: electrical_series (LabelledDict)
+- data_interface: pseudoEMG (TimeSeries)
+  TimeSeries: pseudoEMG
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(20396,)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ogen]
+ProcessingModule: ogen
+- data_interface: optogenetic_stim (OptogeneticSeries)
+  OptogeneticSeries: optogenetic_stim
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(203973840,)
+  - field: starting_time_unit (str)
+  - field: site (OptogeneticStimulusSite)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+INTERVAL TABLES
+
+[epochs] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time           tags
+id                                      
+0      0.00005   2735.856    [home_cage]
+1   2735.85600   3648.348  [wake_square]
+2   3648.34800   7489.656    [home_cage]
+3   7489.65600  10198.690    [wake_opto]
+
+[nrem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0        491.0      499.0  [0]
+1        524.0      531.0  [1]
+2       1191.0     1199.0  [2]
+3       1238.0     1249.0  [3]
+4       1268.0     1322.0  [4]
+
+[rem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0       2715.0     2732.0  [0]
+1       7321.0     7343.0  [1]
+
+UNITS
+('electrode_index', 'trough_to_peak', 'is_excitatory', 'is_fast_spiking', 'is_head_direction', 'spike_times', 'electrode_group', 'waveform_mean')
+    electrode_index  ...                                      waveform_mean
+id                   ...                                                   
+0                24  ...  [[2.6685678958892822, 1.3851525783538818, -0.5...
+1                28  ...  [[0.6384983062744141, -0.017003769055008888, 3...
+2                62  ...  [[-0.6441711783409119, 0.19428518414497375, 0....
+3                18  ...  [[1.5497502088546753, -0.515323281288147, -1.4...
+4                54  ...  [[-6.105649471282959, -4.538857936859131, -3.3...
+
+[5 rows x 8 columns]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1813\sub-A1813_behavior+ecephys+ogen.nwb
+
+PROCESSING MODULES
+
+[behavior]
+ProcessingModule: behavior
+- data_interface: CompassDirection (CompassDirection)
+  CompassDirection: CompassDirection
+  - field: spatial_series (LabelledDict)
+- data_interface: Position (Position)
+  Position: Position
+  - field: spatial_series (LabelledDict)
+- data_interface: accelerometer (TimeSeries)
+  TimeSeries: accelerometer
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(233341920, 3)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ecephys]
+ProcessingModule: ecephys
+- data_interface: LFP (LFP)
+  LFP: LFP
+  - field: electrical_series (LabelledDict)
+- data_interface: pseudoEMG (TimeSeries)
+  TimeSeries: pseudoEMG
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(23333,)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ogen]
+ProcessingModule: ogen
+- data_interface: optogenetic_stim (OptogeneticSeries)
+  OptogeneticSeries: optogenetic_stim
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(933367680,)
+  - field: starting_time_unit (str)
+  - field: site (OptogeneticStimulusSite)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+INTERVAL TABLES
+
+[epochs] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time           tags
+id                                      
+0      0.00005   3966.804    [home_cage]
+1   3966.80400   5008.896  [wake_square]
+2   5008.89600   8908.416    [home_cage]
+3   8908.41600  11667.100    [wake_opto]
+
+[nrem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0         11.0       37.0  [0]
+1        141.0      150.0  [1]
+2        219.0      230.0  [2]
+3        244.0      341.0  [3]
+4        358.0      562.0  [4]
+
+[rem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0       1316.0     1435.0  [0]
+1       2722.0     2739.0  [1]
+2       3203.0     3279.0  [2]
+3       3638.0     3670.0  [3]
+4       7417.0     7428.0  [4]
+
+UNITS
+('electrode_index', 'trough_to_peak', 'is_excitatory', 'is_fast_spiking', 'is_head_direction', 'spike_times', 'electrode_group', 'waveform_mean')
+    electrode_index  ...                                      waveform_mean
+id                   ...                                                   
+0                12  ...  [[-1.3957816362380981, -0.8058030605316162, -1...
+1                40  ...  [[-1.5732824802398682, -0.7082275748252869, -0...
+2                53  ...  [[-1.6950911283493042, -1.1951441764831543, -1...
+3                37  ...  [[0.41723471879959106, 0.547501266002655, 1.16...
+4                28  ...  [[0.5479876399040222, 0.836837649345398, 0.986...
+
+[5 rows x 8 columns]
+
+====================================================================================================
+data\raw\dandi_000939\000939\sub-A1815\sub-A1815_behavior+ecephys+ogen.nwb
+
+PROCESSING MODULES
+
+[behavior]
+ProcessingModule: behavior
+- data_interface: CompassDirection (CompassDirection)
+  CompassDirection: CompassDirection
+  - field: spatial_series (LabelledDict)
+- data_interface: Position (Position)
+  Position: Position
+  - field: spatial_series (LabelledDict)
+- data_interface: accelerometer (TimeSeries)
+  TimeSeries: accelerometer
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(192457440, 3)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ecephys]
+ProcessingModule: ecephys
+- data_interface: LFP (LFP)
+  LFP: LFP
+  - field: electrical_series (LabelledDict)
+- data_interface: pseudoEMG (TimeSeries)
+  TimeSeries: pseudoEMG
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(19244,)
+  - field: starting_time_unit (str)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+[ogen]
+ProcessingModule: ogen
+- data_interface: optogenetic_stim (OptogeneticSeries)
+  OptogeneticSeries: optogenetic_stim
+  - field: starting_time (float64)
+  - field: rate (float64)
+  - field: resolution (float64)
+  - field: comments (str)
+  - field: description (str)
+  - field: conversion (float64)
+  - field: offset (float64)
+  - field: unit (str)
+  - data: shape=(769829760,)
+  - field: starting_time_unit (str)
+  - field: site (OptogeneticStimulusSite)
+- field: description (str)
+- field: data_interfaces (LabelledDict)
+
+INTERVAL TABLES
+
+[epochs] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time           tags
+id                                      
+0      0.00005   3560.976    [home_cage]
+1   3560.97600   4468.392  [wake_square]
+2   4468.39200   6915.168    [home_cage]
+3   6915.16800   9622.872    [wake_opto]
+
+[nrem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0          1.0       10.0  [0]
+1        337.0      344.0  [1]
+2        674.0      683.0  [2]
+3        914.0      923.0  [3]
+4       1042.0     1050.0  [4]
+
+[rem] columns: ('start_time', 'stop_time', 'tags')
+    start_time  stop_time tags
+id                            
+0       2580.0     2641.0  [0]
+1       2674.0     2687.0  [1]
+2       3254.0     3326.0  [2]
+3       3369.0     3383.0  [3]
+4       6101.0     6209.0  [4]
+
+UNITS
+('electrode_index', 'trough_to_peak', 'is_excitatory', 'is_fast_spiking', 'is_head_direction', 'spike_times', 'electrode_group', 'waveform_mean')
+    electrode_index  ...                                      waveform_mean
+id                   ...                                                   
+0                17  ...  [[-2.2715792655944824, -2.7684502601623535, -2...
+1                17  ...  [[0.25665998458862305, -0.4875141382217407, 0....
+2                34  ...  [[-0.6515365242958069, -1.2001203298568726, -0...
+3                25  ...  [[0.49141696095466614, -0.7294532656669617, 1....
+4                57  ...  [[0.6373223662376404, 0.7074655294418335, 3.00...
+
+[5 rows x 8 columns]

@@ -1,0 +1,27 @@
+def at line 3199
+run_all_tests branch at line 6802
+---branch---
+_trajectory_test(
+            config=config,
+            trained_state=trained_state,
+            hd_tuning_history=hd_tuning_history,
+        )
+
+    if "fixed_point_map" in enabled:
+        (
+            fixed_point_map_history,
+            fixed_point_map_metrics,
+        ) = run_selected_diagnostic(
+            "fixed_point_map",
+            lambda: run_fixed_point_map_diagnostic(
+                config=config,
+                trained_state=trained_state,
+            ),
+        )
+    else:
+        fixed_point_map_history = {}
+        fixed_point_map_metrics = {
+            "fixed_point_map_diagnostic_enabled": 0.0
+        }
+    # Merge fixed-point-map history into the attractor-trajectory history so
+    # it is persisted automatically wi
